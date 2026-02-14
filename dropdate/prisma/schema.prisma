@@ -1,0 +1,90 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  name           String
+  age            Int
+  gender         String       // "male" | "female" | "nonbinary"
+  genderPref     String       // "male" | "female" | "any"
+  city           String
+  bio            String?
+  passwordHash   String
+  completedSetup Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  answers        Answer[]
+  optIns         WeeklyOptIn[]
+  matchesA       Match[]      @relation("matchUserA")
+  matchesB       Match[]      @relation("matchUserB")
+  emailLogs      EmailLog[]
+}
+
+model Question {
+  id              String   @id @default(uuid())
+  orderIndex      Int      @unique       // 1–60
+  questionText    String
+  type            String                  // "likert" | "multiple_choice" | "ranking" | "binary"
+  options         Json                    // ["Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"]
+  weightDimension String                  // e.g. "attachment", "values", "lifestyle", "communication", "interests"
+  weight          Float    @default(1.0)  // importance multiplier within dimension
+
+  answers         Answer[]
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId String
+  value      Json     // numeric for likert/binary, string for MC, array for ranking
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id])
+
+  @@unique([userId, questionId])
+}
+
+model WeeklyOptIn {
+  id        String   @id @default(uuid())
+  userId    String
+  weekStart DateTime // Monday 00:00 UTC of that week
+  optedInAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, weekStart])
+}
+
+model Match {
+  id              String   @id @default(uuid())
+  userAId         String
+  userBId         String
+  weekStart       DateTime
+  similarityScore Float
+  explanation     String   // "You both value deep conversations and share lifestyle preferences."
+  createdAt       DateTime @default(now())
+
+  userA           User     @relation("matchUserA", fields: [userAId], references: [id])
+  userB           User     @relation("matchUserB", fields: [userBId], references: [id])
+
+  @@unique([userAId, weekStart])
+  @@unique([userBId, weekStart])
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  userId    String
+  matchId   String
+  sentAt    DateTime @default(now())
+  status    String   // "sent" | "failed" | "bounced"
+  resendId  String?
+
+  user      User     @relation(fields: [userId], references: [id])
+}

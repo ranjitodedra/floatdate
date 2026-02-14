@@ -1,0 +1,8 @@
+{
+    "crons": [
+        {
+            "path": "/api/admin/run-matching",
+            "schedule": "0 0 * * 1"
+        }
+    ]
+}

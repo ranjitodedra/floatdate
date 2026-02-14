@@ -1,0 +1,1106 @@
+[
+    {
+        "id": "bf_01",
+        "text": "I get stressed out easily and often worry about things that might go wrong in my relationships.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "negative",
+        "concept_reference": "Neuroticism is a strong negative predictor of relationship satisfaction.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bf_02",
+        "text": "I follow a schedule and am exacting in my work and commitments.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "positive",
+        "concept_reference": "Conscientiousness predicts long-term relationship satisfaction and stability.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bf_03_rev",
+        "text": "I sometimes insult people or hold grudges when I am frustrated.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "reverse",
+        "concept_reference": "Agreeableness is positively linked to relationship satisfaction; insulting behavior maps to low agreeableness.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bf_04",
+        "text": "I am the life of the party and enjoy being the center of attention.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Extraversion is linked to relationship satisfaction but requires matching or complementarity.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "bf_05",
+        "text": "I spend a lot of time reflecting on abstract ideas, concepts, and unconventional philosophies.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Openness to experience can both positively and negatively affect relationship satisfaction depending on partner match.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "bf_06_scen",
+        "text": "Scenario: Your partner is unexpectedly 30 minutes late coming home and hasn't texted. What is your immediate thought process?",
+        "input_type": "scenario",
+        "options": [
+            "I assume they got stuck in traffic and wait patiently.",
+            "I text them once to check in and find something else to do.",
+            "I start worrying that they were in an accident.",
+            "I get angry that they are being disrespectful of my time."
+        ],
+        "dimension": "Big Five personality traits",
+        "scoring_direction": "negative",
+        "concept_reference": "High neuroticism correlates with interpreting ambiguous relationship cues negatively.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "att_01",
+        "text": "I often worry that my partner will not want to stay with me or that they don't love me enough.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "negative",
+        "concept_reference": "Attachment anxiety is a reliable predictor of relationship dissatisfaction and fear of abandonment.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "att_02",
+        "text": "I don't feel comfortable fully opening up and relying on romantic partners.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "negative",
+        "concept_reference": "Attachment avoidance indicates discomfort with closeness, predicting lower relationship quality.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "att_03",
+        "text": "I find it relatively easy to get close to others and feel comfortable depending on them.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "positive",
+        "concept_reference": "Secure attachment strongly correlates with long-term stability and constructive conflict management.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "att_04_rev",
+        "text": "I rarely worry about being abandoned by my partner.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "reverse",
+        "concept_reference": "Reverse-coded item assessing absence of attachment anxiety.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "att_05_beh",
+        "text": "When feeling highly stressed, I tend to physically pull away and seek alone time rather than seeking comfort from my partner.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "negative",
+        "concept_reference": "Behavioral manifestation of avoidant attachment in high-stress situations.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "att_06_scen",
+        "text": "Scenario: You and your partner have a minor disagreement. Afterwards, your partner asks for an hour of space. What is your immediate impulse?",
+        "input_type": "scenario",
+        "options": [
+            "Give them space without worry.",
+            "Feel highly anxious and try to force a resolution immediately.",
+            "Use the time to distance myself and consider breaking up.",
+            "Feel slightly annoyed but respect the boundary."
+        ],
+        "dimension": "Attachment style (anxiety, avoidance, security)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Scenario measures anxious and avoidant behavioral activation under relationship threat.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "conf_01",
+        "text": "During a disagreement, it is more important to me to keep the peace than to prove I am right.",
+        "input_type": "forced_choice",
+        "options": [
+            "Keep the peace",
+            "Prove I am right"
+        ],
+        "dimension": "Conflict resolution style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses accommodating vs. dominant conflict styles.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "conf_02_scen",
+        "text": "Scenario: You discover your partner made a medium-sized financial purchase without discussing it. How do you handle it?",
+        "input_type": "scenario",
+        "options": [
+            "Bring it up immediately and express my frustration.",
+            "Wait until we are both relaxed to calmly ask about it.",
+            "Make a sarcastic comment about their spending habits.",
+            "Avoid bringing it up to prevent an argument."
+        ],
+        "dimension": "Conflict resolution style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Scenario assesses directness and hostility in conflict initiation.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "conf_03_beh",
+        "text": "I have previously walked out of a room in the middle of a heated argument to cool down.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Conflict resolution style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Behavioral assessment of stonewalling or self-soothing withdrawal.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "conf_04_rev",
+        "text": "I find it easy to completely let go of negative feelings after a fight is resolved.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Conflict resolution style",
+        "scoring_direction": "reverse",
+        "concept_reference": "Measures lack of grudge-holding, reverse-coded indicator of forgiveness.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "conf_05_weight",
+        "text": "How important is it that your partner shares your exact approach to resolving arguments?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Conflict resolution style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses need for homophily in conflict management styles.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "emo_01",
+        "text": "When I am upset, I take time to process my emotions before speaking or acting.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Emotional regulation",
+        "scoring_direction": "positive",
+        "concept_reference": "High emotional regulation leads to more constructive interpersonal behavior.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "emo_02_beh",
+        "text": "In the past month, I have snapped at someone close to me primarily because I was stressed about something else.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Emotional regulation",
+        "scoring_direction": "negative",
+        "concept_reference": "Behavioral spillover of stress indicates poor emotional compartmentalization.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "emo_03_scen",
+        "text": "Scenario: You have had a terrible day at work and come home to a messy house. What is your most likely reaction?",
+        "input_type": "scenario",
+        "options": [
+            "Take a deep breath and ask my partner for help cleaning.",
+            "Clean it myself but feel quietly resentful.",
+            "Lash out at my partner for not maintaining the house.",
+            "Ignore the mess and go straight to bed."
+        ],
+        "dimension": "Emotional regulation",
+        "scoring_direction": "neutral",
+        "concept_reference": "Situational assessment of emotional regulation and frustration tolerance.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "emo_04",
+        "text": "I am able to quickly bounce back and return to baseline after a frustrating event.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Emotional regulation",
+        "scoring_direction": "positive",
+        "concept_reference": "Resilience and emotional recovery are positive predictors for relationship satisfaction.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "emo_05_rev",
+        "text": "My emotions often feel completely out of my control.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Emotional regulation",
+        "scoring_direction": "reverse",
+        "concept_reference": "Reverse-coded measure of emotional volatility.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "comm_01",
+        "text": "Rank the following communication methods from most to least preferred for discussing a sensitive relationship topic.",
+        "input_type": "ranking",
+        "options": [
+            "Face-to-face immediately",
+            "Face-to-face after a delay",
+            "Long thoughtful text message",
+            "Phone call"
+        ],
+        "dimension": "Communication style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses medium preference for serious relationship discussions.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "comm_02_scen",
+        "text": "Scenario: Your partner has a habit that mildly annoys you. How do you communicate this to them?",
+        "input_type": "scenario",
+        "options": [
+            "Directly tell them it bothers me.",
+            "Drop subtle hints and hope they notice.",
+            "Make a joke about it to soften the blow.",
+            "I don't say anything; it's not worth the conflict."
+        ],
+        "dimension": "Communication style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Measures directness vs. passive-aggressiveness in communication.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "comm_03_beh",
+        "text": "I regularly ask my partner about their day and actively listen without interrupting.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Communication style",
+        "scoring_direction": "positive",
+        "concept_reference": "Behavioral active listening is a core component of perceived partner responsiveness.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "comm_04_rev",
+        "text": "It is difficult for me to express my needs clearly to a romantic partner.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Communication style",
+        "scoring_direction": "reverse",
+        "concept_reference": "Reverse-coded measure of expressive communication difficulty.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "comm_05_weight",
+        "text": "How important is it that your partner is highly verbal and expressive about their feelings?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Communication style",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses compatibility weight for expressive communication styles.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "val_01_filter",
+        "text": "Do you require your partner to share your specific religious or spiritual beliefs?",
+        "input_type": "hard_filter",
+        "options": [
+            "Yes, it is a strict requirement",
+            "No, I am flexible"
+        ],
+        "dimension": "Core values (family, ambition, religion, lifestyle)",
+        "scoring_direction": "filter",
+        "concept_reference": "Religious homophily is a strong sorting factor in marital selection.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "val_02",
+        "text": "Rank the following in order of priority in your life right now:",
+        "input_type": "ranking",
+        "options": [
+            "Career & Ambition",
+            "Family & Relationships",
+            "Personal Growth & Hobbies",
+            "Faith & Community"
+        ],
+        "dimension": "Core values (family, ambition, religion, lifestyle)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses macro-level value alignment.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "val_03_scen",
+        "text": "Scenario: You are offered a major career promotion, but it requires moving far away from both of your families. Do you take it?",
+        "input_type": "scenario",
+        "options": [
+            "Yes, career advancement is the priority.",
+            "No, being close to family is more important.",
+            "I would only take it if my partner fully supported the move."
+        ],
+        "dimension": "Core values (family, ambition, religion, lifestyle)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Measures trade-offs between ambition and family proximity.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "val_04_beh",
+        "text": "I actively participate in religious, spiritual, or community service events at least once a month.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Core values (family, ambition, religion, lifestyle)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Behavioral indicator of community/religious involvement.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "val_05_weight",
+        "text": "How important is it to you that your partner has a high level of career ambition?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Core values (family, ambition, religion, lifestyle)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses desired mate value on the status-resources dimension.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "bel_01",
+        "text": "Potential relationship partners are either inherently compatible or they are not; you cannot force it.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Relationship beliefs (growth vs destiny)",
+        "scoring_direction": "negative",
+        "concept_reference": "Assesses 'destiny' relationship beliefs, which correlate with lower persistence during conflict.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "bel_02",
+        "text": "A successful relationship evolves mostly through hard work, compromise, and resolution of incompatibilities.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Relationship beliefs (growth vs destiny)",
+        "scoring_direction": "positive",
+        "concept_reference": "Assesses 'growth' relationship beliefs, linking to constructive coping mechanisms.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bel_03_scen",
+        "text": "Scenario: After 6 months of dating, you and your partner realize you have completely different hobbies and weekend interests. What does this mean?",
+        "input_type": "scenario",
+        "options": [
+            "It is a sign we are fundamentally incompatible.",
+            "It is a minor hurdle we can overcome by finding new shared interests.",
+            "It is perfectly fine; we don't need to do everything together."
+        ],
+        "dimension": "Relationship beliefs (growth vs destiny)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Tests practical application of growth vs destiny beliefs in response to discovered dissimilarity.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bel_04_rev",
+        "text": "If a relationship requires a lot of effort early on, it probably isn't meant to be.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Relationship beliefs (growth vs destiny)",
+        "scoring_direction": "reverse",
+        "concept_reference": "Reverse-coded item capturing destiny/soulmate ideology.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "bel_05_weight",
+        "text": "How important is it that your partner believes relationships require constant work and adaptation?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Relationship beliefs (growth vs destiny)",
+        "scoring_direction": "positive",
+        "concept_reference": "Explicit preference for growth-oriented partners.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "goals_01_filter",
+        "text": "What is your stance on having children?",
+        "input_type": "hard_filter",
+        "options": [
+            "Want children",
+            "Do not want children",
+            "Have children and want more",
+            "Have children and do not want more",
+            "Undecided / Flexible"
+        ],
+        "dimension": "Long-term goals (children, marriage, relocation)",
+        "scoring_direction": "filter",
+        "concept_reference": "Fertility and family planning are core compatibility filters in mating markets.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "goals_02_filter",
+        "text": "Are you seeking a relationship that ultimately leads to marriage?",
+        "input_type": "hard_filter",
+        "options": [
+            "Yes, definitely",
+            "Open to it, but not required",
+            "No, I do not want to marry"
+        ],
+        "dimension": "Long-term goals (children, marriage, relocation)",
+        "scoring_direction": "filter",
+        "concept_reference": "Relationship trajectory alignment serves as a primary hard constraint.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "goals_03_beh",
+        "text": "I am currently taking actionable steps (e.g., saving money, studying) towards a specific 5-year life goal.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Long-term goals (children, marriage, relocation)",
+        "scoring_direction": "positive",
+        "concept_reference": "Behavioral indicator of future-oriented planning and conscientiousness.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "goals_04_scen",
+        "text": "Scenario: You receive a sudden, unexpected windfall of $50,000. What is your primary use for it?",
+        "input_type": "scenario",
+        "options": [
+            "Invest it for retirement or long-term savings.",
+            "Use it as a down payment for a house.",
+            "Spend it on a luxury vacation or dream experience.",
+            "Pay off debts immediately."
+        ],
+        "dimension": "Long-term goals (children, marriage, relocation)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Scenario reveals financial risk tolerance and long-term vs short-term orientation.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "goals_05",
+        "text": "If my partner wanted to relocate to a different country for their dream job, I would be willing to move with them.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Long-term goals (children, marriage, relocation)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Measures geographic flexibility and willingness to sacrifice for a partner.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "socio_01_filter",
+        "text": "What is the minimum educational background you require in a potential partner?",
+        "input_type": "hard_filter",
+        "options": [
+            "No requirement",
+            "High School diploma",
+            "Bachelor's Degree",
+            "Advanced/Graduate Degree"
+        ],
+        "dimension": "Socioeconomic preferences",
+        "scoring_direction": "filter",
+        "concept_reference": "Educational assortative mating is heavily documented in online dating behavior.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "socio_02",
+        "text": "Which of the following best describes your general approach to personal finances?",
+        "input_type": "multiple_choice",
+        "options": [
+            "Strict budgeter; save as much as possible.",
+            "Moderate saver; I budget but leave room for fun.",
+            "Live for today; money is meant to be spent."
+        ],
+        "dimension": "Socioeconomic preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Financial compatibility significantly impacts long-term relationship stability.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "socio_03_weight",
+        "text": "How important is it that your partner earns a similar or higher income than you?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Socioeconomic preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Stated preferences for partner income are strong drivers of mate selection algorithms.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "socio_04_beh",
+        "text": "I actively track my monthly budget and know exactly where my money goes.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Socioeconomic preferences",
+        "scoring_direction": "positive",
+        "concept_reference": "Behavioral measurement of financial conscientiousness.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "socio_05_scen",
+        "text": "Scenario: You and your partner are planning a two-week vacation. What is your preferred travel style?",
+        "input_type": "scenario",
+        "options": [
+            "Luxury resorts and high-end dining.",
+            "Mid-range hotels and a mix of paid tours and free exploration.",
+            "Budget backpacking, hostels, and street food."
+        ],
+        "dimension": "Socioeconomic preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Reveals lifestyle socioeconomic alignment and spending habits.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "habits_01_filter",
+        "text": "Do you smoke, and are you willing to date a smoker?",
+        "input_type": "hard_filter",
+        "options": [
+            "I smoke & will date a smoker",
+            "I smoke & will not date a smoker",
+            "I do not smoke & will date a smoker",
+            "I do not smoke & will not date a smoker"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "filter",
+        "concept_reference": "Smoking is a strict deal-breaker for a significant percentage of online daters.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "habits_02_beh",
+        "text": "I engage in intentional physical exercise at least three times a week.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Behavioral assessment of fitness lifestyle, often subject to assortative matching.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "habits_03_beh",
+        "text": "I typically wake up early on weekends to start my day, rather than sleeping in.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Behavioral assessment of circadian rhythms (morningness/eveningness).",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "habits_04",
+        "text": "Rank the following weekend activities from most to least enjoyable for you.",
+        "input_type": "ranking",
+        "options": [
+            "Night out at a busy club or bar",
+            "Quiet evening at home watching movies",
+            "Outdoor adventure (hiking, sports)",
+            "Dinner party with close friends"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Captures experiential preference clustering relevant for reciprocal recommendation.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "habits_05",
+        "text": "I prefer my living space to be meticulously organized at all times.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses domestic compatibility and trait conscientiousness.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "habits_06_beh",
+        "text": "I consume alcohol regularly (e.g., more than 3 times a week).",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Behavioral lifestyle habits",
+        "scoring_direction": "neutral",
+        "concept_reference": "Substance use homophily is a predictor of long-term compatibility.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "time_01",
+        "text": "I prefer to live in the moment rather than planning too far ahead.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Time orientation (future vs present)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Distinguishes present-hedonistic from future-oriented decision making.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "time_02",
+        "text": "When making major decisions, I heavily weigh how it will impact my life five to ten years from now.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Time orientation (future vs present)",
+        "scoring_direction": "positive",
+        "concept_reference": "Future orientation correlates with relationship persistence and stability.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "time_03_scen",
+        "text": "Scenario: You have a completely free weekend with no obligations. How do you approach it?",
+        "input_type": "scenario",
+        "options": [
+            "I plan a detailed itinerary to maximize the time.",
+            "I outline one or two loose ideas but leave room for spontaneity.",
+            "I decide completely on the fly as the day unfolds."
+        ],
+        "dimension": "Time orientation (future vs present)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Scenario measures structural planning versus spontaneity.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "time_04",
+        "text": "I often feel anxious when I think about the future.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Time orientation (future vs present)",
+        "scoring_direction": "negative",
+        "concept_reference": "Maps future time perspective to neuroticism/anxiety traits.",
+        "recommended_weight": "low"
+    },
+    {
+        "id": "social_01",
+        "text": "After attending a large social event, I feel energized rather than drained.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Social energy (introversion/extroversion)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Classic metric for extroverted energy recharge.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "social_02_beh",
+        "text": "I actively seek out opportunities to meet new people and expand my social circle.",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Social energy (introversion/extroversion)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Behavioral indicator of high social energy and openness.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "social_03",
+        "text": "I prefer maintaining a few very close, deep friendships over a large network of casual acquaintances.",
+        "input_type": "forced_choice",
+        "options": [
+            "A few close friendships",
+            "A large network of acquaintances"
+        ],
+        "dimension": "Social energy (introversion/extroversion)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Identifies depth vs. breadth social preference patterns.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "social_04",
+        "text": "Would you consider dating someone whose social energy needs (introversion/extroversion) are the complete opposite of yours?",
+        "input_type": "binary",
+        "options": [
+            "Yes",
+            "No"
+        ],
+        "dimension": "Social energy (introversion/extroversion)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Measures openness to complementarity vs similarity in personality.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "social_05_weight",
+        "text": "How important is it that you and your partner share the exact same level of extroversion?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Social energy (introversion/extroversion)",
+        "scoring_direction": "neutral",
+        "concept_reference": "Explicit weighting for personality homophily.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "dealbreak_01_filter",
+        "text": "Do you have allergies to or refuse to live with pets (e.g., dogs/cats)?",
+        "input_type": "hard_filter",
+        "options": [
+            "I love pets and want/have them",
+            "I am okay with pets",
+            "I cannot live with pets (allergies/preference)"
+        ],
+        "dimension": "Deal-breakers and hard constraints",
+        "scoring_direction": "filter",
+        "concept_reference": "Pet compatibility serves as a strict environmental deal-breaker.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "dealbreak_02",
+        "text": "What is the maximum geographic distance you are willing to commute for a relationship?",
+        "input_type": "multiple_choice",
+        "options": [
+            "Under 10 miles (Same city)",
+            "10-50 miles (Neighboring cities)",
+            "50-100 miles",
+            "Open to long-distance/remote"
+        ],
+        "dimension": "Deal-breakers and hard constraints",
+        "scoring_direction": "neutral",
+        "concept_reference": "Proximity is a primary predictor of relationship initiation in online dating.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "dealbreak_03_filter",
+        "text": "Do you have strict dietary restrictions (e.g., vegan, kosher) that your partner must also follow or accommodate?",
+        "input_type": "hard_filter",
+        "options": [
+            "Yes, my partner must share my diet",
+            "Yes, but my partner doesn't have to share it",
+            "No strict dietary restrictions"
+        ],
+        "dimension": "Deal-breakers and hard constraints",
+        "scoring_direction": "filter",
+        "concept_reference": "Lifestyle constraints often operate as hard filters in matching algorithms.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "dealbreak_04_scen",
+        "text": "Scenario: You discover your partner maintains a close, platonic friendship with their ex. How do you respond?",
+        "input_type": "scenario",
+        "options": [
+            "It is a complete deal-breaker; I would end it.",
+            "I would be uncomfortable and ask them to limit contact.",
+            "I wouldn't mind as long as there are clear boundaries.",
+            "I think it's healthy that they are on good terms."
+        ],
+        "dimension": "Deal-breakers and hard constraints",
+        "scoring_direction": "neutral",
+        "concept_reference": "Evaluates boundaries and jealousy triggers, predicting conflict.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "dealbreak_05_weight",
+        "text": "How important is it that your partner shares your exact political orientation?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Deal-breakers and hard constraints",
+        "scoring_direction": "neutral",
+        "concept_reference": "Political homophily is increasingly utilized as a deal-breaker in dating markets.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "attr_01",
+        "text": "I am immediately drawn to someone's physical appearance before evaluating their personality.",
+        "input_type": "likert_5",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Neutral",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attraction style & experiential preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Assesses weighting of searchable traits (appearance) vs experiential traits.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "attr_02",
+        "text": "I typically find myself romantically attracted to someone only after a strong emotional or intellectual bond has formed.",
+        "input_type": "likert_7",
+        "options": [
+            "Strongly Disagree",
+            "Disagree",
+            "Somewhat Disagree",
+            "Neutral",
+            "Somewhat Agree",
+            "Agree",
+            "Strongly Agree"
+        ],
+        "dimension": "Attraction style & experiential preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Differentiates primary physical attraction from demisexual/sapiosexual attraction patterns.",
+        "recommended_weight": "medium"
+    },
+    {
+        "id": "attr_03_scen",
+        "text": "Scenario: On a first date, the conversation is slightly awkward and stilted, but you find them physically very attractive. Do you go on a second date?",
+        "input_type": "scenario",
+        "options": [
+            "Yes, physical attraction is enough to try again.",
+            "Maybe, if I think the awkwardness was just nerves.",
+            "No, conversational chemistry is mandatory for me."
+        ],
+        "dimension": "Attraction style & experiential preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Tests the tradeoff between physical attractiveness (actor variance) and interaction chemistry (relationship variance).",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "attr_04",
+        "text": "Rank the following in terms of what creates the strongest initial chemistry for you.",
+        "input_type": "ranking",
+        "options": [
+            "Physical attractiveness & touch",
+            "Shared sense of humor & banter",
+            "Deep intellectual conversation",
+            "Feeling emotionally understood & safe"
+        ],
+        "dimension": "Attraction style & experiential preferences",
+        "scoring_direction": "neutral",
+        "concept_reference": "Captures heterogeneous ideal partner preferences and attraction drivers.",
+        "recommended_weight": "high"
+    },
+    {
+        "id": "attr_05_weight",
+        "text": "How important is a high degree of sexual compatibility and frequency in a long-term relationship?",
+        "input_type": "importance_weight",
+        "options": [
+            "0 - Not important",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 - Crucial"
+        ],
+        "dimension": "Attraction style & experiential preferences",
+        "scoring_direction": "positive",
+        "concept_reference": "Sexual satisfaction is a top relationship-specific predictor of overall relationship quality.",
+        "recommended_weight": "high"
+    }
+]
