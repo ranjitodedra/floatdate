@@ -1,8 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import * as fs from "fs";
 import * as path from "path";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 // Map questions.json dimensions → 5 matching algorithm dimensions
 const DIMENSION_MAP: Record<string, string> = {

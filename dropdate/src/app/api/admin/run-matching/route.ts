@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runWeeklyMatching } from "@/lib/matching";
-import { sendMatchEmails } from "@/lib/send-match-email";
+import { sendMatchEmails, sendNoMatchEmail } from "@/lib/send-match-email";
+import { prisma } from "@/lib/db";
 
 function getWeekStart(): Date {
     const now = new Date();
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
         // Run matching
         const result = await runWeeklyMatching(weekStart);
 
-        // Send emails
+        // Send match emails
         let emailsSent = 0;
         try {
             emailsSent = await sendMatchEmails(result.matches);
@@ -45,10 +46,57 @@ export async function POST(req: NextRequest) {
             console.error("Email sending failed:", emailError);
         }
 
+        // Send no-match emails to unmatched users
+        let noMatchEmailsSent = 0;
+        try {
+            // Get all opted-in users for this week
+            const optIns = await prisma.weeklyOptIn.findMany({
+                where: { weekStart },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            completedSetup: true,
+                            emailVerified: true,
+                        },
+                    },
+                },
+            });
+
+            // Get matched user IDs
+            const matchedUserIds = new Set<string>();
+            for (const match of result.matches) {
+                matchedUserIds.add(match.userAId);
+                matchedUserIds.add(match.userBId);
+            }
+
+            // Send no-match emails to unmatched, verified users
+            for (const optIn of optIns) {
+                if (
+                    optIn.user.completedSetup &&
+                    optIn.user.emailVerified &&
+                    !matchedUserIds.has(optIn.user.id)
+                ) {
+                    const emailResult = await sendNoMatchEmail(
+                        optIn.user.email,
+                        optIn.user.name
+                    );
+                    if (emailResult.status === "sent") noMatchEmailsSent++;
+                    // Rate limiting
+                    await new Promise((r) => setTimeout(r, 500));
+                }
+            }
+        } catch (noMatchError) {
+            console.error("No-match email sending failed:", noMatchError);
+        }
+
         return NextResponse.json({
             matched: result.matched,
             unmatched: result.unmatched,
             emails_sent: emailsSent,
+            no_match_emails_sent: noMatchEmailsSent,
             weekStart: weekStart.toISOString(),
         });
     } catch (error) {

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { hashPassword, createSession, isValidLaurierEmail } from "@/lib/auth";
+import { hashPassword, isValidLaurierEmail } from "@/lib/auth";
+import { sendVerificationEmail } from "@/lib/send-match-email";
+import { randomUUID } from "crypto";
 
 const signupSchema = z.object({
     email: z
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Check if user already exists
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
         if (existing) {
             return NextResponse.json(
                 { error: "An account with this email already exists" },
@@ -52,6 +54,8 @@ export async function POST(req: NextRequest) {
         }
 
         const passwordHash = await hashPassword(password);
+        const verifyToken = randomUUID();
+        const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         const user = await prisma.user.create({
             data: {
@@ -63,13 +67,22 @@ export async function POST(req: NextRequest) {
                 city,
                 bio: bio || null,
                 passwordHash,
+                verifyToken,
+                verifyTokenExpiry,
+                emailVerified: false,
             },
         });
 
-        await createSession(user.id);
+        // Send verification email
+        const emailResult = await sendVerificationEmail(user.email, user.name, verifyToken);
+        console.log(`Verification email to ${user.email}: ${emailResult.status}`);
 
         return NextResponse.json(
-            { success: true, userId: user.id },
+            {
+                success: true,
+                message: "Account created. Please check your email to verify your account.",
+                requiresVerification: true,
+            },
             { status: 201 }
         );
     } catch (error) {

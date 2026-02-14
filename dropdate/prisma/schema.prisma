@@ -16,8 +16,11 @@ model User {
   city           String
   bio            String?
   passwordHash   String
-  completedSetup Boolean      @default(false)
-  createdAt      DateTime     @default(now())
+  completedSetup     Boolean      @default(false)
+  emailVerified      Boolean      @default(false)
+  verifyToken        String?      @unique
+  verifyTokenExpiry  DateTime?
+  createdAt          DateTime     @default(now())
 
   answers        Answer[]
   optIns         WeeklyOptIn[]

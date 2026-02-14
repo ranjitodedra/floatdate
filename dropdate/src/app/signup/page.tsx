@@ -56,7 +56,7 @@ export default function SignupPage() {
                 return;
             }
 
-            router.push("/questions");
+            router.push("/verify-email");
         } catch {
             setError("Something went wrong. Please try again.");
         } finally {
