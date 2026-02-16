@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Delius } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,8 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const delius = Delius({
+  variable: "--font-delius",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
-  title: "DropDate — Find Your Person",
+  title: "FloatDate — Find Your Person",
   description:
     "Answer 74 research-backed compatibility questions. Get matched with one person each week. Exclusive to Wilfrid Laurier University.",
   robots: "noindex",
@@ -27,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${delius.variable} antialiased`}
       >
         {children}
       </body>

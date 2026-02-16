@@ -121,3 +121,8 @@ Click verification link → should redirect to /questions
 Try logging in without verifying → should get "verify your email" error
 Trigger matching with unmatched users → should receive "no match" email
 Match email should show compatibility score percentage
+
+
+
+
+Take our psychology-backed compatibility quiz once. Then opt in weekly by Tuesday 9pm to get a match with a note on why we think you'll click

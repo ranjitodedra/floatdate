@@ -25,7 +25,7 @@ export default function QuestionCard({
         const selectedIndex = typeof value === "number" ? value : -1;
         return (
             <div className="space-y-6">
-                <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+                <p className="text-lg md:text-xl text-zinc-900 font-medium leading-relaxed">
                     {questionText}
                 </p>
                 <div className="space-y-3">
@@ -34,19 +34,19 @@ export default function QuestionCard({
                             key={i}
                             onClick={() => onChange(i + 1)}
                             className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 ${selectedIndex === i + 1
-                                    ? "bg-purple-600/20 border-purple-500/60 text-white shadow-lg shadow-purple-500/10"
-                                    : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:border-white/20"
+                                    ? "bg-zinc-900 border-zinc-900 text-white shadow-lg"
+                                    : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
                                 }`}
                         >
                             <span className="flex items-center gap-3">
                                 <span
                                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedIndex === i + 1
-                                            ? "border-purple-400"
-                                            : "border-zinc-600"
+                                            ? "border-white"
+                                            : "border-zinc-300"
                                         }`}
                                 >
                                     {selectedIndex === i + 1 && (
-                                        <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
+                                        <span className="w-2.5 h-2.5 rounded-full bg-white" />
                                     )}
                                 </span>
                                 {opt}
@@ -63,7 +63,7 @@ export default function QuestionCard({
         const selectedVal = typeof value === "string" ? value : "";
         return (
             <div className="space-y-6">
-                <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+                <p className="text-lg md:text-xl text-zinc-900 font-medium leading-relaxed">
                     {questionText}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -72,8 +72,8 @@ export default function QuestionCard({
                             key={opt}
                             onClick={() => onChange(opt)}
                             className={`px-5 py-4 rounded-xl border transition-all duration-200 text-center ${selectedVal === opt
-                                    ? "bg-purple-600/20 border-purple-500/60 text-white shadow-lg shadow-purple-500/10"
-                                    : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:border-white/20"
+                                    ? "bg-zinc-900 border-zinc-900 text-white shadow-lg"
+                                    : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
                                 }`}
                         >
                             {opt}
@@ -89,7 +89,7 @@ export default function QuestionCard({
         const selectedVal = typeof value === "string" ? value : "";
         return (
             <div className="space-y-6">
-                <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+                <p className="text-lg md:text-xl text-zinc-900 font-medium leading-relaxed">
                     {questionText}
                 </p>
                 <div className="space-y-3">
@@ -98,8 +98,8 @@ export default function QuestionCard({
                             key={i}
                             onClick={() => onChange(opt)}
                             className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 ${selectedVal === opt
-                                    ? "bg-purple-600/20 border-purple-500/60 text-white shadow-lg shadow-purple-500/10"
-                                    : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:border-white/20"
+                                    ? "bg-zinc-900 border-zinc-900 text-white shadow-lg"
+                                    : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
                                 }`}
                         >
                             {opt}
@@ -119,7 +119,7 @@ export default function QuestionCard({
     const selectedFallback = typeof value === "string" ? value : "";
     return (
         <div className="space-y-6">
-            <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+            <p className="text-lg md:text-xl text-zinc-900 font-medium leading-relaxed">
                 {questionText}
             </p>
             <div className="space-y-3">
@@ -128,8 +128,8 @@ export default function QuestionCard({
                         key={i}
                         onClick={() => onChange(opt)}
                         className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 ${selectedFallback === opt
-                                ? "bg-purple-600/20 border-purple-500/60 text-white shadow-lg shadow-purple-500/10"
-                                : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:border-white/20"
+                                ? "bg-zinc-900 border-zinc-900 text-white shadow-lg"
+                                : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300"
                             }`}
                     >
                         {opt}
@@ -174,19 +174,19 @@ function RankingInput({
 
     return (
         <div className="space-y-6">
-            <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+            <p className="text-lg md:text-xl text-zinc-900 font-medium leading-relaxed">
                 {questionText}
             </p>
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-zinc-500">
                 Arrange from most preferred (top) to least preferred (bottom)
             </p>
             <div className="space-y-2">
                 {ranked.map((opt, i) => (
                     <div
                         key={opt}
-                        className="flex items-center gap-3 px-5 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-300"
+                        className="flex items-center gap-3 px-5 py-4 rounded-xl bg-white border border-zinc-200 text-zinc-700"
                     >
-                        <span className="text-purple-400 font-bold text-sm w-6">
+                        <span className="text-zinc-900 font-bold text-sm w-6">
                             {i + 1}
                         </span>
                         <span className="flex-1">{opt}</span>
@@ -195,7 +195,7 @@ function RankingInput({
                                 type="button"
                                 onClick={() => moveUp(i)}
                                 disabled={i === 0}
-                                className="text-xs text-zinc-500 hover:text-white disabled:opacity-20 transition"
+                                className="text-xs text-zinc-400 hover:text-zinc-900 disabled:opacity-20 transition"
                                 aria-label="Move up"
                             >
                                 ▲
@@ -204,7 +204,7 @@ function RankingInput({
                                 type="button"
                                 onClick={() => moveDown(i)}
                                 disabled={i === ranked.length - 1}
-                                className="text-xs text-zinc-500 hover:text-white disabled:opacity-20 transition"
+                                className="text-xs text-zinc-400 hover:text-zinc-900 disabled:opacity-20 transition"
                                 aria-label="Move down"
                             >
                                 ▼

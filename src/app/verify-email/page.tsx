@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
+import Image from "next/image";
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
@@ -37,29 +38,33 @@ function VerifyEmailContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f0f0f] via-[#1a1025] to-[#0f0f0f] px-4">
+        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
             <div className="w-full max-w-md text-center">
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        DropDate
-                    </h1>
+                    <Image
+                        src="/images/icon.png"
+                        alt="FloatDate"
+                        width={120}
+                        height={40}
+                        className="mx-auto"
+                    />
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 space-y-6">
+                <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-6 shadow-sm">
                     {error ? (
                         <>
                             <div className="text-5xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-semibold text-white">
+                            <h2 className="text-xl font-semibold text-zinc-900">
                                 Verification Failed
                             </h2>
-                            <p className="text-zinc-400">
+                            <p className="text-zinc-500">
                                 {errorMessages[error] || "An unknown error occurred."}
                             </p>
                             {error === "expired-token" && (
                                 <button
                                     onClick={handleResend}
                                     disabled={resending}
-                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all duration-200 disabled:opacity-50"
+                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
                                 >
                                     {resending ? "Sending..." : "Resend Verification Email"}
                                 </button>
@@ -68,15 +73,15 @@ function VerifyEmailContent() {
                     ) : (
                         <>
                             <div className="text-5xl mb-4">✉️</div>
-                            <h2 className="text-xl font-semibold text-white">
+                            <h2 className="text-xl font-semibold text-zinc-900">
                                 Check your inbox
                             </h2>
-                            <p className="text-zinc-400">
+                            <p className="text-zinc-500">
                                 We&apos;ve sent a verification link to your university email.
                                 Click it to activate your account and start answering questions!
                             </p>
-                            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
-                                <p className="text-sm text-purple-300">
+                            <div className="bg-zinc-100 border border-zinc-200 rounded-xl p-4">
+                                <p className="text-sm text-zinc-600">
                                     💡 Don&apos;t see it? Check your spam folder.
                                 </p>
                             </div>
@@ -84,13 +89,13 @@ function VerifyEmailContent() {
                     )}
 
                     {resendMsg && (
-                        <p className="text-sm text-green-400">{resendMsg}</p>
+                        <p className="text-sm text-green-600">{resendMsg}</p>
                     )}
 
-                    <p className="text-sm text-zinc-500">
+                    <p className="text-sm text-zinc-400">
                         <a
                             href="/login"
-                            className="text-purple-400 hover:text-purple-300 transition"
+                            className="text-zinc-900 font-medium hover:underline transition"
                         >
                             Back to login
                         </a>
@@ -105,8 +110,8 @@ export default function VerifyEmailPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f0f0f] via-[#1a1025] to-[#0f0f0f]">
-                    <p className="text-zinc-400">Loading...</p>
+                <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+                    <p className="text-zinc-500">Loading...</p>
                 </div>
             }
         >

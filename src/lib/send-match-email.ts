@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { prisma } from "./db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = "DropDate <onboarding@resend.dev>";
+const FROM_EMAIL = "FloatDate <onboarding@resend.dev>";
 
 // ─── Verification Email ───────────────────────────────────────
 
@@ -23,14 +23,14 @@ export async function sendVerificationEmail(
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             to,
-            subject: "Verify your DropDate account ✉️",
+            subject: "Verify your FloatDate account ✉️",
             html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">DropDate</h1>
+          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Email Verification</p>
 
           <p>Hey ${name} 👋</p>
-          <p>Welcome to DropDate! Please verify your email address to get started.</p>
+          <p>Welcome to FloatDate! Please verify your email address to get started.</p>
 
           <div style="text-align: center; margin: 32px 0;">
             <a href="${verifyUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(to right, #a855f7, #ec4899); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Verify My Email</a>
@@ -39,7 +39,7 @@ export async function sendVerificationEmail(
           <p style="color: #a1a1aa; font-size: 13px;">Or copy and paste this link into your browser:</p>
           <p style="color: #a855f7; font-size: 13px; word-break: break-all;">${verifyUrl}</p>
 
-          <p style="color: #52525b; font-size: 12px; margin-top: 32px;">This link expires in 24 hours. If you didn't create an account on DropDate, you can safely ignore this email.</p>
+          <p style="color: #52525b; font-size: 12px; margin-top: 32px;">This link expires in 24 hours. If you didn't create an account on FloatDate, you can safely ignore this email.</p>
         </div>
       `,
             replyTo: "support@dropdate.app",
@@ -79,10 +79,10 @@ export async function sendMatchEmail(
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             to,
-            subject: "Your DropDate match is here 💜",
+            subject: "Your FloatDate match is here 💜",
             html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">DropDate</h1>
+          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
           
           <p>Hey ${recipientName} 👋</p>
@@ -101,7 +101,7 @@ export async function sendMatchEmail(
           <p>Reach out to them at: <a href="mailto:${matchEmail}" style="color: #a855f7;">${matchEmail}</a></p>
           
           <p style="font-size: 12px; color: #52525b; margin-top: 32px;">
-            You received this because you opted in on DropDate.
+            You received this because you opted in on FloatDate.
             Reply STOP to unsubscribe.
           </p>
         </div>
@@ -136,10 +136,10 @@ export async function sendNoMatchEmail(
         const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             to,
-            subject: "DropDate update for this week 💛",
+            subject: "FloatDate update for this week 💛",
             html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">DropDate</h1>
+          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Weekly update</p>
           
           <p>Hey ${recipientName} 👋</p>
@@ -152,7 +152,7 @@ export async function sendNoMatchEmail(
           <p>In the meantime, make sure your profile and answers are up-to-date to improve your chances.</p>
           
           <p style="font-size: 12px; color: #52525b; margin-top: 32px;">
-            You received this because you opted in on DropDate.
+            You received this because you opted in on FloatDate.
             Reply STOP to unsubscribe.
           </p>
         </div>

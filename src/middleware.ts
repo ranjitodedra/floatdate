@@ -13,7 +13,7 @@ export async function middleware(req: NextRequest) {
     const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
     if (!isProtected) return NextResponse.next();
 
-    const token = req.cookies.get("dropdate_session")?.value;
+    const token = req.cookies.get("floatdate_session")?.value;
     if (!token) {
         return NextResponse.redirect(new URL("/login", req.url));
     }

@@ -1,6 +1,6 @@
 
 
-# DropDate MVP — Full Build Plan (7 Days)
+# FloatDate MVP — Full Build Plan (7 Days)
 
 ---
 
@@ -480,7 +480,7 @@ export default function MatchEmail({
       <Body style={{ fontFamily: "sans-serif", padding: "20px" }}>
         <Text>Hey {recipientName} 👋</Text>
         <Text>
-          Your DropDate match this week is <strong>{matchName}</strong>.
+          Your FloatDate match this week is <strong>{matchName}</strong>.
         </Text>
         <Text style={{ color: "#666", fontStyle: "italic" }}>
           "{explanation}"
@@ -494,7 +494,7 @@ export default function MatchEmail({
           <Link href={`mailto:${matchEmail}`}>{matchEmail}</Link>
         </Text>
         <Text style={{ fontSize: "12px", color: "#999", marginTop: "30px" }}>
-          You received this because you opted in on DropDate.
+          You received this because you opted in on FloatDate.
           <br />
           <Link href="{{unsubscribe_url}}">Unsubscribe</Link>
         </Text>
@@ -530,9 +530,9 @@ export async function sendMatchEmail(
   }
 
   const { data, error } = await resend.emails.send({
-    from: "DropDate <hey@mail.dropdate.app>",
+    from: "FloatDate <hey@mail.dropdate.app>",
     to,
-    subject: `Your DropDate match is here 💜`,
+    subject: `Your FloatDate match is here 💜`,
     // In production, use the React Email component rendered to HTML
     html: `
       <p>Hey ${recipientName} 👋</p>
@@ -541,7 +541,7 @@ export async function sendMatchEmail(
       <hr/>
       <p><strong>About ${matchName}:</strong> ${matchBio}</p>
       <p>Reach out: <a href="mailto:${matchEmail}">${matchEmail}</a></p>
-      <p style="font-size:12px;color:#999;">You opted in on DropDate. Reply STOP to unsubscribe.</p>
+      <p style="font-size:12px;color:#999;">You opted in on FloatDate. Reply STOP to unsubscribe.</p>
     `,
     replyTo: "support@dropdate.app",
   });

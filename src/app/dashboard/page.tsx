@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface MatchData {
     id: string;
@@ -108,63 +109,66 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f0f0f] via-[#1a1025] to-[#0f0f0f]">
-                <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+                <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0f0f0f] via-[#1a1025] to-[#0f0f0f] px-4 py-8">
+        <div className="min-h-screen bg-zinc-50 px-4 py-8">
             <div className="max-w-lg mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            DropDate
-                        </h1>
+                    <div className="flex items-center gap-3">
+                        <Image
+                            src="/images/icon.png"
+                            alt="FloatDate"
+                            width={100}
+                            height={34}
+                        />
                         <p className="text-sm text-zinc-500">
                             Hey, {user?.name || "there"} 👋
                         </p>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="text-sm text-zinc-500 hover:text-zinc-300 transition"
+                        className="text-sm text-zinc-400 hover:text-zinc-700 transition"
                     >
                         Log out
                     </button>
                 </div>
 
                 {/* Countdown Card */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <p className="text-xs text-zinc-400 uppercase tracking-wider mb-2">
                         Next matching round
                     </p>
-                    <p className="text-3xl font-bold text-white font-mono">{countdown}</p>
-                    <p className="text-xs text-zinc-500 mt-1">Monday 00:00 UTC</p>
+                    <p className="text-3xl font-bold text-zinc-900 font-mono">{countdown}</p>
+                    <p className="text-xs text-zinc-400 mt-1">Monday 00:00 UTC</p>
                 </div>
 
                 {/* Opt-in Card */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                    <h2 className="text-lg font-semibold text-white mb-2">
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-zinc-900 mb-2">
                         Weekly Opt-in
                     </h2>
                     {optedIn ? (
                         <div className="flex items-center gap-3">
                             <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                            <p className="text-green-400 font-medium">
+                            <p className="text-green-600 font-medium">
                                 You&apos;re opted in for this week
                             </p>
                         </div>
                     ) : (
                         <div>
-                            <p className="text-zinc-400 text-sm mb-4">
+                            <p className="text-zinc-500 text-sm mb-4">
                                 Opt in to be included in this week&apos;s matching round.
                             </p>
                             <button
                                 onClick={handleOptIn}
                                 disabled={optingIn}
-                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all duration-200 disabled:opacity-50 shadow-lg shadow-purple-500/25"
+                                className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
                             >
                                 {optingIn ? "Opting in..." : "Opt In This Week"}
                             </button>
@@ -173,44 +177,44 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Match Card */}
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                    <h2 className="text-lg font-semibold text-white mb-4">
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-zinc-900 mb-4">
                         Your Match
                     </h2>
 
                     {match ? (
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
+                                <div className="w-14 h-14 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xl font-bold">
                                     {match.matchedUser.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="text-white font-semibold text-lg">
+                                    <p className="text-zinc-900 font-semibold text-lg">
                                         {match.matchedUser.name}
                                     </p>
-                                    <p className="text-zinc-500 text-sm">
+                                    <p className="text-zinc-400 text-sm">
                                         {match.matchedUser.city}
                                     </p>
                                 </div>
                             </div>
 
                             {match.matchedUser.bio && (
-                                <p className="text-zinc-300 text-sm">
+                                <p className="text-zinc-600 text-sm">
                                     {match.matchedUser.bio}
                                 </p>
                             )}
 
                             {/* Compatibility score */}
-                            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-zinc-400">Compatibility</span>
-                                    <span className="text-purple-400 font-bold">
+                                    <span className="text-sm text-zinc-500">Compatibility</span>
+                                    <span className="text-zinc-900 font-bold">
                                         {Math.round(match.similarityScore * 100)}%
                                     </span>
                                 </div>
-                                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                                        className="h-full bg-zinc-800 rounded-full transition-all duration-1000"
                                         style={{
                                             width: `${Math.round(match.similarityScore * 100)}%`,
                                         }}
@@ -218,19 +222,19 @@ export default function DashboardPage() {
                                 </div>
                             </div>
 
-                            <p className="text-sm text-zinc-400 italic">
+                            <p className="text-sm text-zinc-500 italic">
                                 &ldquo;{match.explanation}&rdquo;
                             </p>
 
-                            <p className="text-xs text-zinc-600">
+                            <p className="text-xs text-zinc-400">
                                 Check your email for their contact info 💜
                             </p>
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <p className="text-zinc-500 text-4xl mb-3">💜</p>
-                            <p className="text-zinc-400">No match this week</p>
-                            <p className="text-zinc-600 text-sm mt-1">
+                            <p className="text-zinc-300 text-4xl mb-3">💜</p>
+                            <p className="text-zinc-500">No match this week</p>
+                            <p className="text-zinc-400 text-sm mt-1">
                                 Make sure you&apos;re opted in before Monday
                             </p>
                         </div>
