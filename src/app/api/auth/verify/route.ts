@@ -12,31 +12,52 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const user = await prisma.user.findUnique({
+        // Look up the pending signup by verification token
+        const pending = await prisma.pendingSignup.findUnique({
             where: { verifyToken: token },
         });
 
-        if (!user) {
+        if (!pending) {
             return NextResponse.redirect(
                 new URL("/verify-email?error=invalid-token", req.url)
             );
         }
 
-        if (user.verifyTokenExpiry && user.verifyTokenExpiry < new Date()) {
+        if (pending.verifyTokenExpiry < new Date()) {
             return NextResponse.redirect(
                 new URL("/verify-email?error=expired-token", req.url)
             );
         }
 
-        // Mark email as verified, clear the token
-        await prisma.user.update({
-            where: { id: user.id },
+        // Check if a user already exists with this email (edge case: double-click)
+        const existingUser = await prisma.user.findUnique({
+            where: { email: pending.email },
+        });
+
+        if (existingUser) {
+            // Already verified — just clean up and log them in
+            await prisma.pendingSignup.delete({ where: { id: pending.id } });
+            await createSession(existingUser.id);
+            return NextResponse.redirect(new URL("/questions", req.url));
+        }
+
+        // Create the real User account from the pending signup data
+        const user = await prisma.user.create({
             data: {
+                email: pending.email,
+                name: pending.name,
+                age: pending.age,
+                gender: pending.gender,
+                genderPref: pending.genderPref,
+                city: pending.city,
+                bio: pending.bio,
+                passwordHash: pending.passwordHash,
                 emailVerified: true,
-                verifyToken: null,
-                verifyTokenExpiry: null,
             },
         });
+
+        // Delete the pending signup record
+        await prisma.pendingSignup.delete({ where: { id: pending.id } });
 
         // Create session so the user is logged in
         await createSession(user.id);

@@ -10,6 +10,9 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendMessage, setResendMessage] = useState("");
+    const [showResendLink, setShowResendLink] = useState(false);
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -26,7 +29,15 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || "Login failed");
+                const errorMessage = data.error || "Login failed";
+                setError(errorMessage);
+                
+                // Check if this is an email verification error (403)
+                if (res.status === 403 && errorMessage.includes("verify your email")) {
+                    setShowResendLink(true);
+                } else {
+                    setShowResendLink(false);
+                }
                 return;
             }
 
@@ -37,8 +48,40 @@ export default function LoginPage() {
             }
         } catch {
             setError("Something went wrong. Please try again.");
+            setShowResendLink(false);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleResendVerification() {
+        if (!email) {
+            setResendMessage("Please enter your email address first.");
+            return;
+        }
+
+        setResendLoading(true);
+        setResendMessage("");
+
+        try {
+            const res = await fetch("/api/auth/resend-verification", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setResendMessage(data.error || "Failed to send verification email.");
+            } else {
+                setResendMessage("Verification email sent! Please check your inbox.");
+                setShowResendLink(false);
+            }
+        } catch {
+            setResendMessage("Something went wrong. Please try again.");
+        } finally {
+            setResendLoading(false);
         }
     }
 
@@ -63,6 +106,28 @@ export default function LoginPage() {
                     {error && (
                         <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
                             {error}
+                            {showResendLink && (
+                                <div className="mt-3 pt-3 border-t border-red-200">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendVerification}
+                                        disabled={resendLoading}
+                                        className="text-sm text-red-700 hover:text-red-800 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {resendLoading ? "Sending..." : "Resend verification email"}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {resendMessage && !error && (
+                        <div className={`text-sm rounded-lg px-4 py-3 ${
+                            resendMessage.includes("sent") 
+                                ? "bg-green-50 border border-green-200 text-green-600"
+                                : "bg-red-50 border border-red-200 text-red-600"
+                        }`}>
+                            {resendMessage}
                         </div>
                     )}
 

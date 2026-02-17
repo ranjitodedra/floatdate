@@ -44,9 +44,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Check if user already exists
-        const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (existing) {
+        const normalizedEmail = email.toLowerCase();
+
+        // Check if a verified user already exists
+        const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        if (existingUser) {
             return NextResponse.json(
                 { error: "An account with this email already exists" },
                 { status: 409 }
@@ -57,9 +59,10 @@ export async function POST(req: NextRequest) {
         const verifyToken = randomUUID();
         const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        const user = await prisma.user.create({
-            data: {
-                email: email.toLowerCase(),
+        // Upsert into PendingSignup (so re-signups before verification just refresh the token)
+        await prisma.pendingSignup.upsert({
+            where: { email: normalizedEmail },
+            update: {
                 name,
                 age,
                 gender,
@@ -69,19 +72,35 @@ export async function POST(req: NextRequest) {
                 passwordHash,
                 verifyToken,
                 verifyTokenExpiry,
-                emailVerified: false,
+            },
+            create: {
+                email: normalizedEmail,
+                name,
+                age,
+                gender,
+                genderPref,
+                city,
+                bio: bio || null,
+                passwordHash,
+                verifyToken,
+                verifyTokenExpiry,
             },
         });
 
         // Send verification email
-        const emailResult = await sendVerificationEmail(user.email, user.name, verifyToken);
-        console.log(`Verification email to ${user.email}: ${emailResult.status}`);
+        const emailResult = await sendVerificationEmail(normalizedEmail, name, verifyToken);
+        console.log(`Verification email to ${normalizedEmail}: ${emailResult.status}`);
+
+        const emailFailed = emailResult.status === "failed";
 
         return NextResponse.json(
             {
                 success: true,
-                message: "Account created. Please check your email to verify your account.",
+                message: emailFailed
+                    ? "We couldn't send the verification email. Please try again or use the resend option."
+                    : "Please check your email to verify your account. Your account will be created once you verify.",
                 requiresVerification: true,
+                emailFailed,
             },
             { status: 201 }
         );

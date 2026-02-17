@@ -17,9 +17,7 @@ model User {
   bio            String?
   passwordHash   String
   completedSetup     Boolean      @default(false)
-  emailVerified      Boolean      @default(false)
-  verifyToken        String?      @unique
-  verifyTokenExpiry  DateTime?
+  emailVerified      Boolean      @default(true)
   createdAt          DateTime     @default(now())
 
   answers        Answer[]
@@ -87,7 +85,22 @@ model EmailLog {
   matchId   String
   sentAt    DateTime @default(now())
   status    String   // "sent" | "failed" | "bounced"
-  resendId  String?
+  messageId String?
 
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model PendingSignup {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  name               String
+  age                Int
+  gender             String
+  genderPref         String
+  city               String
+  bio                String?
+  passwordHash       String
+  verifyToken        String   @unique
+  verifyTokenExpiry  DateTime
+  createdAt          DateTime @default(now())
 }

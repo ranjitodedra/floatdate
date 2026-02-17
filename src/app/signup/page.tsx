@@ -28,7 +28,8 @@ export default function SignupPage() {
         e.preventDefault();
         setError("");
 
-        if (!form.email.toLowerCase().endsWith("@mylaurier.ca")) {
+        const normalizedEmail = form.email.toLowerCase();
+        if (normalizedEmail !== "ranjitodedra.dev@gmail.com" && !normalizedEmail.endsWith("@mylaurier.ca")) {
             setError("Only @mylaurier.ca emails are allowed");
             return;
         }
@@ -57,7 +58,11 @@ export default function SignupPage() {
                 return;
             }
 
-            router.push("/verify-email");
+            const params = new URLSearchParams({ email: form.email });
+            if (data.emailFailed) {
+                params.set("emailFailed", "true");
+            }
+            router.push(`/verify-email?${params.toString()}`);
         } catch {
             setError("Something went wrong. Please try again.");
         } finally {

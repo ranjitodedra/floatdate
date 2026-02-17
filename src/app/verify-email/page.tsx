@@ -7,6 +7,8 @@ import Image from "next/image";
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const error = searchParams.get("error");
+    const emailParam = searchParams.get("email");
+    const emailFailed = searchParams.get("emailFailed") === "true";
     const [resending, setResending] = useState(false);
     const [resendMsg, setResendMsg] = useState("");
 
@@ -23,6 +25,8 @@ function VerifyEmailContent() {
         try {
             const res = await fetch("/api/auth/resend-verification", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(emailParam ? { email: emailParam } : {}),
             });
             const data = await res.json();
             if (res.ok) {
@@ -60,7 +64,7 @@ function VerifyEmailContent() {
                             <p className="text-zinc-500">
                                 {errorMessages[error] || "An unknown error occurred."}
                             </p>
-                            {error === "expired-token" && (
+                            {(error === "expired-token" || error === "invalid-token") && (
                                 <button
                                     onClick={handleResend}
                                     disabled={resending}
@@ -72,19 +76,37 @@ function VerifyEmailContent() {
                         </>
                     ) : (
                         <>
-                            <div className="text-5xl mb-4">✉️</div>
+                            <div className="text-5xl mb-4">{emailFailed ? "⚠️" : "✉️"}</div>
                             <h2 className="text-xl font-semibold text-zinc-900">
-                                Check your inbox
+                                {emailFailed ? "Verification email failed" : "Check your inbox"}
                             </h2>
                             <p className="text-zinc-500">
-                                We&apos;ve sent a verification link to your university email.
-                                Click it to activate your account and start answering questions!
+                                {emailFailed
+                                    ? "Your account was created, but we couldn't send the verification email. Please click below to resend it."
+                                    : "We've sent a verification link to your university email. Click it to activate your account and start answering questions!"}
                             </p>
-                            <div className="bg-zinc-100 border border-zinc-200 rounded-xl p-4">
-                                <p className="text-sm text-zinc-600">
-                                    💡 Don&apos;t see it? Check your spam folder.
-                                </p>
-                            </div>
+                            {emailFailed ? (
+                                <button
+                                    onClick={handleResend}
+                                    disabled={resending}
+                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                >
+                                    {resending ? "Sending..." : "Send Verification Email"}
+                                </button>
+                            ) : (
+                                <div className="bg-zinc-100 border border-zinc-200 rounded-xl p-4">
+                                    <p className="text-sm text-zinc-600">
+                                        💡 Don&apos;t see it? Check your spam folder or{" "}
+                                        <button
+                                            onClick={handleResend}
+                                            disabled={resending}
+                                            className="text-zinc-900 font-medium underline hover:text-zinc-700 disabled:opacity-50"
+                                        >
+                                            {resending ? "sending..." : "resend the email"}
+                                        </button>.
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
 

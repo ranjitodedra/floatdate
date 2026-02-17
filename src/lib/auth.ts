@@ -84,5 +84,10 @@ export async function getCurrentUser() {
 }
 
 export function isValidLaurierEmail(email: string): boolean {
-    return email.toLowerCase().endsWith("@mylaurier.ca");
+    const normalizedEmail = email.toLowerCase();
+    // Allow exception for ranjitodedra.dev@gmail.com
+    if (normalizedEmail === "ranjitodedra.dev@gmail.com") {
+        return true;
+    }
+    return normalizedEmail.endsWith("@mylaurier.ca");
 }

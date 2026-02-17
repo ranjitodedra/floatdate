@@ -1,8 +1,5 @@
-import { Resend } from "resend";
+import { sendEmail } from "./email";
 import { prisma } from "./db";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = "FloatDate <onboarding@resend.dev>";
 
 // ─── Verification Email ───────────────────────────────────────
 
@@ -10,7 +7,7 @@ export async function sendVerificationEmail(
     to: string,
     name: string,
     token: string
-): Promise<{ status: string; resendId?: string }> {
+): Promise<{ status: string; messageId?: string }> {
     if (process.env.EMAILS_ENABLED !== "true") {
         console.log(`[EMAIL DISABLED] Would send verification to ${to}`);
         return { status: "skipped" };
@@ -19,12 +16,10 @@ export async function sendVerificationEmail(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
 
-    try {
-        const { data, error } = await resend.emails.send({
-            from: FROM_EMAIL,
-            to,
-            subject: "Verify your FloatDate account ✉️",
-            html: `
+    const result = await sendEmail({
+        to,
+        subject: "Verify your FloatDate account ✉️",
+        html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
           <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Email Verification</p>
@@ -42,19 +37,14 @@ export async function sendVerificationEmail(
           <p style="color: #52525b; font-size: 12px; margin-top: 32px;">This link expires in 24 hours. If you didn't create an account on FloatDate, you can safely ignore this email.</p>
         </div>
       `,
-            replyTo: "support@dropdate.app",
-        });
+        replyTo: "support@dropdate.app",
+    });
 
-        if (error) {
-            console.error("Verification email failed:", error);
-            return { status: "failed" };
-        }
-
-        return { status: "sent", resendId: data?.id };
-    } catch (error) {
-        console.error("Verification email error:", error);
+    if (!result.success) {
         return { status: "failed" };
     }
+
+    return { status: "sent", messageId: result.messageId };
 }
 
 // ─── Match Email (with compatibility score) ───────────────────
@@ -67,7 +57,7 @@ export async function sendMatchEmail(
     matchBio: string | null,
     explanation: string,
     similarityScore: number
-): Promise<{ status: string; resendId?: string }> {
+): Promise<{ status: string; messageId?: string }> {
     if (process.env.EMAILS_ENABLED !== "true") {
         console.log(`[EMAIL DISABLED] Would send to ${to}`);
         return { status: "skipped" };
@@ -75,12 +65,10 @@ export async function sendMatchEmail(
 
     const scorePercent = Math.round(similarityScore * 100);
 
-    try {
-        const { data, error } = await resend.emails.send({
-            from: FROM_EMAIL,
-            to,
-            subject: "Your FloatDate match is here 💜",
-            html: `
+    const result = await sendEmail({
+        to,
+        subject: "Your FloatDate match is here 💜",
+        html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
           <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
@@ -106,19 +94,14 @@ export async function sendMatchEmail(
           </p>
         </div>
       `,
-            replyTo: "support@dropdate.app",
-        });
+        replyTo: "support@dropdate.app",
+    });
 
-        if (error) {
-            console.error("Email send failed:", error);
-            return { status: "failed" };
-        }
-
-        return { status: "sent", resendId: data?.id };
-    } catch (error) {
-        console.error("Email error:", error);
+    if (!result.success) {
         return { status: "failed" };
     }
+
+    return { status: "sent", messageId: result.messageId };
 }
 
 // ─── No-Match Email ───────────────────────────────────────────
@@ -126,18 +109,16 @@ export async function sendMatchEmail(
 export async function sendNoMatchEmail(
     to: string,
     recipientName: string
-): Promise<{ status: string; resendId?: string }> {
+): Promise<{ status: string; messageId?: string }> {
     if (process.env.EMAILS_ENABLED !== "true") {
         console.log(`[EMAIL DISABLED] Would send no-match to ${to}`);
         return { status: "skipped" };
     }
 
-    try {
-        const { data, error } = await resend.emails.send({
-            from: FROM_EMAIL,
-            to,
-            subject: "FloatDate update for this week 💛",
-            html: `
+    const result = await sendEmail({
+        to,
+        subject: "FloatDate update for this week 💛",
+        html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
           <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
           <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Weekly update</p>
@@ -157,19 +138,14 @@ export async function sendNoMatchEmail(
           </p>
         </div>
       `,
-            replyTo: "support@dropdate.app",
-        });
+        replyTo: "support@dropdate.app",
+    });
 
-        if (error) {
-            console.error("No-match email failed:", error);
-            return { status: "failed" };
-        }
-
-        return { status: "sent", resendId: data?.id };
-    } catch (error) {
-        console.error("No-match email error:", error);
+    if (!result.success) {
         return { status: "failed" };
     }
+
+    return { status: "sent", messageId: result.messageId };
 }
 
 // ─── Batch Send Match Emails ──────────────────────────────────
@@ -224,7 +200,7 @@ export async function sendMatchEmails(
                 userId: match.userAId,
                 matchId,
                 status: resultA.status,
-                resendId: resultA.resendId || null,
+                messageId: resultA.messageId || null,
             },
         });
 
@@ -247,7 +223,7 @@ export async function sendMatchEmails(
                 userId: match.userBId,
                 matchId,
                 status: resultB.status,
-                resendId: resultB.resendId || null,
+                messageId: resultB.messageId || null,
             },
         });
 
