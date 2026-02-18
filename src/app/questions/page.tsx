@@ -43,6 +43,13 @@ export default function QuestionsPage() {
         loadQuestions();
     }, []);
 
+    // Ensure currentIndex is valid when questions change
+    useEffect(() => {
+        if (questions.length > 0 && currentIndex >= questions.length) {
+            setCurrentIndex(0);
+        }
+    }, [questions, currentIndex]);
+
     const saveAnswer = useCallback(
         async (questionId: string, value: AnswerValue) => {
             setSaving(true);
@@ -71,11 +78,14 @@ export default function QuestionsPage() {
 
     function handleAnswer(value: AnswerValue) {
         const q = questions[currentIndex];
+        if (!q) return;
         setAnswers((prev) => ({ ...prev, [q.id]: value }));
     }
 
     async function goNext() {
         const q = questions[currentIndex];
+        if (!q) return;
+        
         const val = answers[q.id];
 
         if (val === undefined || val === null) {
@@ -130,6 +140,22 @@ export default function QuestionsPage() {
     }
 
     const current = questions[currentIndex];
+    
+    // Safety check: if current is undefined, reset to first question
+    if (!current) {
+        if (currentIndex !== 0 && questions.length > 0) {
+            setCurrentIndex(0);
+        }
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-zinc-500">Loading question...</p>
+                </div>
+            </div>
+        );
+    }
+
     const progress = ((currentIndex + 1) / questions.length) * 100;
     const hasAnswer = answers[current.id] !== undefined && answers[current.id] !== null;
 

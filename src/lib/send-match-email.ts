@@ -20,21 +20,23 @@ export async function sendVerificationEmail(
         to,
         subject: "Verify your FloatDate account ✉️",
         html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
-          <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Email Verification</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Email Verification</p>
 
-          <p>Hey ${name} 👋</p>
-          <p>Welcome to FloatDate! Please verify your email address to get started.</p>
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${name} 👋</p>
+            <p style="color: #18181b; margin: 0 0 32px 0;">Welcome to FloatDate! Please verify your email address to get started.</p>
 
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${verifyUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(to right, #a855f7, #ec4899); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Verify My Email</a>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${verifyUrl}" style="display: inline-block; padding: 14px 32px; background: #18181b; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Verify My Email</a>
+            </div>
+
+            <p style="color: #71717a; font-size: 13px; margin: 24px 0 8px 0;">Or copy and paste this link into your browser:</p>
+            <p style="color: #18181b; font-size: 13px; word-break: break-all; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e4e4e7; margin: 0 0 24px 0;">${verifyUrl}</p>
+
+            <p style="color: #71717a; font-size: 12px; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">This link expires in 24 hours. If you didn't create an account on FloatDate, you can safely ignore this email.</p>
           </div>
-
-          <p style="color: #a1a1aa; font-size: 13px;">Or copy and paste this link into your browser:</p>
-          <p style="color: #a855f7; font-size: 13px; word-break: break-all;">${verifyUrl}</p>
-
-          <p style="color: #52525b; font-size: 12px; margin-top: 32px;">This link expires in 24 hours. If you didn't create an account on FloatDate, you can safely ignore this email.</p>
         </div>
       `,
         replyTo: "support@dropdate.app",
@@ -69,29 +71,31 @@ export async function sendMatchEmail(
         to,
         subject: "Your FloatDate match is here 💜",
         html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
-          <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
-          
-          <p>Hey ${recipientName} 👋</p>
-          <p>Your match this week is <strong style="color: #a855f7;">${matchName}</strong>.</p>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
+            
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${recipientName} 👋</p>
+            <p style="color: #18181b; margin: 0 0 24px 0;">Your match this week is <strong style="color: #18181b;">${matchName}</strong>.</p>
 
-          <div style="text-align: center; margin: 24px 0; padding: 20px; background: rgba(168, 85, 247, 0.1); border-radius: 16px; border: 1px solid rgba(168, 85, 247, 0.2);">
-            <p style="font-size: 36px; font-weight: 700; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">${scorePercent}%</p>
-            <p style="color: #a1a1aa; font-size: 13px; margin: 4px 0 0 0;">Compatibility Score</p>
+            <div style="text-align: center; margin: 24px 0; padding: 24px; background: #fafafa; border-radius: 16px; border: 1px solid #e4e4e7;">
+              <p style="font-size: 36px; font-weight: 700; color: #18181b; margin: 0;">${scorePercent}%</p>
+              <p style="color: #71717a; font-size: 13px; margin: 4px 0 0 0;">Compatibility Score</p>
+            </div>
+
+            <p style="color: #18181b; font-style: italic; padding: 16px; background: #fafafa; border-radius: 12px; border-left: 3px solid #18181b; margin: 24px 0;">"${explanation}"</p>
+            
+            <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;" />
+            
+            <p style="color: #18181b; margin: 0 0 16px 0;"><strong>About ${matchName}:</strong> ${matchBio || "No bio yet."}</p>
+            <p style="color: #18181b; margin: 0 0 32px 0;">Reach out to them at: <a href="mailto:${matchEmail}" style="color: #18181b; text-decoration: underline;">${matchEmail}</a></p>
+            
+            <p style="font-size: 12px; color: #71717a; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">
+              You received this because you opted in on FloatDate.
+              Reply STOP to unsubscribe.
+            </p>
           </div>
-
-          <p style="color: #a1a1aa; font-style: italic; padding: 16px; background: rgba(168, 85, 247, 0.1); border-radius: 12px; border-left: 3px solid #a855f7;">"${explanation}"</p>
-          
-          <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
-          
-          <p><strong>About ${matchName}:</strong> ${matchBio || "No bio yet."}</p>
-          <p>Reach out to them at: <a href="mailto:${matchEmail}" style="color: #a855f7;">${matchEmail}</a></p>
-          
-          <p style="font-size: 12px; color: #52525b; margin-top: 32px;">
-            You received this because you opted in on FloatDate.
-            Reply STOP to unsubscribe.
-          </p>
         </div>
       `,
         replyTo: "support@dropdate.app",
@@ -119,23 +123,25 @@ export async function sendNoMatchEmail(
         to,
         subject: "FloatDate update for this week 💛",
         html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
-          <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
-          <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 24px;">Weekly update</p>
-          
-          <p>Hey ${recipientName} 👋</p>
-          <p>We weren't able to find your perfect match this week — but don't worry! We're still growing our community and finding more amazing people like you.</p>
-          
-          <div style="padding: 20px; background: rgba(168, 85, 247, 0.1); border-radius: 12px; border-left: 3px solid #a855f7; margin: 24px 0;">
-            <p style="color: #a1a1aa; margin: 0;">💡 <strong style="color: #e4e4e7;">Stay opted in</strong> for next week — your match could be just around the corner!</p>
-          </div>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Weekly update</p>
+            
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${recipientName} 👋</p>
+            <p style="color: #18181b; margin: 0 0 24px 0;">We weren't able to find your perfect match this week — but don't worry! We're still growing our community and finding more amazing people like you.</p>
+            
+            <div style="padding: 20px; background: #fafafa; border-radius: 12px; border-left: 3px solid #18181b; margin: 24px 0;">
+              <p style="color: #18181b; margin: 0;">💡 <strong>Stay opted in</strong> for next week — your match could be just around the corner!</p>
+            </div>
 
-          <p>In the meantime, make sure your profile and answers are up-to-date to improve your chances.</p>
-          
-          <p style="font-size: 12px; color: #52525b; margin-top: 32px;">
-            You received this because you opted in on FloatDate.
-            Reply STOP to unsubscribe.
-          </p>
+            <p style="color: #18181b; margin: 0 0 32px 0;">In the meantime, make sure your profile and answers are up-to-date to improve your chances.</p>
+            
+            <p style="font-size: 12px; color: #71717a; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">
+              You received this because you opted in on FloatDate.
+              Reply STOP to unsubscribe.
+            </p>
+          </div>
         </div>
       `,
         replyTo: "support@dropdate.app",

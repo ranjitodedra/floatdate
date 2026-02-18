@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "delete-user": "tsx scripts/delete-user.ts",
+    "trigger-matching": "tsx scripts/trigger-matching.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.0",
