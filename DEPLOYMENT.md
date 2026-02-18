@@ -22,9 +22,13 @@ This guide walks you through deploying FloatDate to Vercel with Supabase.
 4. Wait for project to be created (~2 minutes)
 
 5. Once ready, go to **Project Settings → Database**
-6. Under **Connection string**, copy the **URI** (Session mode, port 5432)
-   - It looks like: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres`
+6. Under **Connection string**, copy the **URI**:
+   - **For Vercel (recommended)**: Use **Transaction mode** (port 6543)
+     - It looks like: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`
+   - **Alternative**: Session mode (port 5432) also works
+     - It looks like: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres`
    - Replace `[password]` with the password you set
+   - **Important**: Do NOT use the direct connection URL (`db.[ref].supabase.co`) - it won't work from Vercel
 
 **Save this connection string** - you'll need it for the next steps.
 
@@ -145,9 +149,19 @@ Replace:
 - ✅ Fixed: `postinstall` script and `tsconfig.json` exclude are in place
 
 ### Database connection errors
-- Verify `DATABASE_URL` is correct in Vercel
+
+**Error: `Can't reach database server at db.[ref].supabase.co` (P1001)**
+- This means you're using the **direct connection URL**, which is firewalled and won't work from Vercel
+- **Fix**: Update `DATABASE_URL` in Vercel to use the **pooler URL** instead:
+  - Go to Supabase Dashboard → Project Settings → Database → Connection string
+  - Copy the **Transaction mode** URI (port 6543) or **Session mode** URI (port 5432)
+  - Update `DATABASE_URL` in Vercel with this pooler URL
+  - Redeploy your app
+
+**Other database connection issues:**
+- Verify `DATABASE_URL` is correct in Vercel (should use pooler, not direct connection)
 - Check Supabase project is active (not paused)
-- Ensure connection string uses port 5432 (Session mode)
+- Ensure connection string uses pooler (port 5432 or 6543), not direct connection (port 5432 with `db.[ref].supabase.co` hostname)
 
 ### Email not sending
 - Verify `EMAIL_USER` and `EMAIL_PASS` are correct
@@ -166,7 +180,7 @@ Replace:
 Copy-paste ready list for Vercel:
 
 ```
-DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 JWT_SECRET=46a6e34556009ff178fc74ce736d68eebad286f109548a5c429c05f6c46e8da7
 CRON_SECRET=c7354e1dd20cb716af84a922e9767466fd482a3f49d230ad12ffca2edd652d6e
 EMAIL_USER=your-email@gmail.com
