@@ -83,6 +83,8 @@ export default function QuestionsPage() {
     }
 
     async function goNext() {
+        if (animating || saving) return;
+        
         const q = questions[currentIndex];
         if (!q) return;
         
@@ -109,6 +111,8 @@ export default function QuestionsPage() {
     }
 
     function goBack() {
+        if (animating) return;
+        
         if (currentIndex > 0) {
             setError("");
             setDirection("prev");
