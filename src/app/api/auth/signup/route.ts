@@ -56,8 +56,24 @@ export async function POST(req: NextRequest) {
         }
 
         const passwordHash = await hashPassword(password);
-        const verifyToken = randomUUID();
-        const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        // Check if a pending signup already exists with a valid token
+        const existingPending = await prisma.pendingSignup.findUnique({
+            where: { email: normalizedEmail },
+        });
+
+        let verifyToken: string;
+        let verifyTokenExpiry: Date;
+
+        if (existingPending && existingPending.verifyTokenExpiry > new Date()) {
+            // Reuse existing valid token so previously sent emails remain valid
+            verifyToken = existingPending.verifyToken;
+            verifyTokenExpiry = existingPending.verifyTokenExpiry;
+        } else {
+            // Generate new token if none exists or existing one is expired
+            verifyToken = randomUUID();
+            verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        }
 
         // Upsert into PendingSignup (so re-signups before verification just refresh the token)
         await prisma.pendingSignup.upsert({

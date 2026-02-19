@@ -14,7 +14,7 @@ export async function sendVerificationEmail(
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`;
+    const verifyUrl = `${appUrl}/verify-email/confirm?token=${token}`;
 
     const result = await sendEmail({
         to,
