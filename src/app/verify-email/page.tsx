@@ -80,32 +80,40 @@ function VerifyEmailContent() {
                             <h2 className="text-xl font-semibold text-zinc-900">
                                 {emailFailed ? "Verification email failed" : "Check your inbox"}
                             </h2>
-                            <p className="text-zinc-500">
-                                {emailFailed
-                                    ? "Your account was created, but we couldn't send the verification email. Please click below to resend it."
-                                    : "We've sent a verification link to your university email. Click it to activate your account and start answering questions!"}
-                            </p>
                             {emailFailed ? (
-                                <button
-                                    onClick={handleResend}
-                                    disabled={resending}
-                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
-                                >
-                                    {resending ? "Sending..." : "Send Verification Email"}
-                                </button>
-                            ) : (
-                                <div className="bg-zinc-100 border border-zinc-200 rounded-xl p-4">
-                                    <p className="text-sm text-zinc-600">
-                                        💡 Don&apos;t see it? Check your spam folder or{" "}
-                                        <button
-                                            onClick={handleResend}
-                                            disabled={resending}
-                                            className="text-zinc-900 font-medium underline hover:text-zinc-700 disabled:opacity-50"
-                                        >
-                                            {resending ? "sending..." : "resend the email"}
-                                        </button>.
+                                <>
+                                    <p className="text-zinc-500">
+                                        Your account was created, but we couldn't send the verification email. Please click below to resend it.
                                     </p>
-                                </div>
+                                    <button
+                                        onClick={handleResend}
+                                        disabled={resending}
+                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                    >
+                                        {resending ? "Sending..." : "Send Verification Email"}
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="bg-red-50 border-2 border-red-500 rounded-xl p-5 my-4">
+                                        <p className="text-sm text-red-900 font-bold leading-relaxed">
+                                            Verification is not instant and may take some time to process (like really, but you will receive verification mail for sure). Please keep an eye on your inbox (especially spam/junk folder). If you don't receive anything after a while, feel free to reach out:{" "}
+                                            <a
+                                                href="mailto:team.floatdate@gmail.com"
+                                                className="text-red-700 underline hover:text-red-800 font-bold"
+                                            >
+                                                team.floatdate@gmail.com
+                                            </a>
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleResend}
+                                        disabled={resending}
+                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                    >
+                                        {resending ? "Sending..." : "Resend Verification Email"}
+                                    </button>
+                                </>
                             )}
                         </>
                     )}

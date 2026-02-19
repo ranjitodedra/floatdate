@@ -103,7 +103,7 @@ export default function Home() {
               {
                 step: "02",
                 title: "Opt in weekly",
-                desc: "Opt in by Friday 9pm. Get your match at the same time at week’s end, along with why we think you’ll click.",
+                desc: "Opt in by Wednesday 9pm. Get your match at the same time at week’s end, along with why we think you’ll click.",
                 icon: "✋",
                 image: "/images/step_2.png",
               },
@@ -149,9 +149,18 @@ export default function Home() {
 
       {/* ── Footer (white background) ── */}
       <footer className="bg-white border-t border-zinc-200 py-6 px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <span className="text-sm text-zinc-400">
             © 2026 FloatDate. Laurier only.
+          </span>
+          <span className="text-sm text-zinc-400">
+            For any questions:{" "}
+            <a
+              href="mailto:team.floatdate@gmail.com"
+              className="text-zinc-600 hover:text-zinc-900 underline transition"
+            >
+              team.floatdate@gmail.com
+            </a>
           </span>
           <span className="text-xs text-zinc-400">Built with 💜</span>
         </div>
