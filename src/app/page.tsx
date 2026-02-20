@@ -1,5 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
+import FAQSection from "@/components/FAQSection";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
@@ -147,24 +149,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer (white background) ── */}
-      <footer className="bg-white border-t border-zinc-200 py-6 px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <span className="text-sm text-zinc-400">
-            © 2026 FloatDate. Laurier only.
-          </span>
-          <span className="text-sm text-zinc-400">
-            For any questions:{" "}
-            <a
-              href="mailto:team.floatdate@gmail.com"
-              className="text-zinc-600 hover:text-zinc-900 underline transition"
-            >
-              team.floatdate@gmail.com
-            </a>
-          </span>
-          <span className="text-xs text-zinc-400">Built with 💜</span>
-        </div>
-      </footer>
+      {/* ── FAQ Section ── */}
+      <FAQSection />
+
+      <Footer />
     </div>
   );
 }
