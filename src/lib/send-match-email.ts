@@ -49,6 +49,54 @@ export async function sendVerificationEmail(
     return { status: "sent", messageId: result.messageId };
 }
 
+// ─── Password Reset Email ─────────────────────────────────────
+
+export async function sendPasswordResetEmail(
+    to: string,
+    name: string,
+    token: string
+): Promise<{ status: string; messageId?: string }> {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+    if (process.env.EMAILS_ENABLED !== "true") {
+        console.log(`[EMAIL DISABLED] Reset link: ${resetUrl}`);
+        return { status: "skipped" };
+    }
+
+    const result = await sendEmail({
+        to,
+        subject: "Reset your FloatDate password 🔑",
+        html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Password Reset</p>
+
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${name} 👋</p>
+            <p style="color: #18181b; margin: 0 0 32px 0;">We received a request to reset your password. Click the button below to choose a new one.</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${resetUrl}" style="display: inline-block; padding: 14px 32px; background: #18181b; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Reset My Password</a>
+            </div>
+
+            <p style="color: #71717a; font-size: 13px; margin: 24px 0 8px 0;">Or copy and paste this link into your browser:</p>
+            <p style="color: #18181b; font-size: 13px; word-break: break-all; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e4e4e7; margin: 0 0 24px 0;">${resetUrl}</p>
+
+            <p style="color: #71717a; font-size: 12px; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your password will remain unchanged.</p>
+          </div>
+        </div>
+      `,
+        replyTo: "support@dropdate.app",
+    });
+
+    if (!result.success) {
+        return { status: "failed" };
+    }
+
+    return { status: "sent", messageId: result.messageId };
+}
+
 // ─── Match Email (with compatibility score) ───────────────────
 
 export async function sendMatchEmail(
