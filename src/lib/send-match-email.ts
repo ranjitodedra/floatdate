@@ -99,6 +99,59 @@ export async function sendPasswordResetEmail(
 
 // ─── Match Email (with compatibility score) ───────────────────
 
+export function buildMatchEmailHtml(
+    recipientName: string,
+    matchName: string,
+    matchEmail: string,
+    matchBio: string | null,
+    explanation: string[],
+    similarityScore: number
+): string {
+    const scorePercent = Math.round(similarityScore * 100);
+    const scoreFormatted = scorePercent.toFixed(1);
+
+    const reasonsList = explanation
+        .map((reason) => `<li style="color: #18181b; margin: 0 0 12px 0; line-height: 1.6;">${reason}</li>`)
+        .join("");
+
+    return `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
+            
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${recipientName} 👋</p>
+            
+            <div style="margin: 24px 0;">
+              <p style="color: #18181b; margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Your match: ${matchName}</p>
+              <p style="color: #18181b; margin: 0 0 24px 0;">📧 <a href="mailto:${matchEmail}" style="color: #18181b; text-decoration: underline;">${matchEmail}</a></p>
+            </div>
+
+            <div style="text-align: center; margin: 24px 0; padding: 24px; background: #fafafa; border-radius: 16px; border: 1px solid #e4e4e7;">
+              <p style="font-size: 36px; font-weight: 700; color: #18181b; margin: 0;">🎯 ${scoreFormatted}%</p>
+              <p style="color: #71717a; font-size: 13px; margin: 4px 0 0 0;">compatibility</p>
+            </div>
+
+            <div style="margin: 24px 0;">
+              <p style="color: #18181b; margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Here's why:</p>
+              <ul style="margin: 0; padding-left: 20px; list-style: none;">
+                ${reasonsList}
+              </ul>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;" />
+            
+            ${matchBio ? `<p style="color: #18181b; margin: 0 0 32px 0;"><strong>About ${matchName}:</strong> ${matchBio}</p>` : ""}
+            
+            <p style="font-size: 12px; color: #71717a; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">
+              You received this because you opted in on FloatDate.
+              Reply STOP to unsubscribe.
+            </p>
+          </div>
+        </div>
+      `;
+}
+
 export async function sendMatchEmail(
     to: string,
     recipientName: string,
@@ -113,39 +166,30 @@ export async function sendMatchEmail(
         return { status: "skipped" };
     }
 
-    const scorePercent = Math.round(similarityScore * 100);
+    // Parse explanation as JSON array, with fallback for legacy string format
+    let reasons: string[];
+    try {
+        reasons = JSON.parse(explanation);
+        if (!Array.isArray(reasons)) {
+            reasons = [explanation]; // Fallback to single string
+        }
+    } catch {
+        reasons = [explanation]; // Fallback to single string
+    }
+
+    const html = buildMatchEmailHtml(
+        recipientName,
+        matchName,
+        matchEmail,
+        matchBio,
+        reasons,
+        similarityScore
+    );
 
     const result = await sendEmail({
         to,
         subject: "Your FloatDate match is here 💜",
-        html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
-          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
-            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">FloatDate</h1>
-            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">Your weekly match</p>
-            
-            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${recipientName} 👋</p>
-            <p style="color: #18181b; margin: 0 0 24px 0;">Your match this week is <strong style="color: #18181b;">${matchName}</strong>.</p>
-
-            <div style="text-align: center; margin: 24px 0; padding: 24px; background: #fafafa; border-radius: 16px; border: 1px solid #e4e4e7;">
-              <p style="font-size: 36px; font-weight: 700; color: #18181b; margin: 0;">${scorePercent}%</p>
-              <p style="color: #71717a; font-size: 13px; margin: 4px 0 0 0;">Compatibility Score</p>
-            </div>
-
-            <p style="color: #18181b; font-style: italic; padding: 16px; background: #fafafa; border-radius: 12px; border-left: 3px solid #18181b; margin: 24px 0;">"${explanation}"</p>
-            
-            <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;" />
-            
-            <p style="color: #18181b; margin: 0 0 16px 0;"><strong>About ${matchName}:</strong> ${matchBio || "No bio yet."}</p>
-            <p style="color: #18181b; margin: 0 0 32px 0;">Reach out to them at: <a href="mailto:${matchEmail}" style="color: #18181b; text-decoration: underline;">${matchEmail}</a></p>
-            
-            <p style="font-size: 12px; color: #71717a; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">
-              You received this because you opted in on FloatDate.
-              Reply STOP to unsubscribe.
-            </p>
-          </div>
-        </div>
-      `,
+        html,
         replyTo: "support@dropdate.app",
     });
 

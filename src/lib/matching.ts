@@ -11,6 +11,11 @@ interface UserForMatching {
     createdAt: Date;
 }
 
+interface Answer {
+    questionId: string;
+    value: unknown;
+}
+
 // ---------- Constants ----------
 const DIMENSION_WEIGHTS: DimensionVec = {
     attachment: 2.0,
@@ -28,6 +33,187 @@ const EXPLANATION_LABELS: Record<string, string> = {
     lifestyle: "compatible lifestyle preferences",
     communication: "matching communication styles",
     interests: "shared interests",
+};
+
+// Question-level insights for generating specific match reasons
+type QuestionInsight = {
+    high?: string; // When both users score high/agree
+    low?: string; // When both users score low/disagree
+    same?: string; // When both users pick the same option (for scenarios/choices)
+    dimension: string; // Fallback dimension label
+};
+
+const QUESTION_INSIGHTS: Record<string, QuestionInsight> = {
+    // Big Five personality traits
+    bf_01: {
+        low: "Neither of you stresses easily about relationship issues",
+        dimension: "attachment",
+    },
+    bf_02: {
+        high: "You both value organization and follow through on commitments",
+        dimension: "lifestyle",
+    },
+    bf_03_rev: {
+        low: "You both avoid holding grudges and handle frustration constructively",
+        dimension: "communication",
+    },
+    bf_06_scen: {
+        same: "You'd both assume the best when your partner is late without worrying",
+        dimension: "attachment",
+    },
+    // Attachment style
+    att_01: {
+        low: "Neither of you worries about your partner leaving or not loving you enough",
+        dimension: "attachment",
+    },
+    att_02: {
+        low: "You both feel comfortable opening up and relying on romantic partners",
+        dimension: "attachment",
+    },
+    att_03: {
+        high: "You both find it easy to get close to others and depend on them",
+        dimension: "attachment",
+    },
+    att_05_beh: {
+        same: "You both handle stress in similar ways when it comes to seeking support",
+        dimension: "attachment",
+    },
+    att_06_scen: {
+        same: "You'd both give space after a disagreement without worry",
+        dimension: "attachment",
+    },
+    // Conflict resolution
+    conf_02_scen: {
+        same: "You both handle financial disagreements in similar ways",
+        dimension: "communication",
+    },
+    conf_04_rev: {
+        high: "You both find it easy to let go of negative feelings after a fight is resolved",
+        dimension: "communication",
+    },
+    // Emotional regulation
+    emo_01: {
+        high: "You both take time to process emotions before speaking or acting",
+        dimension: "communication",
+    },
+    emo_03_scen: {
+        same: "You both handle stress and frustration in similar ways",
+        dimension: "communication",
+    },
+    emo_04: {
+        high: "You both bounce back quickly after frustrating events",
+        dimension: "communication",
+    },
+    emo_05_rev: {
+        low: "You both feel in control of your emotions",
+        dimension: "communication",
+    },
+    // Communication style
+    comm_02_scen: {
+        same: "You both communicate annoyances in similar ways",
+        dimension: "communication",
+    },
+    comm_03_beh: {
+        high: "You both regularly ask about each other's day and actively listen",
+        dimension: "communication",
+    },
+    comm_04_rev: {
+        low: "You both find it easy to express your needs clearly",
+        dimension: "communication",
+    },
+    // Core values
+    val_02: {
+        same: "You both prioritize similar things in life right now",
+        dimension: "values",
+    },
+    val_03_scen: {
+        same: "You both approach career vs family trade-offs similarly",
+        dimension: "values",
+    },
+    // Relationship beliefs
+    bel_02: {
+        high: "You both believe successful relationships evolve through hard work and compromise",
+        dimension: "values",
+    },
+    bel_03_scen: {
+        same: "You both view relationship challenges through a similar lens",
+        dimension: "values",
+    },
+    bel_04_rev: {
+        low: "You both believe relationships can require effort early on and still be meant to be",
+        dimension: "values",
+    },
+    // Long-term goals
+    goals_01_filter: {
+        same: "You both have aligned views on having children",
+        dimension: "values",
+    },
+    goals_02_filter: {
+        same: "You both have similar relationship trajectory goals",
+        dimension: "values",
+    },
+    goals_04_scen: {
+        same: "You both approach financial windfalls in similar ways",
+        dimension: "values",
+    },
+    goals_05: {
+        high: "You both would be willing to relocate for your partner's dream job",
+        dimension: "values",
+    },
+    // Socioeconomic preferences
+    socio_02: {
+        same: "You both approach personal finances in similar ways",
+        dimension: "lifestyle",
+    },
+    socio_05_scen: {
+        same: "You both prefer similar travel styles",
+        dimension: "lifestyle",
+    },
+    // Lifestyle habits
+    habits_04: {
+        same: "You both enjoy similar weekend activities",
+        dimension: "interests",
+    },
+    habits_06_beh: {
+        same: "You both have similar approaches to alcohol consumption",
+        dimension: "lifestyle",
+    },
+    // Time orientation
+    time_02: {
+        high: "You both heavily weigh long-term impacts when making major decisions",
+        dimension: "lifestyle",
+    },
+    // Social energy
+    social_01: {
+        high: "You both feel energized after large social events",
+        dimension: "interests",
+    },
+    social_04: {
+        same: "You both have similar openness to dating someone with different social energy needs",
+        dimension: "interests",
+    },
+    // Deal-breakers
+    dealbreak_01_filter: {
+        same: "You both have compatible views on pets",
+        dimension: "values",
+    },
+    dealbreak_02: {
+        same: "You both have similar geographic distance preferences",
+        dimension: "values",
+    },
+    dealbreak_04_scen: {
+        same: "You both handle ex-partner friendships in similar ways",
+        dimension: "values",
+    },
+    // Attraction style
+    attr_03_scen: {
+        same: "You both weigh physical attraction and conversational chemistry similarly",
+        dimension: "interests",
+    },
+    attr_04: {
+        same: "You both find similar things create the strongest initial chemistry",
+        dimension: "interests",
+    },
 };
 
 // ---------- Normalization ----------
@@ -120,6 +306,142 @@ export function explain(a: DimensionVec, b: DimensionVec): string {
     return `You were matched because of your ${EXPLANATION_LABELS[top2[0]]} and ${EXPLANATION_LABELS[top2[1]]}.`;
 }
 
+// ---------- Detailed Explanation ----------
+interface Question {
+    id: string;
+    weightDimension: string;
+    weight: number;
+    type: string;
+    options: unknown;
+}
+
+export function explainDetailed(
+    answersA: Answer[],
+    answersB: Answer[],
+    questions: Question[],
+    vecA: DimensionVec,
+    vecB: DimensionVec
+): string[] {
+    const reasons: string[] = [];
+    const usedDimensions = new Set<string>();
+    const questionMap = new Map(questions.map((q) => [q.id, q]));
+
+    // Score each question by answer closeness
+    const scoredQuestions: Array<{
+        questionId: string;
+        question: Question;
+        score: number;
+        insight: string | null;
+    }> = [];
+
+    for (const question of questions) {
+        const answerA = answersA.find((a) => a.questionId === question.id);
+        const answerB = answersB.find((a) => a.questionId === question.id);
+
+        if (!answerA || !answerB) continue;
+
+        const insight = QUESTION_INSIGHTS[question.id];
+        if (!insight) continue; // Skip questions without insights
+
+        let closeness = 0;
+        let insightText: string | null = null;
+
+        const options = Array.isArray(question.options) ? (question.options as string[]) : [];
+
+        if (question.type === "likert" || question.type === "binary") {
+            const normA = normalizeAnswer(answerA.value, question.type, options);
+            const normB = normalizeAnswer(answerB.value, question.type, options);
+            closeness = 1 - Math.abs(normA - normB);
+
+            // For high closeness, use appropriate insight
+            if (closeness > 0.7) {
+                if (normA > 0.6 && insight.high) {
+                    insightText = insight.high;
+                } else if (normA < 0.4 && insight.low) {
+                    insightText = insight.low;
+                }
+            }
+        } else if (question.type === "multiple_choice" || question.type === "scenario") {
+            // Check if both picked the same option
+            if (typeof answerA.value === "string" && typeof answerB.value === "string") {
+                if (answerA.value === answerB.value) {
+                    closeness = 1.0;
+                    if (insight.same) {
+                        insightText = insight.same;
+                    }
+                }
+            }
+        } else if (question.type === "ranking") {
+            // For ranking, check if arrays are similar
+            if (Array.isArray(answerA.value) && Array.isArray(answerB.value)) {
+                const arrA = answerA.value as string[];
+                const arrB = answerB.value as string[];
+                if (arrA.length === arrB.length) {
+                    let matches = 0;
+                    for (let i = 0; i < arrA.length; i++) {
+                        if (arrA[i] === arrB[i]) matches++;
+                    }
+                    closeness = matches / arrA.length;
+                    if (closeness > 0.7 && insight.same) {
+                        insightText = insight.same;
+                    }
+                }
+            }
+        }
+
+        if (insightText && closeness > 0.5) {
+            scoredQuestions.push({
+                questionId: question.id,
+                question,
+                score: closeness * question.weight,
+                insight: insightText,
+            });
+        }
+    }
+
+    // Sort by score (highest first) and pick top ones ensuring dimension coverage
+    scoredQuestions.sort((a, b) => b.score - a.score);
+
+    // First pass: pick top insights ensuring we cover multiple dimensions
+    for (const item of scoredQuestions) {
+        if (reasons.length >= 6) break;
+
+        const dim = item.question.weightDimension;
+        // Prefer questions from dimensions we haven't covered yet
+        if (!usedDimensions.has(dim) || reasons.length < 3) {
+            reasons.push(item.insight!);
+            usedDimensions.add(dim);
+        }
+    }
+
+    // Second pass: fill remaining slots with highest scoring insights
+    for (const item of scoredQuestions) {
+        if (reasons.length >= 6) break;
+        if (!reasons.includes(item.insight!)) {
+            reasons.push(item.insight!);
+        }
+    }
+
+    // Fallback: if we don't have enough reasons, use dimension-level labels
+    if (reasons.length < 4) {
+        const sortedDims = DIMENSIONS.slice().sort(
+            (x, y) =>
+                Math.abs((vecA[x] ?? 0.5) - (vecB[x] ?? 0.5)) -
+                Math.abs((vecA[y] ?? 0.5) - (vecB[y] ?? 0.5))
+        );
+
+        for (const dim of sortedDims) {
+            if (reasons.length >= 4) break;
+            const label = EXPLANATION_LABELS[dim];
+            if (label && !reasons.some((r) => r.includes(label))) {
+                reasons.push(`You both have ${label}`);
+            }
+        }
+    }
+
+    return reasons.slice(0, 6); // Return max 6 reasons
+}
+
 // ---------- Hard Filters ----------
 function passesHardFilters(a: UserForMatching, b: UserForMatching): boolean {
     // Mutual gender preference
@@ -167,9 +489,10 @@ export async function runWeeklyMatching(weekStart: Date) {
         allMatches.flatMap((m) => [`${m.userAId}-${m.userBId}`, `${m.userBId}-${m.userAId}`])
     );
 
-    // 3. Build vectors for all users
+    // 3. Build vectors for all users and store answers
     const questions = await prisma.question.findMany();
     const vectors: Record<string, DimensionVec> = {};
+    const allAnswers: Record<string, Answer[]> = {};
 
     for (const user of users) {
         const answers = await prisma.answer.findMany({
@@ -177,6 +500,7 @@ export async function runWeeklyMatching(weekStart: Date) {
             select: { questionId: true, value: true },
         });
         vectors[user.id] = buildVector(answers, questions);
+        allAnswers[user.id] = answers;
     }
 
     // 4. Sort by signup date (older first for fairness)
@@ -214,10 +538,14 @@ export async function runWeeklyMatching(weekStart: Date) {
         scored.sort((a, b) => b.score - a.score);
 
         const best = scored[0];
-        const explanationStr = explain(
+        const reasons = explainDetailed(
+            allAnswers[user.id],
+            allAnswers[best.candidate.id],
+            questions,
             vectors[user.id],
             vectors[best.candidate.id]
         );
+        const explanationStr = JSON.stringify(reasons);
 
         matches.push({
             userAId: user.id,

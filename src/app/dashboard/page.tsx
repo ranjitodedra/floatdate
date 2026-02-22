@@ -259,9 +259,30 @@ export default function DashboardPage() {
                                 </div>
                             </div>
 
-                            <p className="text-sm text-zinc-500 italic">
-                                &ldquo;{match.explanation}&rdquo;
-                            </p>
+                            <div className="mt-4">
+                                <p className="text-sm font-semibold text-zinc-700 mb-2">
+                                    Here&apos;s why:
+                                </p>
+                                {(() => {
+                                    // Parse explanation as JSON array, with fallback for legacy string format
+                                    let reasons: string[];
+                                    try {
+                                        reasons = JSON.parse(match.explanation);
+                                        if (!Array.isArray(reasons)) {
+                                            reasons = [match.explanation];
+                                        }
+                                    } catch {
+                                        reasons = [match.explanation];
+                                    }
+                                    return (
+                                        <ul className="list-disc list-inside space-y-1 text-sm text-zinc-600">
+                                            {reasons.map((reason, idx) => (
+                                                <li key={idx}>{reason}</li>
+                                            ))}
+                                        </ul>
+                                    );
+                                })()}
+                            </div>
 
                             <p className="text-xs text-zinc-400">
                                 Check your email for their contact info 💜
