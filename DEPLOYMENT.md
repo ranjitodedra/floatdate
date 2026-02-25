@@ -90,6 +90,10 @@ In your Vercel project dashboard, go to **Settings → Environment Variables** a
 | `EMAIL_PASS` | Gmail App Password | See Gmail setup below |
 | `EMAILS_ENABLED` | `true` | Literal string `true` |
 | `NEXT_PUBLIC_APP_URL` | Your Vercel URL | e.g., `https://floatdate.vercel.app` |
+| `VERIFY_EMAIL_HOST` | `mail.privateemail.com` | PrivateMail SMTP host |
+| `VERIFY_EMAIL_PORT` | `465` | PrivateMail SMTP port (SSL) |
+| `VERIFY_EMAIL_USER` | `verify@floatdate.com` | PrivateMail email address |
+| `VERIFY_EMAIL_PASS` | Your PrivateMail password | Password for verify@floatdate.com |
 
 ### Optional Variables
 
@@ -164,9 +168,11 @@ Replace:
 - Ensure connection string uses pooler (port 5432 or 6543), not direct connection (port 5432 with `db.[ref].supabase.co` hostname)
 
 ### Email not sending
-- Verify `EMAIL_USER` and `EMAIL_PASS` are correct
+- Verify `EMAIL_USER` and `EMAIL_PASS` are correct (for match emails via Gmail)
+- Verify `VERIFY_EMAIL_*` variables are correct (for verification/reset emails via PrivateMail)
 - Ensure `EMAILS_ENABLED` is set to `true` (not `"true"` or `True`)
 - Check Gmail App Password is valid (regenerate if needed)
+- Check PrivateMail password is correct for verify@floatdate.com
 
 ### Cron job not running
 - Weekly cron (`0 0 * * 1`) requires Vercel **Pro plan**
@@ -189,6 +195,10 @@ EMAILS_ENABLED=true
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 EMAIL_FROM_NAME=FloatDate Team
 EMAIL_FROM=your-email@gmail.com
+VERIFY_EMAIL_HOST=mail.privateemail.com
+VERIFY_EMAIL_PORT=465
+VERIFY_EMAIL_USER=verify@floatdate.com
+VERIFY_EMAIL_PASS=your-privatemail-password
 ```
 
 ---

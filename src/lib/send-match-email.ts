@@ -1,4 +1,4 @@
-import { sendEmail } from "./email";
+import { sendEmail, sendVerifyEmail } from "./email";
 import { prisma } from "./db";
 
 // ─── Verification Email ───────────────────────────────────────
@@ -16,7 +16,7 @@ export async function sendVerificationEmail(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const verifyUrl = `${appUrl}/verify-email/confirm?token=${token}`;
 
-    const result = await sendEmail({
+    const result = await sendVerifyEmail({
         to,
         subject: "Verify your FloatDate account ✉️",
         html: `
@@ -39,7 +39,7 @@ export async function sendVerificationEmail(
           </div>
         </div>
       `,
-        replyTo: "support@dropdate.app",
+        replyTo: "support@floatdate.com",
     });
 
     if (!result.success) {
@@ -64,7 +64,7 @@ export async function sendPasswordResetEmail(
         return { status: "skipped" };
     }
 
-    const result = await sendEmail({
+    const result = await sendVerifyEmail({
         to,
         subject: "Reset your FloatDate password 🔑",
         html: `
@@ -87,7 +87,7 @@ export async function sendPasswordResetEmail(
           </div>
         </div>
       `,
-        replyTo: "support@dropdate.app",
+        replyTo: "support@floatdate.com",
     });
 
     if (!result.success) {
