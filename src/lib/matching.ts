@@ -443,7 +443,7 @@ export function explainDetailed(
 }
 
 // ---------- Hard Filters ----------
-function passesHardFilters(a: UserForMatching, b: UserForMatching): boolean {
+export function passesHardFilters(a: UserForMatching, b: UserForMatching): boolean {
     // Mutual gender preference
     const aAcceptsB =
         a.genderPref === "any" || a.genderPref === b.gender;
