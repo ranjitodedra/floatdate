@@ -190,7 +190,7 @@ export async function sendMatchEmail(
         to,
         subject: "Your FloatDate match is here 💜",
         html,
-        replyTo: "support@dropdate.app",
+        replyTo: "support@floatdate.com",
     });
 
     if (!result.success) {
@@ -244,7 +244,7 @@ export async function sendNoMatchEmail(
         to,
         subject: "FloatDate update for this week 💛",
         html,
-        replyTo: "support@dropdate.app",
+        replyTo: "support@floatdate.com",
     });
 
     if (!result.success) {
@@ -252,6 +252,43 @@ export async function sendNoMatchEmail(
     }
 
     return { status: "sent", messageId: result.messageId };
+}
+
+// ─── Send with Retry ──────────────────────────────────────────
+
+const SEND_DELAY_MS = 3000; // 3 seconds between emails
+const RETRY_DELAY_MS = 5000; // 5 seconds before retry
+
+async function sendMatchEmailWithRetry(
+    to: string,
+    recipientName: string,
+    matchName: string,
+    matchEmail: string,
+    matchBio: string | null,
+    explanation: string,
+    similarityScore: number
+): Promise<{ status: string; messageId?: string }> {
+    const result = await sendMatchEmail(
+        to, recipientName, matchName, matchEmail, matchBio, explanation, similarityScore
+    );
+
+    if (result.status === "sent" || result.status === "skipped") {
+        return result;
+    }
+
+    // Retry once after a delay
+    console.log(`[EMAIL RETRY] First attempt failed for ${to}, retrying in ${RETRY_DELAY_MS / 1000}s...`);
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+
+    const retry = await sendMatchEmail(
+        to, recipientName, matchName, matchEmail, matchBio, explanation, similarityScore
+    );
+
+    if (retry.status !== "sent") {
+        console.error(`[EMAIL RETRY] Second attempt also failed for ${to}`);
+    }
+
+    return retry;
 }
 
 // ─── Batch Send Match Emails ──────────────────────────────────
@@ -290,8 +327,8 @@ export async function sendMatchEmails(
 
         const matchId = dbMatch?.id || "unknown";
 
-        // Send to User A
-        const resultA = await sendMatchEmail(
+        // Send to User A (with retry)
+        const resultA = await sendMatchEmailWithRetry(
             userA.email,
             userA.name,
             userB.name,
@@ -311,10 +348,10 @@ export async function sendMatchEmails(
         });
 
         if (resultA.status === "sent") sent++;
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, SEND_DELAY_MS));
 
-        // Send to User B
-        const resultB = await sendMatchEmail(
+        // Send to User B (with retry)
+        const resultB = await sendMatchEmailWithRetry(
             userB.email,
             userB.name,
             userA.name,
@@ -334,7 +371,7 @@ export async function sendMatchEmails(
         });
 
         if (resultB.status === "sent") sent++;
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, SEND_DELAY_MS));
     }
 
     return sent;
