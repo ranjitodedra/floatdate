@@ -2,19 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runWeeklyMatching } from "@/lib/matching";
 import { sendMatchEmails, sendNoMatchEmail } from "@/lib/send-match-email";
 import { prisma } from "@/lib/db";
-
-function getWeekStart(): Date {
-    const now = new Date();
-    const day = now.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday, ..., 6 = Saturday
-    // Calculate days to subtract to get to the most recent Wednesday (day 3)
-    // If today is Wednesday or later (3-6), subtract (day - 3)
-    // If today is before Wednesday (0-2), subtract (day + 4) to go to previous Wednesday
-    const diff = day >= 3 ? day - 3 : day + 4;
-    const wednesday = new Date(now);
-    wednesday.setUTCDate(now.getUTCDate() - diff);
-    wednesday.setUTCHours(0, 0, 0, 0);
-    return wednesday;
-}
+import { getWeekStart, isMatchingTime } from "@/lib/week-cycle";
 
 export async function POST(req: NextRequest) {
     try {
@@ -34,6 +22,16 @@ export async function POST(req: NextRequest) {
                 { error: "Unauthorized" },
                 { status: 401 }
             );
+        }
+
+        // DST guard: two cron entries fire at 01:00 and 02:00 UTC Thursday.
+        // Only proceed if it's actually Wednesday 9 PM in America/Toronto.
+        if (!isMatchingTime()) {
+            console.log("Cron fired but it's not 9 PM Wednesday in Toronto. Skipping.");
+            return NextResponse.json({
+                skipped: true,
+                reason: "Not Wednesday 9 PM in America/Toronto (DST guard)",
+            });
         }
 
         const weekStart = getWeekStart();

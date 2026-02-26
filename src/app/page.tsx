@@ -105,7 +105,7 @@ export default function Home() {
               {
                 step: "02",
                 title: "Opt in weekly",
-                desc: "Opt in by Wednesday 9pm. Get your match at the same time at week’s end, along with why we think you’ll click.",
+                desc: "Opt in by Wednesday 9 PM ET. Get your match at the same time at week’s end, along with why we think you’ll click.",
                 icon: "✋",
                 image: "/images/step_2.png",
               },

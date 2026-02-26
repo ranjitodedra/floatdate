@@ -2,7 +2,11 @@
     "crons": [
         {
             "path": "/api/admin/run-matching",
-            "schedule": "0 21 * * 3"
+            "schedule": "0 1 * * 4"
+        },
+        {
+            "path": "/api/admin/run-matching",
+            "schedule": "0 2 * * 4"
         }
     ]
 }

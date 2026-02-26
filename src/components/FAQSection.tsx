@@ -30,7 +30,7 @@ const faqItems = [
   {
     question: "How often do I get matched?",
     answer:
-      "Once per week. Opt in by Wednesday 9 PM and you'll receive your match along with a note explaining why you were paired.",
+      "Once per week. Opt in by Wednesday 9 PM ET and you'll receive your match along with a note explaining why you were paired.",
   },
   {
     question: "Will I ever be matched with the same person twice?",
@@ -82,9 +82,8 @@ export default function FAQSection() {
                   {item.question}
                 </span>
                 <span
-                  className={`text-zinc-500 text-2xl font-light transition-transform duration-200 flex-shrink-0 ${
-                    openIndex === index ? "rotate-180" : ""
-                  }`}
+                  className={`text-zinc-500 text-2xl font-light transition-transform duration-200 flex-shrink-0 ${openIndex === index ? "rotate-180" : ""
+                    }`}
                 >
                   ▼
                 </span>

@@ -63,53 +63,104 @@ export default function DashboardPage() {
         fetchData();
     }, [fetchData]);
 
-    // Countdown timer
+    // Countdown timer — targets next Wednesday 9:00 PM America/Toronto
     useEffect(() => {
-        function updateCountdown() {
+        function getNextWednesday9pmET(): Date {
             const now = new Date();
-            const dayOfWeek = now.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 3 = Wednesday, ..., 6 = Saturday
-            const currentHour = now.getUTCHours();
-            const currentMinute = now.getUTCMinutes();
-            const currentSecond = now.getUTCSeconds();
-            
-            // Calculate next Wednesday 21:00 UTC (cron schedule: "0 21 * * 3")
-            let daysUntilWednesday;
+            // Use Intl to figure out what day/hour it is in Toronto
+            const torontoParts = new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/Toronto",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false,
+                weekday: "short",
+            }).formatToParts(now);
+
+            const get = (type: string) =>
+                torontoParts.find((p) => p.type === type)?.value ?? "";
+
+            const weekday = get("weekday"); // "Wed", "Thu", etc.
+            const hour = parseInt(get("hour"), 10);
+            const year = parseInt(get("year"), 10);
+            const month = parseInt(get("month"), 10) - 1; // 0-indexed
+            const day = parseInt(get("day"), 10);
+
+            // Map weekday string to numeric (0=Sun)
+            const dayMap: Record<string, number> = {
+                Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+            };
+            const dayOfWeek = dayMap[weekday] ?? 0;
+
+            let daysUntilWed: number;
             if (dayOfWeek === 3) {
-                // Today is Wednesday
-                if (currentHour < 21 || (currentHour === 21 && currentMinute === 0 && currentSecond === 0)) {
-                    // Before or at 21:00 UTC today, countdown to today's 21:00
-                    daysUntilWednesday = 0;
-                } else {
-                    // After 21:00 UTC today, countdown to next Wednesday
-                    daysUntilWednesday = 7;
-                }
+                daysUntilWed = hour < 21 ? 0 : 7;
             } else if (dayOfWeek < 3) {
-                // Sunday (0), Monday (1), Tuesday (2) - next Wednesday is (3 - dayOfWeek) days away
-                daysUntilWednesday = 3 - dayOfWeek;
+                daysUntilWed = 3 - dayOfWeek;
             } else {
-                // Thursday (4), Friday (5), Saturday (6) - next Wednesday is (10 - dayOfWeek) days away
-                daysUntilWednesday = 10 - dayOfWeek;
+                daysUntilWed = 10 - dayOfWeek;
             }
 
-            const nextWednesday = new Date(now);
-            nextWednesday.setUTCDate(now.getUTCDate() + daysUntilWednesday);
-            nextWednesday.setUTCHours(21, 0, 0, 0);
+            // Build target date in Toronto local time
+            const targetLocalDate = new Date(year, month, day + daysUntilWed);
 
-            const diff = nextWednesday.getTime() - now.getTime();
-            
-            // Ensure we have a valid positive difference
+            // We need the UTC equivalent of "targetLocalDate 21:00 Toronto".
+            // Create a temp date and use Intl to find the Toronto offset at that date.
+            const tempDate = new Date(
+                Date.UTC(
+                    targetLocalDate.getFullYear(),
+                    targetLocalDate.getMonth(),
+                    targetLocalDate.getDate(),
+                    21, 0, 0, 0,
+                ),
+            );
+            // Get Toronto's formatted time at this UTC instant to derive offset
+            const probe = new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/Toronto",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+                day: "2-digit",
+            }).formatToParts(tempDate);
+            const probeHour = parseInt(
+                probe.find((p) => p.type === "hour")?.value ?? "0",
+                10,
+            );
+            const probeDay = parseInt(
+                probe.find((p) => p.type === "day")?.value ?? "0",
+                10,
+            );
+
+            // Toronto hour at tempDate(UTC). Offset = torontoHour - utcHour (21).
+            // Account for day rollover.
+            let offsetHours = probeHour - 21;
+            if (probeDay > targetLocalDate.getDate()) offsetHours += 24;
+            if (probeDay < targetLocalDate.getDate()) offsetHours -= 24;
+
+            // Wed 9 PM Toronto = Wed 9 PM UTC minus offset
+            const targetUTC = new Date(
+                Date.UTC(
+                    targetLocalDate.getFullYear(),
+                    targetLocalDate.getMonth(),
+                    targetLocalDate.getDate(),
+                    21 - offsetHours, 0, 0, 0,
+                ),
+            );
+
+            return targetUTC;
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const target = getNextWednesday9pmET();
+            let diff = target.getTime() - now.getTime();
+
             if (diff <= 0) {
-                // If somehow the calculation is wrong, default to next Wednesday
-                const fallbackWednesday = new Date(now);
-                fallbackWednesday.setUTCDate(now.getUTCDate() + 7);
-                fallbackWednesday.setUTCHours(21, 0, 0, 0);
-                const fallbackDiff = fallbackWednesday.getTime() - now.getTime();
-                const days = Math.floor(fallbackDiff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((fallbackDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((fallbackDiff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((fallbackDiff % (1000 * 60)) / 1000);
-                setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-                return;
+                // Safety fallback: add 7 days
+                diff = target.getTime() + 7 * 24 * 60 * 60 * 1000 - now.getTime();
             }
 
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -182,7 +233,7 @@ export default function DashboardPage() {
                         Next matching round
                     </p>
                     <p className="text-3xl font-bold text-zinc-900 font-mono">{countdown}</p>
-                    <p className="text-xs text-zinc-400 mt-1">Wednesday 21:00 UTC</p>
+                    <p className="text-xs text-zinc-400 mt-1">Wednesday 9:00 PM ET</p>
                 </div>
 
                 {/* Opt-in Card */}
@@ -293,7 +344,7 @@ export default function DashboardPage() {
                             <p className="text-zinc-300 text-4xl mb-3">💜</p>
                             <p className="text-zinc-500">No match this week</p>
                             <p className="text-zinc-400 text-sm mt-1">
-                                Make sure you&apos;re opted in before Wednesday
+                                Make sure you&apos;re opted in before Wednesday 9 PM ET
                             </p>
                         </div>
                     )}
