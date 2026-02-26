@@ -23,7 +23,7 @@ export default function DashboardPage() {
     const [optingIn, setOptingIn] = useState(false);
     const [match, setMatch] = useState<MatchData | null>(null);
     const [countdown, setCountdown] = useState("");
-    const [user, setUser] = useState<{ name: string; completedSetup: boolean } | null>(null);
+    const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean } | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -219,12 +219,22 @@ export default function DashboardPage() {
                             Hey, {user?.name || "there"} 👋
                         </p>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm text-zinc-400 hover:text-zinc-700 transition"
-                    >
-                        Log out
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {user?.email === "ranjitodedra.dev@gmail.com" && (
+                            <a
+                                href="/admin"
+                                className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                            >
+                                Admin
+                            </a>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                        >
+                            Log out
+                        </button>
+                    </div>
                 </div>
 
                 {/* Countdown Card */}
