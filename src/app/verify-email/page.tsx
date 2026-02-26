@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 
 function VerifyEmailContent() {
@@ -11,12 +11,37 @@ function VerifyEmailContent() {
     const emailFailed = searchParams.get("emailFailed") === "true";
     const [resending, setResending] = useState(false);
     const [resendMsg, setResendMsg] = useState("");
+    const [countdown, setCountdown] = useState(120); // 2 minutes in seconds
 
     const errorMessages: Record<string, string> = {
         "missing-token": "No verification token found. Please check your email for the correct link.",
         "invalid-token": "This verification link is invalid. It may have already been used.",
         "expired-token": "This verification link has expired. Please request a new one below.",
         "server-error": "Something went wrong. Please try again later.",
+    };
+
+    // Countdown timer effect
+    useEffect(() => {
+        if (countdown > 0 && !error && !emailFailed) {
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            return () => clearInterval(timer);
+        }
+    }, [countdown, error, emailFailed]);
+
+    // Format countdown as M:SS
+    const formatTime = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
     async function handleResend() {
@@ -31,6 +56,7 @@ function VerifyEmailContent() {
             const data = await res.json();
             if (res.ok) {
                 setResendMsg("Verification email sent! Check your inbox.");
+                setCountdown(120); // Reset timer to 2 minutes
             } else {
                 setResendMsg(data.error || "Failed to resend.");
             }
@@ -95,21 +121,32 @@ function VerifyEmailContent() {
                                 </>
                             ) : (
                                 <>
-                                    <div className="bg-red-50 border-2 border-red-500 rounded-xl p-5 my-4">
-                                        <p className="text-sm text-red-900 font-bold leading-relaxed">
-                                            Verification is not instant and may take some time to process (like really, but you will receive verification mail for sure). Please keep an eye on your inbox (especially spam/junk folder). If you don't receive anything after a while, feel free to reach out:{" "}
-                                            <a
-                                                href="mailto:team.floatdate@gmail.com"
-                                                className="text-red-700 underline hover:text-red-800 font-bold"
-                                            >
-                                                team.floatdate@gmail.com
-                                            </a>
-                                        </p>
-                                    </div>
+                                    {countdown > 0 ? (
+                                        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 my-4">
+                                            <p className="text-sm text-zinc-700 leading-relaxed">
+                                                You should receive your email within{" "}
+                                                <span className="font-semibold text-zinc-900 text-base">
+                                                    {formatTime(countdown)}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 my-4">
+                                            <p className="text-sm text-zinc-700 leading-relaxed">
+                                                Didn&apos;t get it? Try resending or check your spam folder. If you still don&apos;t receive anything, feel free to reach out:{" "}
+                                                <a
+                                                    href="mailto:team.floatdate@gmail.com"
+                                                    className="text-zinc-900 underline hover:text-zinc-800 font-medium"
+                                                >
+                                                    team.floatdate@gmail.com
+                                                </a>
+                                            </p>
+                                        </div>
+                                    )}
                                     <button
                                         onClick={handleResend}
-                                        disabled={resending}
-                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                        disabled={resending || countdown > 0}
+                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {resending ? "Sending..." : "Resend Verification Email"}
                                     </button>

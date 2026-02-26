@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import Image from "next/image";
 
 export default function ForgotPasswordPage() {
@@ -8,6 +8,7 @@ export default function ForgotPasswordPage() {
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState("");
+    const [countdown, setCountdown] = useState(120); // 2 minutes in seconds
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -28,12 +29,37 @@ export default function ForgotPasswordPage() {
             }
 
             setSubmitted(true);
+            setCountdown(120); // Start countdown when email is sent
         } catch {
             setError("Something went wrong. Please try again.");
         } finally {
             setLoading(false);
         }
     }
+
+    // Countdown timer effect
+    useEffect(() => {
+        if (countdown > 0 && submitted) {
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            return () => clearInterval(timer);
+        }
+    }, [countdown, submitted]);
+
+    // Format countdown as M:SS
+    const formatTime = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
@@ -56,11 +82,22 @@ export default function ForgotPasswordPage() {
                             <h2 className="text-xl font-semibold text-zinc-900">
                                 Check your inbox
                             </h2>
-                            <p className="text-zinc-500 text-sm">
-                                If an account with that email exists, we&apos;ve
-                                sent a password reset link. Please also check
-                                your spam/junk folder.
-                            </p>
+                            {countdown > 0 ? (
+                                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4">
+                                    <p className="text-sm text-zinc-700">
+                                        You should receive your email within{" "}
+                                        <span className="font-semibold text-zinc-900 text-base">
+                                            {formatTime(countdown)}
+                                        </span>
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-zinc-500 text-sm">
+                                    If an account with that email exists, we&apos;ve
+                                    sent a password reset link. Please also check
+                                    your spam/junk folder.
+                                </p>
+                            )}
                             <a
                                 href="/login"
                                 className="inline-block text-sm text-zinc-900 font-medium hover:underline transition"
