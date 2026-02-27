@@ -503,10 +503,38 @@ export async function runWeeklyMatching(weekStart: Date) {
         allAnswers[user.id] = answers;
     }
 
-    // 4. Sort by signup date (older first for fairness)
-    const sortedUsers = users.sort(
-        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    // 4. Determine carry-forward priority (unmatched from previous cycle)
+    //    Users who opted in last week but didn't get matched get sorted first.
+    const prevWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const prevOptIns = await prisma.weeklyOptIn.findMany({
+        where: { weekStart: prevWeekStart },
+        select: { userId: true },
+    });
+
+    const prevMatches = await prisma.match.findMany({
+        where: { weekStart: prevWeekStart },
+        select: { userAId: true, userBId: true },
+    });
+
+    const prevMatchedIds = new Set(
+        prevMatches.flatMap((m) => [m.userAId, m.userBId])
     );
+
+    // Priority = opted in last week AND not matched last week AND opted in this week
+    const priorityUserIds = new Set(
+        prevOptIns
+            .filter((o) => !prevMatchedIds.has(o.userId))
+            .map((o) => o.userId)
+    );
+
+    // Sort: priority users first, then by signup date (older first)
+    const sortedUsers = users.sort((a, b) => {
+        const aPri = priorityUserIds.has(a.id) ? 0 : 1;
+        const bPri = priorityUserIds.has(b.id) ? 0 : 1;
+        if (aPri !== bPri) return aPri - bPri;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+    });
 
     // 5. Greedy matching
     const matchedIds = new Set<string>();
@@ -569,6 +597,7 @@ export async function runWeeklyMatching(weekStart: Date) {
     return {
         matched: matches.length * 2,
         unmatched: users.length - matches.length * 2,
+        priorityUsers: users.filter((u) => priorityUserIds.has(u.id)).length,
         matches,
     };
 }
