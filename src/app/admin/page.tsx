@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
@@ -34,6 +36,14 @@ interface PreviewResult {
     unmatched: UnmatchedUser[];
 }
 
+interface WeekHistory {
+    weekNumber: number;
+    weekStart: string;
+    weekEnd: string;
+    totalOptedIn: number;
+    users: OptedInUser[];
+}
+
 export default function AdminPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -43,6 +53,11 @@ export default function AdminPage() {
     const [preview, setPreview] = useState<PreviewResult | null>(null);
     const [previewing, setPreviewing] = useState(false);
     const [error, setError] = useState("");
+    const [weekHistory, setWeekHistory] = useState<WeekHistory[]>([]);
+    const [historyGrandTotal, setHistoryGrandTotal] = useState(0);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set());
 
     const fetchOptedIn = useCallback(async () => {
         try {
@@ -65,6 +80,34 @@ export default function AdminPage() {
             setLoading(false);
         }
     }, []);
+
+    const fetchWeekHistory = useCallback(async () => {
+        setHistoryLoading(true);
+        try {
+            const res = await fetch("/api/admin/opted-in-history");
+            if (!res.ok) throw new Error("Failed to fetch history");
+            const data = await res.json();
+            setWeekHistory(data.weeks);
+            setHistoryGrandTotal(data.grandTotal);
+        } catch (err) {
+            console.error("History fetch error:", err);
+            setError("Failed to load opt-in history.");
+        } finally {
+            setHistoryLoading(false);
+        }
+    }, []);
+
+    const toggleWeekExpanded = (weekNumber: number) => {
+        setExpandedWeeks((prev) => {
+            const next = new Set(prev);
+            if (next.has(weekNumber)) {
+                next.delete(weekNumber);
+            } else {
+                next.add(weekNumber);
+            }
+            return next;
+        });
+    };
 
     useEffect(() => {
         fetchOptedIn();
@@ -210,6 +253,136 @@ export default function AdminPage() {
                                 </tbody>
                             </table>
                         </div>
+                    )}
+                </div>
+
+                {/* Weekly Opt-In History Section */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-lg font-semibold text-zinc-900">
+                                Weekly Opt-In History
+                            </h2>
+                            <p className="text-zinc-400 text-sm mt-1">
+                                Breakdown of opted-in users by week
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (!showHistory && weekHistory.length === 0) {
+                                    fetchWeekHistory();
+                                }
+                                setShowHistory(!showHistory);
+                            }}
+                            className="px-4 py-2 bg-zinc-100 text-zinc-700 font-medium rounded-xl hover:bg-zinc-200 transition-all duration-200 text-sm"
+                        >
+                            {showHistory ? "Hide History" : "Show History"}
+                        </button>
+                    </div>
+
+                    {showHistory && (
+                        <>
+                            {historyLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="w-6 h-6 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : weekHistory.length === 0 ? (
+                                <p className="text-zinc-400 text-sm text-center py-6">
+                                    No opt-in history found.
+                                </p>
+                            ) : (
+                                <>
+                                    {/* Summary Table */}
+                                    <div className="overflow-x-auto mb-4">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-zinc-100">
+                                                    <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Week</th>
+                                                    <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Date Range</th>
+                                                    <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Opted In</th>
+                                                    <th className="text-left py-2 text-zinc-400 font-medium"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {weekHistory.map((week) => (
+                                                    <React.Fragment key={`week-${week.weekNumber}`}>
+                                                        <tr
+                                                            className="border-b border-zinc-50 hover:bg-zinc-50 transition cursor-pointer"
+                                                            onClick={() => toggleWeekExpanded(week.weekNumber)}
+                                                        >
+                                                            <td className="py-2.5 pr-4 text-zinc-900 font-medium">
+                                                                Week {week.weekNumber}
+                                                            </td>
+                                                            <td className="py-2.5 pr-4 text-zinc-500">
+                                                                {formatDate(week.weekStart)} → {formatDate(week.weekEnd)}
+                                                            </td>
+                                                            <td className="py-2.5 pr-4">
+                                                                <span className="bg-zinc-100 text-zinc-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                                                                    {week.totalOptedIn}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2.5 text-zinc-400 text-xs">
+                                                                {expandedWeeks.has(week.weekNumber) ? "▲" : "▼"}
+                                                            </td>
+                                                        </tr>
+                                                        {expandedWeeks.has(week.weekNumber) && (
+                                                            <tr key={`detail-${week.weekNumber}`}>
+                                                                <td colSpan={4} className="py-2 px-4">
+                                                                    <div className="bg-zinc-50 rounded-xl p-4">
+                                                                        <table className="w-full text-xs">
+                                                                            <thead>
+                                                                                <tr className="border-b border-zinc-200">
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">#</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Name</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Email</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">City</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Gender</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Pref</th>
+                                                                                    <th className="text-left py-1.5 text-zinc-400 font-medium">Setup</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {week.users.map((u, idx) => (
+                                                                                    <tr key={u.id} className="border-b border-zinc-100">
+                                                                                        <td className="py-1.5 pr-3 text-zinc-400">{idx + 1}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-900 font-medium">{u.name}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-500">{u.email}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-500">{u.city}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-500 capitalize">{u.gender}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-500 capitalize">{u.genderPref}</td>
+                                                                                        <td className="py-1.5">
+                                                                                            {u.completedSetup ? (
+                                                                                                <span className="text-green-600">✓</span>
+                                                                                            ) : (
+                                                                                                <span className="text-red-400">✗</span>
+                                                                                            )}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                                <tr className="border-t-2 border-zinc-200">
+                                                    <td className="py-2.5 pr-4 text-zinc-900 font-bold">Total</td>
+                                                    <td className="py-2.5 pr-4"></td>
+                                                    <td className="py-2.5 pr-4">
+                                                        <span className="bg-zinc-900 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                                                            {historyGrandTotal}
+                                                        </span>
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </>
                     )}
                 </div>
 

@@ -48,6 +48,18 @@ export function getWeekStart(now: Date = new Date()): Date {
 }
 
 /**
+ * Returns the weekStart for the cycle that just ended (i.e. 7 days before
+ * the current getWeekStart). Used by the matching cron which fires at the
+ * boundary — at that instant getWeekStart() has already rolled forward,
+ * so we need to look back to find the users who opted in during the
+ * previous cycle.
+ */
+export function getPreviousWeekStart(now: Date = new Date()): Date {
+    const currentStart = getWeekStart(now);
+    return new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+}
+
+/**
  * Returns the *next* Wednesday 9:00 PM America/Toronto as a UTC Date.
  * This is the end of the current cycle / start of the next cycle.
  */

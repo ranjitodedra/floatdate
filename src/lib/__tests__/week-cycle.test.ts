@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getWeekStart, getNextWeekStart, isMatchingTime, formatTorontoTime } from "../week-cycle";
+import { getWeekStart, getNextWeekStart, getPreviousWeekStart, isMatchingTime, formatTorontoTime } from "../week-cycle";
 
 /**
  * Helper: build a UTC Date from an ISO string.
@@ -134,5 +134,24 @@ describe("formatTorontoTime", () => {
         expect(formatted).toContain("9:00");
         expect(formatted).toContain("PM");
         expect(formatted).toContain("ET");
+    });
+});
+
+describe("getPreviousWeekStart", () => {
+    it("returns exactly 7 days before getWeekStart", () => {
+        const now = utc("2026-01-15T15:00:00Z"); // Thu Jan 15
+        const current = getWeekStart(now);
+        const previous = getPreviousWeekStart(now);
+        const diffMs = current.getTime() - previous.getTime();
+        expect(diffMs).toBe(7 * 24 * 60 * 60 * 1000);
+    });
+
+    it("at Wednesday 9 PM boundary, returns the week before the one that just started", () => {
+        // Wed Jan 14 2026, exactly 9 PM EST = Jan 15 02:00 UTC
+        // getWeekStart returns this Wed (Jan 15 02:00 UTC)
+        // getPreviousWeekStart should return Jan 8 02:00 UTC
+        const now = utc("2026-01-15T02:00:00Z");
+        const previous = getPreviousWeekStart(now);
+        expect(previous.toISOString()).toBe("2026-01-08T02:00:00.000Z");
     });
 });

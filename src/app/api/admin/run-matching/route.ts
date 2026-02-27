@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runWeeklyMatching } from "@/lib/matching";
 import { sendMatchEmails, sendNoMatchEmail } from "@/lib/send-match-email";
 import { prisma } from "@/lib/db";
-import { getWeekStart, isMatchingTime } from "@/lib/week-cycle";
+import { getPreviousWeekStart, isMatchingTime } from "@/lib/week-cycle";
 
 export async function POST(req: NextRequest) {
     try {
@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const weekStart = getWeekStart();
+        // Match the week that just ended — at Wed 9 PM the week rolls forward,
+        // so we look back to find users who opted in during the previous cycle.
+        const weekStart = getPreviousWeekStart();
 
         // Run matching
         const result = await runWeeklyMatching(weekStart);
