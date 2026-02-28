@@ -2,8 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
+import { getSession } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession();
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Hero Section (dark, with background image) ── */}
@@ -24,20 +26,32 @@ export default function Home() {
         <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto w-full">
           <Image src="/images/icon.png" alt="FloatDate" width={120} height={40} className="drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
           <div className="flex gap-3">
-            <Link
-              href="/login"
-              className="px-5 py-2 text-sm text-white hover:text-white/80 transition"
-              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
-              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
-            >
-              Sign up
-            </Link>
+            {session ? (
+              <Link
+                href="/dashboard"
+                className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
+                style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-5 py-2 text-sm text-white hover:text-white/80 transition"
+                  style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
+                  style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         </nav>
 
@@ -47,12 +61,12 @@ export default function Home() {
             <div className="max-w-xl space-y-8">
               <h1
                 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-wide"
-                style={{ 
+                style={{
                   textShadow: "0 2px 16px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4)",
                   fontFamily: "var(--font-delius), sans-serif"
                 }}
               >
-                Dates minus 
+                Dates minus
                 <br />
                 the swipe fatigue.
                 <br />
@@ -68,19 +82,30 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row items-start gap-4">
-                <Link
-                  href="/signup"
-                  className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
-                >
-                  Get Started
-                </Link>
-                <Link
-                  href="/login"
-                  className="px-8 py-4 text-white hover:text-white/80 transition text-lg"
-                  style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}
-                >
-                  I have an account →
-                </Link>
+                {session ? (
+                  <Link
+                    href="/dashboard"
+                    className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
+                  >
+                    Go to Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
+                    >
+                      Get Started
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="px-8 py-4 text-white hover:text-white/80 transition text-lg"
+                      style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}
+                    >
+                      I have an account →
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
