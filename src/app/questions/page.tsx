@@ -81,9 +81,11 @@ function QuestionsContent() {
                 });
                 const data = await res.json();
 
-                if (isEditMode && currentIndex >= questions.length - 1) {
-                    // In edit mode, go back to dashboard after the last question
-                    router.push("/dashboard");
+                if (isEditMode) {
+                    // In edit mode, only redirect after the very last question
+                    if (currentIndex >= questions.length - 1) {
+                        router.push("/dashboard");
+                    }
                     return;
                 }
 
@@ -267,6 +269,14 @@ function QuestionsContent() {
                                 <span className="w-3 h-3 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
                                 Saving...
                             </span>
+                        )}
+                        {isEditMode && !saving && (
+                            <button
+                                onClick={() => router.push("/dashboard")}
+                                className="px-5 py-3 rounded-xl border border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 transition-all"
+                            >
+                                Dashboard
+                            </button>
                         )}
                     </div>
 

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const CONTACT_EMAIL = "team.floatdate@gmail.com";
+const CONTACT_EMAIL = "support@floatdate.com";
 
 export default function Footer() {
   return (

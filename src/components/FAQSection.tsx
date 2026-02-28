@@ -6,7 +6,7 @@ const faqItems = [
   {
     question: "I didn’t receive any verification email. What should I do?",
     answer:
-      "First, check your spam or junk folder just in case. If you still don’t see it, email team.floatdate@gmail.com from your Outlook address and we’ll manually verify your account.",
+      "First, check your spam or junk folder just in case. If you still don’t see it, email support@floatdate.com from your Outlook address and we’ll manually verify your account.",
   },
   {
     question: "Who can sign up?",

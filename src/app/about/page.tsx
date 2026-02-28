@@ -57,10 +57,10 @@ export default function AboutPage() {
           <p>
             If you have questions or feedback, reach out at{" "}
             <a
-              href="mailto:team.floatdate@gmail.com"
+              href="mailto:support@floatdate.com"
               className="text-zinc-900 underline underline-offset-2 hover:no-underline"
             >
-              team.floatdate@gmail.com
+              support@floatdate.com
             </a>
             .
           </p>

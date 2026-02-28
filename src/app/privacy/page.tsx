@@ -79,10 +79,10 @@ export default function PrivacyPage() {
               You can request access to your data or ask for your account and
               associated data to be deleted. To do so, contact us at{" "}
               <a
-                href="mailto:team.floatdate@gmail.com"
+                href="mailto:support@floatdate.com"
                 className="text-zinc-900 underline underline-offset-2 hover:no-underline"
               >
-                team.floatdate@gmail.com
+                support@floatdate.com
               </a>
               . We will respond within a reasonable time.
             </p>
@@ -94,10 +94,10 @@ export default function PrivacyPage() {
             <p>
               For privacy-related questions or requests, email{" "}
               <a
-                href="mailto:team.floatdate@gmail.com"
+                href="mailto:support@floatdate.com"
                 className="text-zinc-900 underline underline-offset-2 hover:no-underline"
               >
-                team.floatdate@gmail.com
+                support@floatdate.com
               </a>
               .
             </p>
