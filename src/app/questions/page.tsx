@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import QuestionCard from "@/components/QuestionCard";
 
@@ -15,8 +15,11 @@ interface Question {
 
 type AnswerValue = string | number | boolean | string[];
 
-export default function QuestionsPage() {
+function QuestionsContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const isEditMode = searchParams.get("edit") === "true";
+
     const [questions, setQuestions] = useState<Question[]>([]);
     const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,6 +37,21 @@ export default function QuestionsPage() {
                 if (data.questions) {
                     setQuestions(data.questions);
                 }
+
+                // In edit mode, pre-fill existing answers
+                if (isEditMode) {
+                    const profileRes = await fetch("/api/profile");
+                    if (profileRes.ok) {
+                        const profileData = await profileRes.json();
+                        if (profileData.answers) {
+                            const existingAnswers: Record<string, AnswerValue> = {};
+                            for (const [qId, val] of Object.entries(profileData.answers)) {
+                                existingAnswers[qId] = val as AnswerValue;
+                            }
+                            setAnswers(existingAnswers);
+                        }
+                    }
+                }
             } catch {
                 setError("Failed to load questions");
             } finally {
@@ -41,7 +59,7 @@ export default function QuestionsPage() {
             }
         }
         loadQuestions();
-    }, []);
+    }, [isEditMode]);
 
     // Ensure currentIndex is valid when questions change
     useEffect(() => {
@@ -63,6 +81,12 @@ export default function QuestionsPage() {
                 });
                 const data = await res.json();
 
+                if (isEditMode && currentIndex >= questions.length - 1) {
+                    // In edit mode, go back to dashboard after the last question
+                    router.push("/dashboard");
+                    return;
+                }
+
                 if (data.completedSetup) {
                     router.push("/dashboard");
                     return;
@@ -73,7 +97,7 @@ export default function QuestionsPage() {
                 setSaving(false);
             }
         },
-        [router]
+        [router, isEditMode, currentIndex, questions.length]
     );
 
     function handleAnswer(value: AnswerValue) {
@@ -84,10 +108,10 @@ export default function QuestionsPage() {
 
     async function goNext() {
         if (animating || saving) return;
-        
+
         const q = questions[currentIndex];
         if (!q) return;
-        
+
         const val = answers[q.id];
 
         if (val === undefined || val === null) {
@@ -112,7 +136,7 @@ export default function QuestionsPage() {
 
     function goBack() {
         if (animating) return;
-        
+
         if (currentIndex > 0) {
             setError("");
             setDirection("prev");
@@ -144,7 +168,7 @@ export default function QuestionsPage() {
     }
 
     const current = questions[currentIndex];
-    
+
     // Safety check: if current is undefined, reset to first question
     if (!current) {
         if (currentIndex !== 0 && questions.length > 0) {
@@ -169,12 +193,22 @@ export default function QuestionsPage() {
             <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-zinc-200 px-4 py-4">
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center justify-between mb-3">
-                        <Image
-                            src="/images/icon.png"
-                            alt="FloatDate"
-                            width={90}
-                            height={30}
-                        />
+                        <div className="flex items-center gap-3">
+                            <Image
+                                src="/images/icon.png"
+                                alt="FloatDate"
+                                width={90}
+                                height={30}
+                            />
+                            {isEditMode && (
+                                <button
+                                    onClick={() => router.push("/dashboard")}
+                                    className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                                >
+                                    ← Back to Dashboard
+                                </button>
+                            )}
+                        </div>
                         <span className="text-sm text-zinc-500 font-medium">
                             {currentIndex + 1}{" "}
                             <span className="text-zinc-300">/ {questions.length}</span>
@@ -195,10 +229,10 @@ export default function QuestionsPage() {
                 <div className="w-full max-w-2xl">
                     <div
                         className={`transition-all duration-250 ease-out ${animating
-                                ? direction === "next"
-                                    ? "opacity-0 translate-x-8"
-                                    : "opacity-0 -translate-x-8"
-                                : "opacity-100 translate-x-0"
+                            ? direction === "next"
+                                ? "opacity-0 translate-x-8"
+                                : "opacity-0 -translate-x-8"
+                            : "opacity-100 translate-x-0"
                             }`}
                     >
                         <QuestionCard
@@ -240,14 +274,28 @@ export default function QuestionsPage() {
                         onClick={goNext}
                         disabled={!hasAnswer || saving}
                         className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 ${hasAnswer
-                                ? "bg-zinc-900 text-white hover:bg-zinc-800"
-                                : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                            ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                            : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
                             }`}
                     >
-                        {currentIndex === questions.length - 1 ? "Finish ✓" : "Next →"}
+                        {currentIndex === questions.length - 1
+                            ? (isEditMode ? "Save Changes ✓" : "Finish ✓")
+                            : "Next →"}
                     </button>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function QuestionsPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+                <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <QuestionsContent />
+        </Suspense>
     );
 }

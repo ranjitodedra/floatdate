@@ -25,6 +25,13 @@ export default function DashboardPage() {
     const [countdown, setCountdown] = useState("");
     const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean } | null>(null);
 
+    // Edit profile state
+    const [editingBio, setEditingBio] = useState(false);
+    const [bio, setBio] = useState("");
+    const [bioInput, setBioInput] = useState("");
+    const [savingBio, setSavingBio] = useState(false);
+    const [bioMessage, setBioMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
     const fetchData = useCallback(async () => {
         try {
             // Check user status
@@ -52,6 +59,14 @@ export default function DashboardPage() {
             const matchRes = await fetch("/api/match/current");
             const matchData = await matchRes.json();
             setMatch(matchData.match);
+
+            // Fetch profile data (bio)
+            const profileRes = await fetch("/api/profile");
+            if (profileRes.ok) {
+                const profileData = await profileRes.json();
+                setBio(profileData.bio || "");
+                setBioInput(profileData.bio || "");
+            }
         } catch (err) {
             console.error("Dashboard fetch error:", err);
         } finally {
@@ -187,6 +202,31 @@ export default function DashboardPage() {
             console.error("Opt-in error:", err);
         } finally {
             setOptingIn(false);
+        }
+    }
+
+    async function handleSaveBio() {
+        setSavingBio(true);
+        setBioMessage(null);
+        try {
+            const res = await fetch("/api/profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ bio: bioInput }),
+            });
+            if (res.ok) {
+                setBio(bioInput);
+                setEditingBio(false);
+                setBioMessage({ type: "success", text: "Bio updated!" });
+                setTimeout(() => setBioMessage(null), 3000);
+            } else {
+                const data = await res.json();
+                setBioMessage({ type: "error", text: data.error || "Failed to update bio" });
+            }
+        } catch {
+            setBioMessage({ type: "error", text: "Failed to update bio" });
+        } finally {
+            setSavingBio(false);
         }
     }
 
@@ -359,7 +399,98 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Edit Profile Card */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-zinc-900 mb-4">
+                        Edit Profile
+                    </h2>
+
+                    {/* Bio Section */}
+                    <div className="mb-5">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium text-zinc-700">Your Bio</p>
+                            {!editingBio && (
+                                <button
+                                    onClick={() => {
+                                        setBioInput(bio);
+                                        setEditingBio(true);
+                                        setBioMessage(null);
+                                    }}
+                                    className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                                >
+                                    Edit
+                                </button>
+                            )}
+                        </div>
+
+                        {editingBio ? (
+                            <div className="space-y-3">
+                                <textarea
+                                    value={bioInput}
+                                    onChange={(e) => setBioInput(e.target.value)}
+                                    maxLength={300}
+                                    rows={3}
+                                    placeholder="Tell your match a bit about yourself..."
+                                    className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+                                />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-zinc-400">
+                                        {bioInput.length}/300
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setBioInput(bio);
+                                                setEditingBio(false);
+                                            }}
+                                            className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700 transition"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveBio}
+                                            disabled={savingBio}
+                                            className="px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                        >
+                                            {savingBio ? "Saving..." : "Save"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-zinc-500">
+                                {bio || "No bio set yet."}
+                            </p>
+                        )}
+
+                        {bioMessage && (
+                            <p className={`text-sm mt-2 ${bioMessage.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                                {bioMessage.text}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Edit Answers */}
+                    <div className="border-t border-zinc-100 pt-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-zinc-700">Your Answers</p>
+                                <p className="text-xs text-zinc-400 mt-0.5">
+                                    Update your question answers to improve matching
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => router.push("/questions?edit=true")}
+                                className="px-5 py-2 bg-zinc-100 text-zinc-700 text-sm font-semibold rounded-xl hover:bg-zinc-200 transition-all duration-200"
+                            >
+                                Edit Answers
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
+
