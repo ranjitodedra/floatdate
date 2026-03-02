@@ -18,6 +18,8 @@ model User {
   passwordHash   String
   completedSetup     Boolean      @default(false)
   emailVerified      Boolean      @default(true)
+  notifyPreference   String?
+  phoneVerified      Boolean      @default(false)
   createdAt          DateTime     @default(now())
 
   answers        Answer[]
@@ -25,6 +27,7 @@ model User {
   matchesA       Match[]      @relation("matchUserA")
   matchesB       Match[]      @relation("matchUserB")
   emailLogs      EmailLog[]
+  floatLiveParticipations FloatLiveParticipant[]
 }
 
 model Question {
@@ -114,4 +117,89 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+// ============================================
+// FLOAT LIVE — New models (additive migration)
+// ============================================
+
+model FloatLiveSession {
+  id             String   @id @default(uuid())
+  date           DateTime // The date of the live session (date only, no time)
+  startTime      DateTime // 5:00 PM ET converted to UTC
+  endTime        DateTime // 6:00 PM ET converted to UTC
+  createdAt      DateTime @default(now())
+
+  participants   FloatLiveParticipant[]
+  chatRooms      FloatLiveChatRoom[]
+}
+
+model FloatLiveParticipant {
+  id             String   @id @default(uuid())
+  userId         String
+  sessionId      String
+  gender         String   // "male" | "female" | "nonbinary" — copied from User at join time
+  preference     String   // "male" | "female" | "nonbinary" | "any" — who they want to chat with
+  intention      String   // "blind_date" | "friendship"
+  campus         String   // Campus filter value
+  isOnline       Boolean  @default(true)
+  acceptedTerms  Boolean  @default(false)
+  joinedAt       DateTime @default(now())
+  leftAt         DateTime?
+
+  user           User     @relation(fields: [userId], references: [id])
+  session        FloatLiveSession @relation(fields: [sessionId], references: [id])
+
+  chatRoomsAsA   FloatLiveChatRoom[] @relation("chatParticipantA")
+  chatRoomsAsB   FloatLiveChatRoom[] @relation("chatParticipantB")
+
+  @@unique([userId, sessionId])
+}
+
+model FloatLiveChatRoom {
+  id                String   @id @default(uuid())
+  sessionId         String
+  participantAId    String
+  participantBId    String
+  intention         String   // "blind_date" | "friendship"
+  emailRevealedByA  Boolean  @default(false)
+  emailRevealedByB  Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  startedAt         DateTime @default(now())
+  endedAt           DateTime?
+
+  session        FloatLiveSession @relation(fields: [sessionId], references: [id])
+  participantA   FloatLiveParticipant @relation("chatParticipantA", fields: [participantAId], references: [id])
+  participantB   FloatLiveParticipant @relation("chatParticipantB", fields: [participantBId], references: [id])
+
+  messages       FloatLiveChatMessage[]
+  reports        FloatLiveReport[]
+
+  @@unique([participantAId, participantBId, sessionId])
+}
+
+model FloatLiveChatMessage {
+  id           String   @id @default(uuid())
+  chatRoomId   String
+  senderId     String   // References User.id
+  content      String
+  isDeleted    Boolean  @default(false)  // Soft delete — hidden from UI, kept in DB
+  createdAt    DateTime @default(now())
+
+  chatRoom     FloatLiveChatRoom @relation(fields: [chatRoomId], references: [id])
+}
+
+model FloatLiveReport {
+  id            String   @id @default(uuid())
+  chatRoomId    String
+  reporterId    String   // User who reported
+  reportedId    String   // User who was reported
+  reason        String   // "harassment" | "spam" | "inappropriate" | "other"
+  details       String?  // Optional free-text details
+  status        String   @default("pending") // "pending" | "reviewed" | "action_taken" | "dismissed"
+  adminNotes    String?
+  createdAt     DateTime @default(now())
+  reviewedAt    DateTime?
+
+  chatRoom      FloatLiveChatRoom @relation(fields: [chatRoomId], references: [id])
 }

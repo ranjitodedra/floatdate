@@ -5,7 +5,7 @@ const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET || "dev-secret-change-in-production"
 );
 
-const protectedPaths = ["/dashboard", "/questions", "/admin"];
+const protectedPaths = ["/dashboard", "/questions", "/admin", "/float-live"];
 
 export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
@@ -27,5 +27,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*", "/questions/:path*", "/admin/:path*"],
+    matcher: ["/dashboard/:path*", "/questions/:path*", "/admin/:path*", "/float-live/:path*"],
 };
