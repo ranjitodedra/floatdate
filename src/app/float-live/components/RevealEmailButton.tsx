@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface RevealEmailButtonProps {
     chatRoomId: string;
@@ -17,6 +17,30 @@ export default function RevealEmailButton({
     const [loading, setLoading] = useState(false);
     const [partnerEmail, setPartnerEmail] = useState(initialPartnerEmail || null);
     const [waitingForPartner, setWaitingForPartner] = useState(false);
+
+    // Poll for partner reveal when waiting
+    useEffect(() => {
+        if (!waitingForPartner || revealed) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/float-live/chat/${chatRoomId}/reveal-email`, {
+                    method: "POST",
+                });
+                const data = await res.json();
+
+                if (data.bothRevealed) {
+                    setRevealed(true);
+                    setPartnerEmail(data.partnerEmail);
+                    setWaitingForPartner(false);
+                }
+            } catch {
+                /* ignore polling errors */
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [waitingForPartner, revealed, chatRoomId]);
 
     // In friendship mode, emails are visible from the start
     if (intention === "friendship") {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import PixelScene from "../../components/PixelScene";
 import TypingBar from "../../components/TypingBar";
 import TranscriptView from "../../components/TranscriptView";
@@ -21,18 +21,24 @@ interface Message {
 export default function ChatRoomPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const roomId = params.roomId as string;
+
+    // Character from URL params
+    const urlUserChar = searchParams.get("uc") || "A";
+    const urlPartnerChar = searchParams.get("pc") || "A";
 
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState("");
-    const [userGender, setUserGender] = useState("nonbinary");
-    const [partnerGender, setPartnerGender] = useState("nonbinary");
+    const [userCharacter, setUserCharacter] = useState(urlUserChar);
+    const [partnerCharacter, setPartnerCharacter] = useState(urlPartnerChar);
     const [partnerEmail, setPartnerEmail] = useState<string | null>(null);
     const [intention, setIntention] = useState("blind_date");
     const [messages, setMessages] = useState<Message[]>([]);
     const [showTranscript, setShowTranscript] = useState(false);
     const [minutesLeft, setMinutesLeft] = useState(60);
     const [chatEnded, setChatEnded] = useState(false);
+    const [partnerLeft, setPartnerLeft] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -49,7 +55,6 @@ export default function ChatRoomPage() {
                 }
                 const userData = await userRes.json();
                 setUserId(userData.user.id);
-                setUserGender(userData.user.gender);
 
                 // Get time status
                 const statusRes = await fetch("/api/float-live/status");
@@ -66,13 +71,16 @@ export default function ChatRoomPage() {
                     const sessionData = await sessionRes.json();
                     setSessionId(sessionData.session.id);
 
-                    // Get match status to learn partner gender
+                    // Get match status to learn partner details
                     const matchRes = await fetch(
                         `/api/float-live/match-status?sessionId=${sessionData.session.id}`
                     );
                     const matchData = await matchRes.json();
-                    if (matchData.partnerGender) {
-                        setPartnerGender(matchData.partnerGender);
+                    if (matchData.partnerCharacter) {
+                        setPartnerCharacter(matchData.partnerCharacter);
+                    }
+                    if (matchData.userCharacter) {
+                        setUserCharacter(matchData.userCharacter);
                     }
                     if (matchData.intention) {
                         setIntention(matchData.intention);
@@ -80,11 +88,8 @@ export default function ChatRoomPage() {
 
                     // If friendship mode, fetch partner email
                     if (matchData.intention === "friendship") {
-                        // Get chat room details to figure out partner
                         const msgsRes = await fetch(`/api/float-live/chat/${roomId}/messages`);
                         if (msgsRes.ok) {
-                            // For friendship mode the email is visible immediately
-                            // We'll do a reveal-email call to get it
                             const revealRes = await fetch(`/api/float-live/chat/${roomId}/reveal-email`, {
                                 method: "POST",
                             });
@@ -113,7 +118,7 @@ export default function ChatRoomPage() {
         init();
     }, [roomId, router]);
 
-    // Supabase Realtime subscription for new messages
+    // Supabase Realtime subscription for new messages + chat room exit detection
     useEffect(() => {
         if (!roomId) return;
 
@@ -136,12 +141,61 @@ export default function ChatRoomPage() {
                     });
                 }
             )
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "FloatLiveChatRoom",
+                    filter: `id=eq.${roomId}`,
+                },
+                (payload) => {
+                    const updated = payload.new as { isActive: boolean };
+                    if (!updated.isActive) {
+                        setPartnerLeft(true);
+                        setChatEnded(true);
+                    }
+                }
+            )
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
     }, [roomId]);
+
+    // Polling fallback for real-time chat — fetch messages every 3 seconds
+    // Also checks if the chat room is still active (partner exit detection)
+    useEffect(() => {
+        if (!roomId || chatEnded) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/float-live/chat/${roomId}/messages`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const fetched: Message[] = data.messages || [];
+
+                    // If the API returns roomActive === false, partner has left
+                    if (data.roomActive === false) {
+                        setPartnerLeft(true);
+                        setChatEnded(true);
+                        return;
+                    }
+
+                    setMessages((prev) => {
+                        // Merge fetched messages, dedup by id
+                        const existingIds = new Set(prev.map((m) => m.id));
+                        const newMsgs = fetched.filter((m) => !existingIds.has(m.id));
+                        if (newMsgs.length === 0) return prev;
+                        return [...prev, ...newMsgs];
+                    });
+                }
+            } catch { /* ignore polling errors */ }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [roomId, chatEnded]);
 
     // Auto-scroll on new messages
     useEffect(() => {
@@ -162,6 +216,15 @@ export default function ChatRoomPage() {
         }, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    // Auto-redirect when partner leaves
+    useEffect(() => {
+        if (!partnerLeft) return;
+        const timeout = setTimeout(() => {
+            router.push("/float-live");
+        }, 4000);
+        return () => clearTimeout(timeout);
+    }, [partnerLeft, router]);
 
     // Send message
     const handleSend = useCallback(
@@ -188,19 +251,6 @@ export default function ChatRoomPage() {
         [roomId]
     );
 
-    // Poll for email reveal status periodically (for blind date mode)
-    useEffect(() => {
-        if (intention !== "blind_date" || chatEnded) return;
-
-        const interval = setInterval(async () => {
-            try {
-                // Check reveal status without toggling (use a GET-like check via the existing POST)
-                // We just poll match-status which has the reveal info
-            } catch { /* ignore */ }
-        }, 10000);
-        return () => clearInterval(interval);
-    }, [intention, chatEnded]);
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900">
@@ -220,9 +270,9 @@ export default function ChatRoomPage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-900 flex flex-col">
+        <div className="h-screen bg-zinc-900 flex flex-col overflow-hidden">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700">
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <span className="text-lg">🎮</span>
                     <span className="text-white font-semibold text-sm">Float Live</span>
@@ -252,23 +302,34 @@ export default function ChatRoomPage() {
             </div>
 
             {/* Time warning */}
-            <div className="px-4 pt-2">
+            <div className="px-4 pt-2 flex-shrink-0">
                 <TimeWarning minutesLeft={minutesLeft} />
             </div>
 
-            {/* Pixel scene */}
-            <div className="flex-1 px-4 py-4">
+            {/* Pixel scene — constrained height so everything fits on screen */}
+            <div className="flex-1 min-h-0 px-4 py-2 flex items-center justify-center">
                 <PixelScene
-                    userGender={userGender}
-                    partnerGender={partnerGender}
+                    userCharacter={userCharacter}
+                    partnerCharacter={partnerCharacter}
                     userId={userId}
                     messages={messages}
                 />
             </div>
 
-            {/* Chat ended message */}
-            {chatEnded && (
-                <div className="px-4 pb-2">
+            {/* Partner left overlay */}
+            {partnerLeft && (
+                <div className="px-4 pb-2 flex-shrink-0">
+                    <div className="bg-red-900/30 border border-red-500/40 rounded-xl p-4 text-center animate-pulse">
+                        <p className="text-red-300 text-sm font-medium">
+                            😔 Your partner has left the chat. Redirecting to lobby...
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Chat ended message (session timeout) */}
+            {chatEnded && !partnerLeft && (
+                <div className="px-4 pb-2 flex-shrink-0">
                     <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-center">
                         <p className="text-zinc-400 text-sm">
                             Session ended. See you tomorrow at 5 PM! 👋
@@ -278,8 +339,8 @@ export default function ChatRoomPage() {
             )}
 
             {/* Typing bar */}
-            <div className="relative">
-                <TypingBar onSend={handleSend} disabled={chatEnded} />
+            <div className="relative flex-shrink-0">
+                <TypingBar onSend={handleSend} disabled={chatEnded || partnerLeft} />
             </div>
 
             <div ref={messagesEndRef} />

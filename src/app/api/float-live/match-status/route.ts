@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
                 ],
             },
             include: {
-                participantA: { select: { gender: true, userId: true } },
-                participantB: { select: { gender: true, userId: true } },
+                participantA: { select: { gender: true, character: true, userId: true } },
+                participantB: { select: { gender: true, character: true, userId: true } },
             },
         });
 
@@ -53,6 +53,8 @@ export async function GET(req: NextRequest) {
                 status: "matched",
                 chatRoomId: chatRoom.id,
                 partnerGender: partner.gender,
+                partnerCharacter: partner.character || "A",
+                userCharacter: (isA ? chatRoom.participantA : chatRoom.participantB).character || "A",
                 intention: chatRoom.intention,
             });
         }

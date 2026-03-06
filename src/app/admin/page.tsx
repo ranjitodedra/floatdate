@@ -59,6 +59,12 @@ export default function AdminPage() {
     const [showHistory, setShowHistory] = useState(false);
     const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set());
 
+    // Float Live Settings
+    const [flStartHour, setFlStartHour] = useState(17);
+    const [flEndHour, setFlEndHour] = useState(18);
+    const [flSettingsLoading, setFlSettingsLoading] = useState(false);
+    const [flSettingsSaved, setFlSettingsSaved] = useState(false);
+
     const fetchOptedIn = useCallback(async () => {
         try {
             const res = await fetch("/api/admin/opted-in");
@@ -111,7 +117,40 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchOptedIn();
+        // Fetch Float Live settings
+        fetch("/api/admin/float-live-settings")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (data) {
+                    setFlStartHour(data.startHour);
+                    setFlEndHour(data.endHour);
+                }
+            })
+            .catch(() => { });
     }, [fetchOptedIn]);
+
+    async function handleSaveFloatLiveSettings() {
+        setFlSettingsLoading(true);
+        setFlSettingsSaved(false);
+        try {
+            const res = await fetch("/api/admin/float-live-settings", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ startHour: flStartHour, endHour: flEndHour }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                setError(data.error || "Failed to save settings");
+            } else {
+                setFlSettingsSaved(true);
+                setTimeout(() => setFlSettingsSaved(false), 3000);
+            }
+        } catch {
+            setError("Failed to save Float Live settings.");
+        } finally {
+            setFlSettingsLoading(false);
+        }
+    }
 
     async function handlePreview() {
         setPreviewing(true);
@@ -188,6 +227,57 @@ export default function AdminPage() {
                     >
                         ← Dashboard
                     </button>
+                </div>
+
+                {/* Float Live Settings */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-lg font-semibold text-zinc-900">Float Live Settings</h2>
+                            <p className="text-zinc-400 text-sm mt-1">Configure the daily time window</p>
+                        </div>
+                        <button
+                            onClick={handleSaveFloatLiveSettings}
+                            disabled={flSettingsLoading || flStartHour >= flEndHour}
+                            className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                            {flSettingsLoading ? "Saving..." : flSettingsSaved ? "✓ Saved" : "Save"}
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">Start Hour (ET)</label>
+                            <select
+                                value={flStartHour}
+                                onChange={(e) => setFlStartHour(Number(e.target.value))}
+                                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                            >
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <option key={i} value={i}>
+                                        {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <span className="text-zinc-400 text-lg mt-5">→</span>
+                        <div className="flex-1">
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">End Hour (ET)</label>
+                            <select
+                                value={flEndHour}
+                                onChange={(e) => setFlEndHour(Number(e.target.value))}
+                                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                            >
+                                {Array.from({ length: 24 }, (_, i) => (
+                                    <option key={i} value={i}>
+                                        {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    {flStartHour >= flEndHour && (
+                        <p className="text-red-500 text-xs mt-2">Start hour must be before end hour.</p>
+                    )}
                 </div>
 
                 {error && (

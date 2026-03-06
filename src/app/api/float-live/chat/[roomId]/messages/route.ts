@@ -50,7 +50,7 @@ export async function GET(
             },
         });
 
-        return NextResponse.json({ messages });
+        return NextResponse.json({ messages, roomActive: chatRoom.isActive });
     } catch (error) {
         console.error("Float Live messages error:", error);
         return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });

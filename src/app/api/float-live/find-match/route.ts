@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = isFloatLiveActive();
+        const { active } = await isFloatLiveActive();
         if (!active) {
             return NextResponse.json(
                 { error: "Float Live is only available 5-6 PM ET" },
@@ -94,17 +94,72 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Create chat room
-        const chatRoom = await prisma.floatLiveChatRoom.create({
-            data: {
+        // Check if an inactive room already exists between these two participants
+        // If so, reactivate it instead of creating a new one (avoids unique constraint)
+        const existingPairRoom = await prisma.floatLiveChatRoom.findFirst({
+            where: {
                 sessionId,
-                participantAId: myParticipant.id,
-                participantBId: match.id,
-                intention: myParticipant.intention,
+                isActive: false,
+                OR: [
+                    { participantAId: myParticipant.id, participantBId: match.id },
+                    { participantAId: match.id, participantBId: myParticipant.id },
+                ],
             },
         });
 
-        return NextResponse.json({ status: "matched", chatRoomId: chatRoom.id });
+        if (existingPairRoom) {
+            // Reactivate the existing room for a fresh chat
+            const reactivated = await prisma.floatLiveChatRoom.update({
+                where: { id: existingPairRoom.id },
+                data: {
+                    isActive: true,
+                    endedAt: null,
+                    intention: myParticipant.intention,
+                    emailRevealedByA: false,
+                    emailRevealedByB: false,
+                },
+            });
+            return NextResponse.json({ status: "matched", chatRoomId: reactivated.id });
+        }
+
+        // Create chat room — wrapped in try/catch for race condition safety
+        try {
+            const chatRoom = await prisma.floatLiveChatRoom.create({
+                data: {
+                    sessionId,
+                    participantAId: myParticipant.id,
+                    participantBId: match.id,
+                    intention: myParticipant.intention,
+                },
+            });
+
+            return NextResponse.json({ status: "matched", chatRoomId: chatRoom.id });
+        } catch (createError: unknown) {
+            // If unique constraint failed, the other user's polling already created the room
+            if (
+                typeof createError === "object" &&
+                createError !== null &&
+                "code" in createError &&
+                (createError as { code: string }).code === "P2002"
+            ) {
+                // Find the room that was just created by the other side
+                const raceRoom = await prisma.floatLiveChatRoom.findFirst({
+                    where: {
+                        sessionId,
+                        isActive: true,
+                        OR: [
+                            { participantAId: myParticipant.id },
+                            { participantBId: myParticipant.id },
+                        ],
+                    },
+                });
+                if (raceRoom) {
+                    return NextResponse.json({ status: "matched", chatRoomId: raceRoom.id });
+                }
+                return NextResponse.json({ status: "waiting", message: "Looking for someone..." });
+            }
+            throw createError;
+        }
     } catch (error) {
         console.error("Float Live find-match error:", error);
         return NextResponse.json({ error: "Failed to find match" }, { status: 500 });

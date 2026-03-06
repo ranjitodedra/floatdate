@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = isFloatLiveActive();
+        const { active } = await isFloatLiveActive();
         if (!active) {
             return NextResponse.json(
                 { error: "Float Live is only available 5-6 PM ET" },

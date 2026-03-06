@@ -6,6 +6,7 @@ import { isFloatLiveActive, getTodaySessionTimes } from "@/lib/float-live-time";
 const VALID_PREFERENCES = ["male", "female", "nonbinary", "any"];
 const VALID_INTENTIONS = ["blind_date", "friendship"];
 const VALID_CAMPUSES = ["Waterloo", "Brantford", "Milton"];
+const VALID_CHARACTERS = ["A", "B", "C", "D", "E", "F"];
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = isFloatLiveActive();
+        const { active } = await isFloatLiveActive();
         if (!active) {
             return NextResponse.json(
                 { error: "Float Live is only available 5-6 PM ET" },
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { preference, intention, campus } = body;
+        const { preference, intention, campus, character } = body;
 
         // Validate filters
         if (!VALID_PREFERENCES.includes(preference)) {
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
         }
         if (!VALID_CAMPUSES.includes(campus)) {
             return NextResponse.json({ error: "Invalid campus" }, { status: 400 });
+        }
+        const selectedCharacter = VALID_CHARACTERS.includes(character) ? character : "A";
+        if (!VALID_CHARACTERS.includes(selectedCharacter)) {
+            return NextResponse.json({ error: "Invalid character" }, { status: 400 });
         }
 
         // Get user's gender
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Get or create today's session
-        const { date, startTime, endTime } = getTodaySessionTimes();
+        const { date, startTime, endTime } = await getTodaySessionTimes();
         let liveSession = await prisma.floatLiveSession.findFirst({
             where: {
                 date: {
@@ -75,6 +80,7 @@ export async function POST(req: NextRequest) {
                 preference,
                 intention,
                 campus,
+                character: selectedCharacter,
                 isOnline: true,
                 acceptedTerms: true,
                 leftAt: null,
@@ -86,6 +92,7 @@ export async function POST(req: NextRequest) {
                 preference,
                 intention,
                 campus,
+                character: selectedCharacter,
                 acceptedTerms: true,
             },
         });

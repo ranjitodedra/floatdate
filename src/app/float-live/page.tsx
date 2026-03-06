@@ -8,6 +8,8 @@ import OnlineCounter from "./components/OnlineCounter";
 import TermsModal from "./components/TermsModal";
 import TimeWarning from "./components/TimeWarning";
 
+const CHARACTERS = ["A", "B", "C", "D", "E", "F"];
+
 export default function FloatLivePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -25,6 +27,10 @@ export default function FloatLivePage() {
     const [preference, setPreference] = useState("any");
     const [intention, setIntention] = useState("blind_date");
     const [campus, setCampus] = useState("Waterloo");
+
+    // Character selection
+    const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+    const [showCharacterSelect, setShowCharacterSelect] = useState(false);
 
     // Lobby state
     const [onlineCount, setOnlineCount] = useState(0);
@@ -127,7 +133,12 @@ export default function FloatLivePage() {
                 const data = await res.json();
 
                 if (!cancelled && data.status === "matched" && data.chatRoomId) {
-                    router.push(`/float-live/chat/${data.chatRoomId}`);
+                    // Pass character choices via URL params
+                    const params = new URLSearchParams({
+                        uc: data.userCharacter || selectedCharacter || "A",
+                        pc: data.partnerCharacter || "A",
+                    });
+                    router.push(`/float-live/chat/${data.chatRoomId}?${params.toString()}`);
                 }
             } catch (err) {
                 console.error("Match poll error:", err);
@@ -140,9 +151,15 @@ export default function FloatLivePage() {
             cancelled = true;
             clearInterval(interval);
         };
-    }, [searching, sessionId, router]);
+    }, [searching, sessionId, router, selectedCharacter]);
 
-    async function handleStartChat() {
+    function handleStartChat() {
+        setShowCharacterSelect(true);
+    }
+
+    function handleCharacterSelected(char: string) {
+        setSelectedCharacter(char);
+        setShowCharacterSelect(false);
         setShowTerms(true);
     }
 
@@ -154,7 +171,12 @@ export default function FloatLivePage() {
             await fetch("/api/float-live/join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ preference, intention, campus }),
+                body: JSON.stringify({
+                    preference,
+                    intention,
+                    campus,
+                    character: selectedCharacter || "A",
+                }),
             });
             setSearching(true);
         } catch (err) {
@@ -227,12 +249,12 @@ export default function FloatLivePage() {
                 <TimeWarning minutesLeft={minutesLeft} />
 
                 {/* Pixel scene preview */}
-                <div className="relative h-[200px] rounded-2xl overflow-hidden border border-zinc-700">
+                <div className="relative rounded-2xl overflow-hidden border border-zinc-700" style={{ aspectRatio: "16/9" }}>
                     <Image
-                        src="/assets/float-live/background.png"
-                        alt="Café scene"
+                        src="/assets/Characters/Background.jpg"
+                        alt="Scene background"
                         fill
-                        className="object-cover pixel-scene opacity-60"
+                        className="object-cover opacity-60"
                         priority
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -285,6 +307,45 @@ export default function FloatLivePage() {
                     </button>
                 )}
             </div>
+
+            {/* Character selection modal */}
+            {showCharacterSelect && (
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-zinc-800 border border-zinc-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+                        <h2 className="text-xl font-bold text-white text-center mb-2">Choose Your Character</h2>
+                        <p className="text-zinc-400 text-sm text-center mb-6">Pick an avatar for your chat session</p>
+
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                            {CHARACTERS.map((char) => (
+                                <button
+                                    key={char}
+                                    onClick={() => handleCharacterSelected(char)}
+                                    className={`relative rounded-xl overflow-hidden border-2 transition-all duration-200 hover:scale-105 hover:border-indigo-400 ${selectedCharacter === char
+                                            ? "border-indigo-500 shadow-lg shadow-indigo-500/25"
+                                            : "border-zinc-600 hover:border-zinc-400"
+                                        }`}
+                                >
+                                    <div className="aspect-square relative bg-zinc-700/50">
+                                        <Image
+                                            src={`/assets/Characters/${char}.png`}
+                                            alt={`Character ${char}`}
+                                            fill
+                                            className="object-contain p-2"
+                                        />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setShowCharacterSelect(false)}
+                            className="w-full py-2 text-sm text-zinc-400 hover:text-zinc-200 transition"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Terms modal */}
             {showTerms && (

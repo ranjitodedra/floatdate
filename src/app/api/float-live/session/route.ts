@@ -10,7 +10,7 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = isFloatLiveActive();
+        const { active } = await isFloatLiveActive();
         if (!active) {
             return NextResponse.json(
                 { error: "Float Live is only available 5-6 PM ET" },
@@ -18,7 +18,7 @@ export async function GET() {
             );
         }
 
-        const { date, startTime, endTime } = getTodaySessionTimes();
+        const { date, startTime, endTime } = await getTodaySessionTimes();
 
         // Get or create today's session
         const existing = await prisma.floatLiveSession.findFirst({

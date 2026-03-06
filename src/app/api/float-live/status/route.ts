@@ -3,7 +3,7 @@ import { isFloatLiveActive } from "@/lib/float-live-time";
 
 export async function GET() {
     try {
-        const status = isFloatLiveActive();
+        const status = await isFloatLiveActive();
         return NextResponse.json(status);
     } catch (error) {
         console.error("Float Live status error:", error);
