@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import blossom from "edmonds-blossom";
 
 // ---------- Types ----------
 type DimensionVec = Record<string, number>;
@@ -26,6 +27,9 @@ const DIMENSION_WEIGHTS: DimensionVec = {
 };
 
 const DIMENSIONS = Object.keys(DIMENSION_WEIGHTS);
+
+export const MIN_SIMILARITY_THRESHOLD = 0.35;
+const JITTER_AMOUNT = 0.02;
 
 const EXPLANATION_LABELS: Record<string, string> = {
     attachment: "similar emotional openness",
@@ -237,7 +241,8 @@ export function normalizeAnswer(
             }
             return value ? 1 : 0;
         }
-        case "multiple_choice": {
+        case "multiple_choice":
+        case "scenario": {
             if (typeof value === "string") {
                 const idx = options.indexOf(value);
                 return idx >= 0 ? idx / Math.max(options.length - 1, 1) : 0.5;
@@ -245,8 +250,20 @@ export function normalizeAnswer(
             return 0.5;
         }
         case "ranking": {
-            // For ranking, use Spearman-style: compare to default order
-            // MVP: return 0.5 as placeholder since ranking comparison is complex
+            // Spearman rank correlation: compare user ranking to reference order
+            if (Array.isArray(value) && options.length > 0) {
+                const userRanking = value as string[];
+                let displacement = 0;
+                for (let i = 0; i < userRanking.length; i++) {
+                    const refIdx = options.indexOf(userRanking[i]);
+                    if (refIdx >= 0) {
+                        displacement += Math.abs(i - refIdx);
+                    }
+                }
+                const n = userRanking.length;
+                const maxDisplacement = (n * (n - 1)) / 2;
+                return maxDisplacement > 0 ? 1 - displacement / maxDisplacement : 0.5;
+            }
             return 0.5;
         }
         default:
@@ -458,6 +475,85 @@ export function passesHardFilters(a: UserForMatching, b: UserForMatching): boole
     return true;
 }
 
+// ---------- Maximum Weight Matching (Blossom) ----------
+export function findOptimalPairs(
+    users: UserForMatching[],
+    vectors: Record<string, DimensionVec>,
+    pastPairs: Set<string>,
+    jitter: boolean = true
+): Array<{ userAId: string; userBId: string; score: number }> {
+    if (users.length < 2) return [];
+
+    // Map user IDs to integer indices for the blossom algorithm
+    const idToIdx = new Map<string, number>();
+    users.forEach((u, i) => idToIdx.set(u.id, i));
+
+    // Build weighted edge list: [nodeA, nodeB, weight]
+    // Only create edges for compatible pairs above the minimum threshold
+    const edges: Array<[number, number, number]> = [];
+    const realScores = new Map<string, number>(); // Store real scores without jitter
+
+    for (let i = 0; i < users.length; i++) {
+        for (let j = i + 1; j < users.length; j++) {
+            const a = users[i];
+            const b = users[j];
+
+            // Hard filters: gender preference + city
+            if (!passesHardFilters(a, b)) continue;
+
+            // Past pair exclusion: never re-match
+            if (pastPairs.has(`${a.id}-${b.id}`)) continue;
+
+            // Compute similarity
+            const score = similarity(vectors[a.id], vectors[b.id]);
+
+            // Minimum threshold: skip low-quality edges
+            if (score < MIN_SIMILARITY_THRESHOLD) continue;
+
+            // Store the real score for output
+            realScores.set(`${i}-${j}`, score);
+
+            // Add controlled jitter for tie-breaking variety
+            const weight = jitter
+                ? score + (Math.random() - 0.5) * JITTER_AMOUNT
+                : score;
+
+            edges.push([i, j, weight]);
+        }
+    }
+
+    if (edges.length === 0) return [];
+
+    // Run Edmonds' Blossom algorithm for maximum weight matching
+    const blossomResult: number[] = blossom(edges);
+
+    // Convert blossom result to match pairs
+    // blossomResult[i] = j means node i is matched with node j (-1 = unmatched)
+    const result: Array<{ userAId: string; userBId: string; score: number }> = [];
+    const seen = new Set<number>();
+
+    for (let i = 0; i < blossomResult.length; i++) {
+        const j = blossomResult[i];
+        if (j === -1 || seen.has(i) || seen.has(j)) continue;
+
+        seen.add(i);
+        seen.add(j);
+
+        // Use real score (without jitter) for the output
+        const lo = Math.min(i, j);
+        const hi = Math.max(i, j);
+        const realScore = realScores.get(`${lo}-${hi}`) ?? 0;
+
+        result.push({
+            userAId: users[lo].id,
+            userBId: users[hi].id,
+            score: realScore,
+        });
+    }
+
+    return result;
+}
+
 // ---------- Main Matching Pipeline ----------
 export async function runWeeklyMatching(weekStart: Date) {
     // 1. Get all opted-in users for this week who completed setup
@@ -536,8 +632,9 @@ export async function runWeeklyMatching(weekStart: Date) {
         return a.createdAt.getTime() - b.createdAt.getTime();
     });
 
-    // 5. Greedy matching
-    const matchedIds = new Set<string>();
+    // 5. Maximum Weight Matching (Blossom algorithm)
+    const optimalPairs = findOptimalPairs(sortedUsers, vectors, pastPairs);
+
     const matches: {
         userAId: string;
         userBId: string;
@@ -546,45 +643,23 @@ export async function runWeeklyMatching(weekStart: Date) {
         weekStart: Date;
     }[] = [];
 
-    for (const user of sortedUsers) {
-        if (matchedIds.has(user.id)) continue;
-
-        const candidates = sortedUsers.filter(
-            (c) =>
-                c.id !== user.id &&
-                !matchedIds.has(c.id) &&
-                passesHardFilters(user, c) &&
-                !pastPairs.has(`${user.id}-${c.id}`)
-        );
-
-        if (candidates.length === 0) continue;
-
-        const scored = candidates.map((c) => ({
-            candidate: c,
-            score: similarity(vectors[user.id], vectors[c.id]),
-        }));
-        scored.sort((a, b) => b.score - a.score);
-
-        const best = scored[0];
+    for (const pair of optimalPairs) {
         const reasons = explainDetailed(
-            allAnswers[user.id],
-            allAnswers[best.candidate.id],
+            allAnswers[pair.userAId],
+            allAnswers[pair.userBId],
             questions,
-            vectors[user.id],
-            vectors[best.candidate.id]
+            vectors[pair.userAId],
+            vectors[pair.userBId]
         );
         const explanationStr = JSON.stringify(reasons);
 
         matches.push({
-            userAId: user.id,
-            userBId: best.candidate.id,
-            similarityScore: best.score,
+            userAId: pair.userAId,
+            userBId: pair.userBId,
+            similarityScore: pair.score,
             explanation: explanationStr,
             weekStart,
         });
-
-        matchedIds.add(user.id);
-        matchedIds.add(best.candidate.id);
     }
 
     // 6. Save matches to DB
