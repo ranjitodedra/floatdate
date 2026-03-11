@@ -39,184 +39,646 @@ const EXPLANATION_LABELS: Record<string, string> = {
     interests: "shared interests",
 };
 
-// Question-level insights for generating specific match reasons
-type QuestionInsight = {
-    high?: string; // When both users score high/agree
-    low?: string; // When both users score low/disagree
-    same?: string; // When both users pick the same option (for scenarios/choices)
-    dimension: string; // Fallback dimension label
-};
+// ---------- Reason Generator System ----------
+// Each generator receives both users' answers and produces a tailored reason
+// or null if that question isn't a useful discriminator for this pair.
 
-const QUESTION_INSIGHTS: Record<string, QuestionInsight> = {
-    // Big Five personality traits
+type ReasonCategory = "shared" | "complementary" | "behavioral" | "ranking";
+
+interface GeneratedReason {
+    reason: string;
+    dimension: string;
+    score: number;
+    category: ReasonCategory;
+}
+
+type ReasonGenerator = (
+    answerA: unknown,
+    answerB: unknown,
+    options: string[]
+) => GeneratedReason | null;
+
+// Helper: get normalized value for likert/binary
+function norm(value: unknown, type: string, options: string[]): number {
+    return normalizeAnswer(value, type, options);
+}
+
+// Helper: find overlapping top-N items in two rankings
+function topOverlap(arrA: string[], arrB: string[], n: number): string[] {
+    const topA = new Set(arrA.slice(0, n));
+    return arrB.slice(0, n).filter((item) => topA.has(item));
+}
+
+// Helper: short label (strip trailing parentheticals and keep it punchy)
+function shortLabel(s: string): string {
+    return s.replace(/\s*\(.*\)$/, "").replace(/ & /g, " and ");
+}
+
+// ---------- Question-Specific Generators ----------
+const REASON_GENERATORS: Record<string, { gen: ReasonGenerator; dim: string }> = {
+    // ── Big Five ─────────────────────────────────────────
     bf_01: {
-        low: "Neither of you stresses easily about relationship issues",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "Neither of you sweats the small stuff — you don't spiral over relationship what-ifs", dimension: "attachment", score: close, category: "shared" };
+            if (close > 0.7 && nA > 0.6) return { reason: "You're both emotionally tuned in — you actually notice when something feels off", dimension: "attachment", score: close, category: "shared" };
+            return null;
+        },
     },
     bf_02: {
-        high: "You both value organization and follow through on commitments",
-        dimension: "lifestyle",
+        dim: "lifestyle",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both follow through on commitments — if you say you'll be there, you mean it", dimension: "lifestyle", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "Neither of you is rigid about schedules — you both leave room for life to happen", dimension: "lifestyle", score: close, category: "shared" };
+            if (close < 0.3) return { reason: "One of you loves a plan, the other rides the wave — you'll balance each other out", dimension: "lifestyle", score: 0.6, category: "complementary" };
+            return null;
+        },
     },
     bf_03_rev: {
-        low: "You both avoid holding grudges and handle frustration constructively",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "You both let things go once they're resolved — no scorekeeping", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
+    },
+    bf_04: {
+        dim: "interests",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You're both the type to light up a room — energy won't be an issue", dimension: "interests", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "You both prefer the background over the spotlight — cozy > loud", dimension: "interests", score: close, category: "shared" };
+            if (close < 0.3) return { reason: "One of you owns the room, the other observes it — you'll see the world from two angles", dimension: "interests", score: 0.55, category: "complementary" };
+            return null;
+        },
+    },
+    bf_05: {
+        dim: "interests",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You're both deep thinkers — expect 2 AM conversations about the meaning of everything", dimension: "interests", score: close, category: "shared" };
+            return null;
+        },
     },
     bf_06_scen: {
-        same: "You'd both assume the best when your partner is late without worrying",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) return { reason: "When a partner runs late, you'd both stay calm — no panic spirals", dimension: "attachment", score: 1.0, category: "shared" };
+            return null;
+        },
     },
-    // Attachment style
+
+    // ── Attachment ────────────────────────────────────────
     att_01: {
-        low: "Neither of you worries about your partner leaving or not loving you enough",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "Neither of you needs constant reassurance — you trust without asking", dimension: "attachment", score: close, category: "shared" };
+            return null;
+        },
     },
     att_02: {
-        low: "You both feel comfortable opening up and relying on romantic partners",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "You're both comfortable being vulnerable — walls aren't your thing", dimension: "attachment", score: close, category: "shared" };
+            return null;
+        },
     },
     att_03: {
-        high: "You both find it easy to get close to others and depend on them",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "Getting close to someone comes naturally to both of you", dimension: "attachment", score: close, category: "shared" };
+            return null;
+        },
+    },
+    att_04_rev: {
+        dim: "attachment",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both feel secure in relationships — no one's watching the door", dimension: "attachment", score: close, category: "shared" };
+            return null;
+        },
     },
     att_05_beh: {
-        same: "You both handle stress in similar ways when it comes to seeking support",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "When stressed, you both need space to recharge before talking it out", dimension: "attachment", score: 1.0, category: "behavioral" };
+                return { reason: "You both reach for each other when things get hard — comfort is a team sport", dimension: "attachment", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
     },
     att_06_scen: {
-        same: "You'd both give space after a disagreement without worry",
-        dimension: "attachment",
+        dim: "attachment",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) return { reason: "After a disagreement, you'd both give space without it turning into a crisis", dimension: "attachment", score: 1.0, category: "shared" };
+            return null;
+        },
     },
-    // Conflict resolution
+
+    // ── Conflict Resolution ──────────────────────────────
+    conf_01: {
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Keep the peace") return { reason: "You both value peace over being right — fights stay short", dimension: "communication", score: 1.0, category: "shared" };
+                return { reason: "You both care about getting to the truth, even if it's uncomfortable", dimension: "communication", score: 1.0, category: "shared" };
+            }
+            return null;
+        },
+    },
     conf_02_scen: {
-        same: "You both handle financial disagreements in similar ways",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("Wait")) return { reason: "You'd both wait for the right moment to bring up money stuff — no ambushes", dimension: "communication", score: 1.0, category: "shared" };
+                if ((a as string).includes("Directly") || (a as string).includes("immediately")) return { reason: "You're both direct when something's off — no festering resentment", dimension: "communication", score: 1.0, category: "shared" };
+                return { reason: "You'd handle a surprise purchase the same way — no guessing games", dimension: "communication", score: 1.0, category: "shared" };
+            }
+            return null;
+        },
+    },
+    conf_03_beh: {
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You both know when to step away from a heated moment — cool heads prevail", dimension: "communication", score: 1.0, category: "behavioral" };
+                return { reason: "Neither of you walks out mid-argument — you both stay and work through it", dimension: "communication", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
     },
     conf_04_rev: {
-        high: "You both find it easy to let go of negative feelings after a fight is resolved",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "Once a fight is over, it's over for both of you — no lingering grudges", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Emotional regulation
+
+    // ── Emotional Regulation ─────────────────────────────
     emo_01: {
-        high: "You both take time to process emotions before speaking or acting",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both think before you speak when emotions run high", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
+    },
+    emo_02_beh: {
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "No") return { reason: "Neither of you takes a bad day out on the people closest to you", dimension: "communication", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
     },
     emo_03_scen: {
-        same: "You both handle stress and frustration in similar ways",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("deep breath")) return { reason: "Bad day? You'd both take a breath and ask for help — no silent treatment", dimension: "communication", score: 1.0, category: "shared" };
+                return { reason: "A tough day at work wouldn't blow up your evening — you'd handle it the same way", dimension: "communication", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
     emo_04: {
-        high: "You both bounce back quickly after frustrating events",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both bounce back fast — a bad moment doesn't ruin a good day", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
     },
     emo_05_rev: {
-        low: "You both feel in control of your emotions",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "You both feel grounded in your emotions — no rollercoasters", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Communication style
+
+    // ── Communication Style ──────────────────────────────
+    comm_01: {
+        dim: "communication",
+        gen: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                const overlap = topOverlap(a as string[], b as string[], 2);
+                if (overlap.length >= 1) {
+                    const label = shortLabel(overlap[0]);
+                    return { reason: `For tough conversations, you'd both reach for the same approach — ${label.toLowerCase()}`, dimension: "communication", score: 0.9, category: "ranking" };
+                }
+            }
+            return null;
+        },
+    },
     comm_02_scen: {
-        same: "You both communicate annoyances in similar ways",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("Directly")) return { reason: "They also want someone who calls things out directly — no passive-aggressive hints", dimension: "communication", score: 1.0, category: "shared" };
+                if ((a as string).includes("joke")) return { reason: "You'd both use humor to soften hard truths — same wavelength", dimension: "communication", score: 1.0, category: "shared" };
+                return { reason: "You communicate annoyances the same way — fewer misunderstandings", dimension: "communication", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
     comm_03_beh: {
-        high: "You both regularly ask about each other's day and actively listen",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both actually ask about each other's day and listen — not just nod along", dimension: "communication", score: close, category: "behavioral" };
+            return null;
+        },
     },
     comm_04_rev: {
-        low: "You both find it easy to express your needs clearly",
-        dimension: "communication",
+        dim: "communication",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "You're both comfortable saying what you need — no mind-reading required", dimension: "communication", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Core values
+
+    // ── Core Values ──────────────────────────────────────
     val_02: {
-        same: "You both prioritize similar things in life right now",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                const overlap = topOverlap(a as string[], b as string[], 2);
+                if (overlap.length >= 2) {
+                    return { reason: `"${shortLabel(overlap[0])}" and "${shortLabel(overlap[1])}" both made your top life priorities`, dimension: "values", score: 1.0, category: "ranking" };
+                }
+                if (overlap.length === 1) {
+                    return { reason: `You both put "${shortLabel(overlap[0])}" near the top of what matters most right now`, dimension: "values", score: 0.85, category: "ranking" };
+                }
+            }
+            return null;
+        },
     },
     val_03_scen: {
-        same: "You both approach career vs family trade-offs similarly",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("career")) return { reason: "You'd both chase the career move — ambition is a shared language", dimension: "values", score: 1.0, category: "shared" };
+                if ((a as string).includes("family")) return { reason: "Family proximity matters to both of you — roots run deep", dimension: "values", score: 1.0, category: "shared" };
+                return { reason: "You'd navigate the career-vs-family tradeoff the same way", dimension: "values", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
-    // Relationship beliefs
+    val_04_beh: {
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You both show up for your community — service is part of who you are", dimension: "values", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
+    },
+
+    // ── Relationship Beliefs ─────────────────────────────
+    bel_01: {
+        dim: "values",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "You both believe great relationships are built, not found — effort isn't a red flag", dimension: "values", score: close, category: "shared" };
+            return null;
+        },
+    },
     bel_02: {
-        high: "You both believe successful relationships evolve through hard work and compromise",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both see relationships as something you grow, not something you stumble into", dimension: "values", score: close, category: "shared" };
+            return null;
+        },
     },
     bel_03_scen: {
-        same: "You both view relationship challenges through a similar lens",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("perfectly fine")) return { reason: "Different hobbies? No problem for either of you — space is healthy", dimension: "values", score: 1.0, category: "shared" };
+                if ((a as string).includes("new shared")) return { reason: "If interests don't overlap, you'd both go find new ones together", dimension: "values", score: 1.0, category: "shared" };
+                return { reason: "You see relationship bumps through the same lens", dimension: "values", score: 0.85, category: "shared" };
+            }
+            return null;
+        },
     },
     bel_04_rev: {
-        low: "You both believe relationships can require effort early on and still be meant to be",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "Early effort doesn't scare either of you — you know good things take work", dimension: "values", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Long-term goals
+
+    // ── Long-term Goals ──────────────────────────────────
     goals_01_filter: {
-        same: "You both have aligned views on having children",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) return { reason: "You're aligned on the kids question — no surprises down the road", dimension: "values", score: 1.0, category: "shared" };
+            return null;
+        },
     },
     goals_02_filter: {
-        same: "You both have similar relationship trajectory goals",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) return { reason: "You're on the same page about where a relationship should go", dimension: "values", score: 1.0, category: "shared" };
+            return null;
+        },
+    },
+    goals_03_beh: {
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You're both actively building toward a five-year goal — direction, not drift", dimension: "values", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
     },
     goals_04_scen: {
-        same: "You both approach financial windfalls in similar ways",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("Invest")) return { reason: "Unexpected windfall? You'd both invest it — future-minded thinkers", dimension: "values", score: 1.0, category: "shared" };
+                if ((a as string).includes("down payment")) return { reason: "You'd both put a windfall toward a home — nesting instincts match", dimension: "values", score: 1.0, category: "shared" };
+                return { reason: "You'd spend an unexpected $50K the same way — your money brains align", dimension: "values", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
     goals_05: {
-        high: "You both would be willing to relocate for your partner's dream job",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You'd both relocate for each other's dreams — adventure over comfort zone", dimension: "values", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "You both value staying rooted — home base matters", dimension: "values", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Socioeconomic preferences
+
+    // ── Socioeconomic ────────────────────────────────────
     socio_02: {
-        same: "You both approach personal finances in similar ways",
-        dimension: "lifestyle",
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("Strict")) return { reason: "You're both serious about saving — no arguments about the credit card bill", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("Moderate")) return { reason: "You both budget but leave room for fun — no financial guilt trips", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("Live for today")) return { reason: "You both believe money is for living — experience over spreadsheets", dimension: "lifestyle", score: 1.0, category: "shared" };
+                return { reason: "Your money styles match — fewer fights about spending", dimension: "lifestyle", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
+    },
+    socio_04_beh: {
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You both actually track your spending — rare, and very compatible", dimension: "lifestyle", score: 1.0, category: "behavioral" };
+            }
+            return null;
+        },
     },
     socio_05_scen: {
-        same: "You both prefer similar travel styles",
-        dimension: "lifestyle",
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("Luxury")) return { reason: "You both want the good stuff when you travel — five stars or bust", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("Mid-range")) return { reason: "Your travel style is the same mix of comfort and exploration", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("Budget")) return { reason: "Backpacks and street food — you'd travel the same way", dimension: "lifestyle", score: 1.0, category: "shared" };
+                return { reason: "You'd plan a vacation the same way — no travel-style clashes", dimension: "lifestyle", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
-    // Lifestyle habits
+
+    // ── Lifestyle Habits ─────────────────────────────────
+    habits_02_beh: {
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You're both regulars at the gym — expect someone who gets the routine", dimension: "lifestyle", score: 0.9, category: "behavioral" };
+            }
+            return null;
+        },
+    },
+    habits_03_beh: {
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You're both early risers — no one's dragging the other out of bed", dimension: "lifestyle", score: 0.9, category: "behavioral" };
+                return { reason: "You both love sleeping in on weekends — lazy mornings together", dimension: "lifestyle", score: 0.9, category: "behavioral" };
+            }
+            if (typeof a === "string" && typeof b === "string" && a !== b) {
+                return { reason: "One morning person, one night owl — you'll each get quiet time", dimension: "lifestyle", score: 0.5, category: "complementary" };
+            }
+            return null;
+        },
+    },
     habits_04: {
-        same: "You both enjoy similar weekend activities",
-        dimension: "interests",
+        dim: "interests",
+        gen: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                const overlap = topOverlap(a as string[], b as string[], 2);
+                if (overlap.length >= 1) {
+                    const label = shortLabel(overlap[0]);
+                    return { reason: `"${label}" is a top weekend pick for both of you`, dimension: "interests", score: 0.95, category: "ranking" };
+                }
+            }
+            return null;
+        },
+    },
+    habits_05: {
+        dim: "lifestyle",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both like things tidy — no future arguments about dishes in the sink", dimension: "lifestyle", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "Neither of you stresses about a little mess — lived-in is fine", dimension: "lifestyle", score: close, category: "shared" };
+            return null;
+        },
     },
     habits_06_beh: {
-        same: "You both have similar approaches to alcohol consumption",
-        dimension: "lifestyle",
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "No") return { reason: "Neither of you drinks heavily — your social lives don't revolve around alcohol", dimension: "lifestyle", score: 1.0, category: "behavioral" };
+                return { reason: "You both enjoy a drink — no one feels judged for ordering another round", dimension: "lifestyle", score: 0.9, category: "behavioral" };
+            }
+            return null;
+        },
     },
-    // Time orientation
+
+    // ── Time Orientation ─────────────────────────────────
+    time_01: {
+        dim: "lifestyle",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You're both present-moment people — spontaneity over spreadsheets", dimension: "lifestyle", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "You're both planners — the future isn't scary, it's a project", dimension: "lifestyle", score: close, category: "shared" };
+            if (close < 0.3) return { reason: "They plan ahead, you live in the moment (or vice versa) — you'll stretch each other", dimension: "lifestyle", score: 0.5, category: "complementary" };
+            return null;
+        },
+    },
     time_02: {
-        high: "You both heavily weigh long-term impacts when making major decisions",
-        dimension: "lifestyle",
+        dim: "lifestyle",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both weigh the long game when making big decisions — strategic minds", dimension: "lifestyle", score: close, category: "shared" };
+            return null;
+        },
     },
-    // Social energy
+    time_03_scen: {
+        dim: "lifestyle",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("detailed")) return { reason: "Free weekend? You'd both plan it out — itinerary lovers unite", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("loose")) return { reason: "You'd both keep a free weekend flexible — loose plans, good vibes", dimension: "lifestyle", score: 1.0, category: "shared" };
+                if ((a as string).includes("fly")) return { reason: "No plans, no stress — you'd both wing a free weekend and love it", dimension: "lifestyle", score: 1.0, category: "shared" };
+            }
+            return null;
+        },
+    },
+
+    // ── Social Energy ────────────────────────────────────
     social_01: {
-        high: "You both feel energized after large social events",
-        dimension: "interests",
+        dim: "interests",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You both get energized by a full room — social batteries match", dimension: "interests", score: close, category: "shared" };
+            if (close > 0.7 && nA < 0.4) return { reason: "You both need recharge time after socializing — no guilt for leaving early", dimension: "interests", score: close, category: "shared" };
+            return null;
+        },
+    },
+    social_02_beh: {
+        dim: "interests",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You both actively seek out new people — your social worlds will mix well", dimension: "interests", score: 0.9, category: "behavioral" };
+            }
+            return null;
+        },
+    },
+    social_03: {
+        dim: "interests",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("few close")) return { reason: "You both prefer a small inner circle over a wide network — depth over breadth", dimension: "interests", score: 1.0, category: "shared" };
+                return { reason: "You both cast a wide social net — your calendars will stay full", dimension: "interests", score: 1.0, category: "shared" };
+            }
+            return null;
+        },
     },
     social_04: {
-        same: "You both have similar openness to dating someone with different social energy needs",
-        dimension: "interests",
+        dim: "interests",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if (a === "Yes") return { reason: "You're both open to dating someone with opposite social energy — flexibility matters", dimension: "interests", score: 0.9, category: "shared" };
+            }
+            return null;
+        },
     },
-    // Deal-breakers
+
+    // ── Deal-breakers ────────────────────────────────────
     dealbreak_01_filter: {
-        same: "You both have compatible views on pets",
-        dimension: "values",
-    },
-    dealbreak_02: {
-        same: "You both have similar geographic distance preferences",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("love pets")) return { reason: "You're both pet people — expect to fight over who the dog loves more", dimension: "values", score: 1.0, category: "shared" };
+                return { reason: "You're aligned on the pet question — no dealbreaker surprises there", dimension: "values", score: 0.85, category: "shared" };
+            }
+            return null;
+        },
     },
     dealbreak_04_scen: {
-        same: "You both handle ex-partner friendships in similar ways",
-        dimension: "values",
+        dim: "values",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("healthy")) return { reason: "Ex still in the picture? You'd both be cool with it — maturity match", dimension: "values", score: 1.0, category: "shared" };
+                if ((a as string).includes("boundaries")) return { reason: "You'd both want clear boundaries with exes — same comfort zone", dimension: "values", score: 1.0, category: "shared" };
+                return { reason: "You handle the ex question the same way — one less thing to navigate", dimension: "values", score: 0.85, category: "shared" };
+            }
+            return null;
+        },
     },
-    // Attraction style
+
+    // ── Attraction Style ─────────────────────────────────
+    attr_01: {
+        dim: "interests",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA < 0.4) return { reason: "Personality first for both of you — looks are a bonus, not the headline", dimension: "interests", score: close, category: "shared" };
+            return null;
+        },
+    },
+    attr_02: {
+        dim: "interests",
+        gen: (a, b, opts) => {
+            const nA = norm(a, "likert", opts), nB = norm(b, "likert", opts);
+            const close = 1 - Math.abs(nA - nB);
+            if (close > 0.7 && nA > 0.6) return { reason: "You're both slow-burn types — attraction grows over real connection, not just a spark", dimension: "interests", score: close, category: "shared" };
+            return null;
+        },
+    },
     attr_03_scen: {
-        same: "You both weigh physical attraction and conversational chemistry similarly",
-        dimension: "interests",
+        dim: "interests",
+        gen: (a, b) => {
+            if (typeof a === "string" && a === b) {
+                if ((a as string).includes("conversational")) return { reason: "No spark in the convo? You'd both pass — chemistry starts with words", dimension: "interests", score: 1.0, category: "shared" };
+                if ((a as string).includes("nerves")) return { reason: "You'd both give a second chance if first-date nerves got in the way", dimension: "interests", score: 1.0, category: "shared" };
+                return { reason: "You weigh physical attraction vs conversation chemistry the same way", dimension: "interests", score: 0.85, category: "shared" };
+            }
+            return null;
+        },
     },
     attr_04: {
-        same: "You both find similar things create the strongest initial chemistry",
-        dimension: "interests",
+        dim: "interests",
+        gen: (a, b) => {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                const overlap = topOverlap(a as string[], b as string[], 2);
+                if (overlap.length >= 2) {
+                    return { reason: `"${shortLabel(overlap[0])}" and "${shortLabel(overlap[1])}" both made your top 2 chemistry drivers`, dimension: "interests", score: 1.0, category: "ranking" };
+                }
+                if (overlap.length === 1) {
+                    return { reason: `"${shortLabel(overlap[0])}" is what sparks chemistry for both of you`, dimension: "interests", score: 0.85, category: "ranking" };
+                }
+            }
+            return null;
+        },
     },
 };
 
@@ -339,108 +801,71 @@ export function explainDetailed(
     vecA: DimensionVec,
     vecB: DimensionVec
 ): string[] {
-    const reasons: string[] = [];
-    const usedDimensions = new Set<string>();
-    const questionMap = new Map(questions.map((q) => [q.id, q]));
-
-    // Score each question by answer closeness
-    const scoredQuestions: Array<{
-        questionId: string;
-        question: Question;
-        score: number;
-        insight: string | null;
-    }> = [];
+    // 1. Run all generators → collect scored reasons
+    const candidates: GeneratedReason[] = [];
 
     for (const question of questions) {
+        const gen = REASON_GENERATORS[question.id];
+        if (!gen) continue;
+
         const answerA = answersA.find((a) => a.questionId === question.id);
         const answerB = answersB.find((a) => a.questionId === question.id);
-
         if (!answerA || !answerB) continue;
 
-        const insight = QUESTION_INSIGHTS[question.id];
-        if (!insight) continue; // Skip questions without insights
-
-        let closeness = 0;
-        let insightText: string | null = null;
-
         const options = Array.isArray(question.options) ? (question.options as string[]) : [];
+        const result = gen.gen(answerA.value, answerB.value, options);
 
-        if (question.type === "likert" || question.type === "binary") {
-            const normA = normalizeAnswer(answerA.value, question.type, options);
-            const normB = normalizeAnswer(answerB.value, question.type, options);
-            closeness = 1 - Math.abs(normA - normB);
-
-            // For high closeness, use appropriate insight
-            if (closeness > 0.7) {
-                if (normA > 0.6 && insight.high) {
-                    insightText = insight.high;
-                } else if (normA < 0.4 && insight.low) {
-                    insightText = insight.low;
-                }
-            }
-        } else if (question.type === "multiple_choice" || question.type === "scenario") {
-            // Check if both picked the same option
-            if (typeof answerA.value === "string" && typeof answerB.value === "string") {
-                if (answerA.value === answerB.value) {
-                    closeness = 1.0;
-                    if (insight.same) {
-                        insightText = insight.same;
-                    }
-                }
-            }
-        } else if (question.type === "ranking") {
-            // For ranking, check if arrays are similar
-            if (Array.isArray(answerA.value) && Array.isArray(answerB.value)) {
-                const arrA = answerA.value as string[];
-                const arrB = answerB.value as string[];
-                if (arrA.length === arrB.length) {
-                    let matches = 0;
-                    for (let i = 0; i < arrA.length; i++) {
-                        if (arrA[i] === arrB[i]) matches++;
-                    }
-                    closeness = matches / arrA.length;
-                    if (closeness > 0.7 && insight.same) {
-                        insightText = insight.same;
-                    }
-                }
-            }
-        }
-
-        if (insightText && closeness > 0.5) {
-            scoredQuestions.push({
-                questionId: question.id,
-                question,
-                score: closeness * question.weight,
-                insight: insightText,
-            });
+        if (result) {
+            // Boost score by question weight
+            result.score *= question.weight;
+            candidates.push(result);
         }
     }
 
-    // Sort by score (highest first) and pick top ones ensuring dimension coverage
-    scoredQuestions.sort((a, b) => b.score - a.score);
+    // 2. Sort by score (highest first)
+    candidates.sort((a, b) => b.score - a.score);
 
-    // First pass: pick top insights ensuring we cover multiple dimensions
-    for (const item of scoredQuestions) {
-        if (reasons.length >= 6) break;
+    // 3. Select 2–4 diverse reasons
+    const selected: GeneratedReason[] = [];
+    const usedDimensions = new Set<string>();
+    const usedCategories = new Set<string>();
 
-        const dim = item.question.weightDimension;
-        // Prefer questions from dimensions we haven't covered yet
-        if (!usedDimensions.has(dim) || reasons.length < 3) {
-            reasons.push(item.insight!);
-            usedDimensions.add(dim);
+    // First pass: pick top reasons from distinct dimensions
+    for (const c of candidates) {
+        if (selected.length >= 4) break;
+        if (!usedDimensions.has(c.dimension)) {
+            selected.push(c);
+            usedDimensions.add(c.dimension);
+            usedCategories.add(c.category);
         }
     }
 
-    // Second pass: fill remaining slots with highest scoring insights
-    for (const item of scoredQuestions) {
-        if (reasons.length >= 6) break;
-        if (!reasons.includes(item.insight!)) {
-            reasons.push(item.insight!);
+    // Second pass: fill to at least 3 if possible, preferring new categories
+    if (selected.length < 3) {
+        for (const c of candidates) {
+            if (selected.length >= 3) break;
+            if (!selected.includes(c)) {
+                // Prefer different category if possible
+                if (!usedCategories.has(c.category) || selected.length < 2) {
+                    selected.push(c);
+                    usedCategories.add(c.category);
+                }
+            }
         }
     }
 
-    // Fallback: if we don't have enough reasons, use dimension-level labels
-    if (reasons.length < 4) {
+    // Third pass: still short? take anything remaining
+    if (selected.length < 2) {
+        for (const c of candidates) {
+            if (selected.length >= 2) break;
+            if (!selected.includes(c)) {
+                selected.push(c);
+            }
+        }
+    }
+
+    // 4. Fallback: if we still have fewer than 2, use dimension-level labels
+    if (selected.length < 2) {
         const sortedDims = DIMENSIONS.slice().sort(
             (x, y) =>
                 Math.abs((vecA[x] ?? 0.5) - (vecB[x] ?? 0.5)) -
@@ -448,15 +873,20 @@ export function explainDetailed(
         );
 
         for (const dim of sortedDims) {
-            if (reasons.length >= 4) break;
+            if (selected.length >= 2) break;
             const label = EXPLANATION_LABELS[dim];
-            if (label && !reasons.some((r) => r.includes(label))) {
-                reasons.push(`You both have ${label}`);
+            if (label && !selected.some((s) => s.reason.includes(label))) {
+                selected.push({
+                    reason: `You share ${label} that set you apart`,
+                    dimension: dim,
+                    score: 0,
+                    category: "shared",
+                });
             }
         }
     }
 
-    return reasons.slice(0, 6); // Return max 6 reasons
+    return selected.slice(0, 4).map((s) => s.reason);
 }
 
 // ---------- Hard Filters ----------

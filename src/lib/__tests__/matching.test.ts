@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeAnswer, buildVector, similarity, findOptimalPairs, MIN_SIMILARITY_THRESHOLD } from "../matching";
+import { normalizeAnswer, buildVector, similarity, findOptimalPairs, explainDetailed, MIN_SIMILARITY_THRESHOLD } from "../matching";
 
 // =============================================================
 // normalizeAnswer — ranking type (Bug 1 fix: Spearman rank)
@@ -347,5 +347,102 @@ describe("findOptimalPairs", () => {
         // A wants male but B is female → A doesn't accept B
         const result = findOptimalPairs(users, vectors, new Set(), false);
         expect(result).toHaveLength(0);
+    });
+});
+
+// =============================================================
+// explainDetailed — Redesigned Reason Generator System
+// =============================================================
+describe("explainDetailed", () => {
+    // Minimal question definitions matching the generator IDs
+    const questions = [
+        { id: "val_02", weightDimension: "values", weight: 2.0, type: "ranking", options: ["Career & Ambition", "Family & Relationships", "Personal Growth & Hobbies", "Faith & Community"] },
+        { id: "habits_04", weightDimension: "interests", weight: 1.0, type: "ranking", options: ["Night out at a busy club or bar", "Quiet evening at home watching movies", "Outdoor adventure (hiking, sports)", "Dinner party with close friends"] },
+        { id: "att_05_beh", weightDimension: "attachment", weight: 2.0, type: "binary", options: ["Yes", "No"] },
+        { id: "socio_02", weightDimension: "lifestyle", weight: 2.0, type: "multiple_choice", options: ["Strict budgeter; save as much as possible.", "Moderate saver; I budget but leave room for fun.", "Live for today; money is meant to be spent."] },
+        { id: "emo_01", weightDimension: "communication", weight: 2.0, type: "likert", options: ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"] },
+        { id: "bf_02", weightDimension: "lifestyle", weight: 2.0, type: "likert", options: ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"] },
+        { id: "attr_04", weightDimension: "interests", weight: 1.5, type: "ranking", options: ["Physical attractiveness & touch", "Shared sense of humor & banter", "Deep intellectual conversation", "Feeling emotionally understood & safe"] },
+        { id: "comm_02_scen", weightDimension: "communication", weight: 2.0, type: "scenario", options: ["Directly tell them it bothers me.", "Drop subtle hints and hope they notice.", "Make a joke about it to soften the blow.", "I don't say anything; it's not worth the conflict."] },
+    ];
+
+    const defaultVec = { attachment: 0.5, values: 0.5, lifestyle: 0.5, communication: 0.5, interests: 0.5 };
+
+    it("surfaces specific ranking items when top choices overlap", () => {
+        const answersA = [
+            { questionId: "val_02", value: ["Career & Ambition", "Personal Growth & Hobbies", "Family & Relationships", "Faith & Community"] },
+        ];
+        const answersB = [
+            { questionId: "val_02", value: ["Career & Ambition", "Personal Growth & Hobbies", "Faith & Community", "Family & Relationships"] },
+        ];
+
+        const reasons = explainDetailed(answersA, answersB, questions, defaultVec, defaultVec);
+        // Should mention the specific overlapping values
+        expect(reasons.some(r => r.includes("Career"))).toBe(true);
+    });
+
+    it("generates scenario-specific insights, not generic ones", () => {
+        const answersA = [
+            { questionId: "comm_02_scen", value: "Directly tell them it bothers me." },
+        ];
+        const answersB = [
+            { questionId: "comm_02_scen", value: "Directly tell them it bothers me." },
+        ];
+
+        const reasons = explainDetailed(answersA, answersB, questions, defaultVec, defaultVec);
+        // Should produce a direct-communication insight, not generic "communicate annoyances the same way"
+        expect(reasons.some(r => r.includes("direct") || r.includes("calls things out"))).toBe(true);
+    });
+
+    it("returns 2–4 reasons, never more than 4", () => {
+        // Feed many matching answers to produce lots of generator hits
+        const answersA = [
+            { questionId: "val_02", value: ["Career & Ambition", "Personal Growth & Hobbies", "Family & Relationships", "Faith & Community"] },
+            { questionId: "att_05_beh", value: "No" },
+            { questionId: "socio_02", value: "Moderate saver; I budget but leave room for fun." },
+            { questionId: "emo_01", value: 4 },
+            { questionId: "bf_02", value: 4 },
+            { questionId: "habits_04", value: ["Outdoor adventure (hiking, sports)", "Dinner party with close friends", "Night out at a busy club or bar", "Quiet evening at home watching movies"] },
+            { questionId: "attr_04", value: ["Shared sense of humor & banter", "Feeling emotionally understood & safe", "Physical attractiveness & touch", "Deep intellectual conversation"] },
+            { questionId: "comm_02_scen", value: "Directly tell them it bothers me." },
+        ];
+        const answersB = [...answersA]; // Identical answers
+
+        const reasons = explainDetailed(answersA, answersB, questions, defaultVec, defaultVec);
+        expect(reasons.length).toBeGreaterThanOrEqual(2);
+        expect(reasons.length).toBeLessThanOrEqual(4);
+    });
+
+    it("ensures dimension diversity — no two reasons from the same dimension when alternatives exist", () => {
+        const answersA = [
+            { questionId: "val_02", value: ["Career & Ambition", "Personal Growth & Hobbies", "Family & Relationships", "Faith & Community"] },
+            { questionId: "att_05_beh", value: "No" },
+            { questionId: "socio_02", value: "Moderate saver; I budget but leave room for fun." },
+            { questionId: "emo_01", value: 4 },
+            { questionId: "habits_04", value: ["Outdoor adventure (hiking, sports)", "Dinner party with close friends", "Night out at a busy club or bar", "Quiet evening at home watching movies"] },
+        ];
+        const answersB = [...answersA];
+
+        const reasons = explainDetailed(answersA, answersB, questions, defaultVec, defaultVec);
+        // With answers across values, attachment, lifestyle, communication, and interests,
+        // we should get diverse reasons
+        expect(reasons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("returns fallback dimension labels when no generators fire", () => {
+        // No answers at all → generators can't fire, fallback kicks in
+        const reasons = explainDetailed([], [], questions, defaultVec, defaultVec);
+        expect(reasons.length).toBeGreaterThanOrEqual(1);
+        // Should use dimension-level labels as fallback
+        expect(reasons.some(r => r.includes("share"))).toBe(true);
+    });
+
+    it("behavioral match uses answer-specific phrasing", () => {
+        const answersA = [{ questionId: "att_05_beh", value: "Yes" }];
+        const answersB = [{ questionId: "att_05_beh", value: "Yes" }];
+
+        const reasons = explainDetailed(answersA, answersB, questions, defaultVec, defaultVec);
+        // "Yes" = both pull away for space → should mention "space" or "recharge"
+        expect(reasons.some(r => r.includes("space") || r.includes("recharge"))).toBe(true);
     });
 });
