@@ -40,6 +40,7 @@ interface ViewAsUserMatch {
     id: string;
     matchedUser: {
         name: string;
+        email: string;
         bio: string | null;
         city: string;
     };
@@ -376,6 +377,25 @@ export default function AdminPage() {
                                                 <p className="text-zinc-400 text-sm">
                                                     {viewAsData.match.matchedUser.city}
                                                 </p>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <p className="text-zinc-500 text-sm">
+                                                        {viewAsData.match.matchedUser.email}
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(viewAsData.match!.matchedUser.email);
+                                                            const btn = document.getElementById("admin-copy-email-btn");
+                                                            if (btn) {
+                                                                btn.textContent = "Copied!";
+                                                                setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+                                                            }
+                                                        }}
+                                                        id="admin-copy-email-btn"
+                                                        className="text-xs text-zinc-400 hover:text-zinc-700 transition px-1.5 py-0.5 rounded-md hover:bg-zinc-100"
+                                                    >
+                                                        Copy
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 

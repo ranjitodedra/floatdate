@@ -72,10 +72,10 @@ export async function GET(req: NextRequest) {
             orderBy: { weekStart: "desc" },
             include: {
                 userA: {
-                    select: { id: true, name: true, bio: true, city: true },
+                    select: { id: true, name: true, email: true, bio: true, city: true },
                 },
                 userB: {
-                    select: { id: true, name: true, bio: true, city: true },
+                    select: { id: true, name: true, email: true, bio: true, city: true },
                 },
             },
         });
@@ -89,6 +89,7 @@ export async function GET(req: NextRequest) {
                 id: match.id,
                 matchedUser: {
                     name: matchedUser.name,
+                    email: matchedUser.email,
                     bio: matchedUser.bio,
                     city: matchedUser.city,
                 },
