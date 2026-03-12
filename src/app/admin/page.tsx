@@ -36,6 +36,35 @@ interface PreviewResult {
     unmatched: UnmatchedUser[];
 }
 
+interface ViewAsUserMatch {
+    id: string;
+    matchedUser: {
+        name: string;
+        bio: string | null;
+        city: string;
+    };
+    similarityScore: number;
+    explanation: string;
+    weekStart: string;
+}
+
+interface ViewAsUserData {
+    user: {
+        name: string;
+        email: string;
+        bio: string | null;
+        city: string;
+        age: number;
+        gender: string;
+        genderPref: string;
+        completedSetup: boolean;
+        createdAt: string;
+    };
+    optedIn: boolean;
+    weekStart: string;
+    match: ViewAsUserMatch | null;
+}
+
 interface WeekHistory {
     weekNumber: number;
     weekStart: string;
@@ -58,6 +87,12 @@ export default function AdminPage() {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set());
+
+    // View as User state
+    const [viewAsEmail, setViewAsEmail] = useState("");
+    const [viewAsData, setViewAsData] = useState<ViewAsUserData | null>(null);
+    const [viewAsLoading, setViewAsLoading] = useState(false);
+    const [viewAsError, setViewAsError] = useState("");
 
     const fetchOptedIn = useCallback(async () => {
         try {
@@ -108,6 +143,30 @@ export default function AdminPage() {
             return next;
         });
     };
+
+    async function handleViewAsUser(e: React.FormEvent) {
+        e.preventDefault();
+        if (!viewAsEmail.trim()) return;
+        setViewAsLoading(true);
+        setViewAsError("");
+        setViewAsData(null);
+        try {
+            const res = await fetch(
+                `/api/admin/view-as-user?email=${encodeURIComponent(viewAsEmail.trim())}`
+            );
+            if (!res.ok) {
+                const data = await res.json();
+                setViewAsError(data.error || "Failed to fetch user data");
+                return;
+            }
+            const data: ViewAsUserData = await res.json();
+            setViewAsData(data);
+        } catch {
+            setViewAsError("Failed to fetch user data");
+        } finally {
+            setViewAsLoading(false);
+        }
+    }
 
     useEffect(() => {
         fetchOptedIn();
@@ -195,6 +254,190 @@ export default function AdminPage() {
                         {error}
                     </div>
                 )}
+
+                {/* View as User Card */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-zinc-900">View as User</h2>
+                        <p className="text-zinc-400 text-sm mt-1">
+                            Enter an email to see their dashboard (read-only)
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleViewAsUser} className="flex gap-3 mb-4">
+                        <input
+                            type="email"
+                            value={viewAsEmail}
+                            onChange={(e) => setViewAsEmail(e.target.value)}
+                            placeholder="user@mylaurier.ca"
+                            className="flex-1 px-4 py-2.5 border border-zinc-300 rounded-xl text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            disabled={viewAsLoading}
+                            className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 text-sm flex-shrink-0"
+                        >
+                            {viewAsLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Loading...
+                                </span>
+                            ) : (
+                                "View Dashboard"
+                            )}
+                        </button>
+                    </form>
+
+                    {viewAsError && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm mb-4">
+                            {viewAsError}
+                        </div>
+                    )}
+
+                    {viewAsData && (
+                        <div className="border-t border-zinc-100 pt-4">
+                            {/* Admin viewing banner */}
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
+                                <p className="text-amber-800 text-sm font-medium">
+                                    👁️ Viewing as: {viewAsData.user.name} ({viewAsData.user.email})
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setViewAsData(null);
+                                        setViewAsEmail("");
+                                        setViewAsError("");
+                                    }}
+                                    className="text-amber-600 text-sm hover:text-amber-800 transition font-medium"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+
+                            {/* User info row */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                                <div className="bg-zinc-50 rounded-lg p-3">
+                                    <p className="text-xs text-zinc-400">City</p>
+                                    <p className="text-sm text-zinc-900 font-medium">{viewAsData.user.city}</p>
+                                </div>
+                                <div className="bg-zinc-50 rounded-lg p-3">
+                                    <p className="text-xs text-zinc-400">Age</p>
+                                    <p className="text-sm text-zinc-900 font-medium">{viewAsData.user.age}</p>
+                                </div>
+                                <div className="bg-zinc-50 rounded-lg p-3">
+                                    <p className="text-xs text-zinc-400">Gender</p>
+                                    <p className="text-sm text-zinc-900 font-medium capitalize">{viewAsData.user.gender}</p>
+                                </div>
+                                <div className="bg-zinc-50 rounded-lg p-3">
+                                    <p className="text-xs text-zinc-400">Setup</p>
+                                    <p className="text-sm font-medium">
+                                        {viewAsData.user.completedSetup ? (
+                                            <span className="text-green-600">Complete ✓</span>
+                                        ) : (
+                                            <span className="text-red-500">Incomplete ✗</span>
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {viewAsData.user.bio && (
+                                <div className="bg-zinc-50 rounded-lg p-3 mb-4">
+                                    <p className="text-xs text-zinc-400 mb-1">Bio</p>
+                                    <p className="text-sm text-zinc-700">{viewAsData.user.bio}</p>
+                                </div>
+                            )}
+
+                            {/* Opt-in status */}
+                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 mb-4">
+                                <h3 className="text-sm font-semibold text-zinc-700 mb-2">Weekly Opt-in</h3>
+                                {viewAsData.optedIn ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                                        <p className="text-green-600 text-sm font-medium">Opted in for this week</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-zinc-400 text-sm">Not opted in this week</p>
+                                )}
+                            </div>
+
+                            {/* Match card — same design as dashboard */}
+                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-zinc-700 mb-3">Their Latest Match</h3>
+                                {viewAsData.match ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-white text-lg font-bold">
+                                                {viewAsData.match.matchedUser.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-zinc-900 font-semibold">
+                                                    {viewAsData.match.matchedUser.name}
+                                                </p>
+                                                <p className="text-zinc-400 text-sm">
+                                                    {viewAsData.match.matchedUser.city}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {viewAsData.match.matchedUser.bio && (
+                                            <p className="text-zinc-600 text-sm">
+                                                <span className="font-semibold text-zinc-700">Bio: </span>{viewAsData.match.matchedUser.bio}
+                                            </p>
+                                        )}
+
+                                        {/* Compatibility bar */}
+                                        <div className="bg-white border border-zinc-200 rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-xs text-zinc-500">Compatibility</span>
+                                                <span className="text-zinc-900 font-bold text-sm">
+                                                    {Math.round(viewAsData.match.similarityScore * 100)}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-zinc-800 rounded-full transition-all duration-1000"
+                                                    style={{
+                                                        width: `${Math.round(viewAsData.match.similarityScore * 100)}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Match reasons */}
+                                        <div>
+                                            <p className="text-xs font-semibold text-zinc-500 mb-1.5">
+                                                Here&apos;s why:
+                                            </p>
+                                            {(() => {
+                                                let reasons: string[];
+                                                try {
+                                                    reasons = JSON.parse(viewAsData.match.explanation);
+                                                    if (!Array.isArray(reasons)) {
+                                                        reasons = [viewAsData.match.explanation];
+                                                    }
+                                                } catch {
+                                                    reasons = [viewAsData.match.explanation];
+                                                }
+                                                return (
+                                                    <ul className="list-disc list-inside space-y-0.5 text-sm text-zinc-600">
+                                                        {reasons.map((reason, idx) => (
+                                                            <li key={idx}>{reason}</li>
+                                                        ))}
+                                                    </ul>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6">
+                                        <p className="text-zinc-300 text-3xl mb-2">💜</p>
+                                        <p className="text-zinc-500 text-sm">No match yet</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Opted-In Users Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">

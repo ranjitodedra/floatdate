@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { getWeekStart } from "@/lib/week-cycle";
 
 export async function GET() {
     try {
@@ -10,17 +9,15 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const weekStart = getWeekStart();
-
-        // Find match where user is either userA or userB
+        // Find latest match (most recent weekStart) where user is either userA or userB
         const match = await prisma.match.findFirst({
             where: {
-                weekStart,
                 OR: [
                     { userAId: session.userId },
                     { userBId: session.userId },
                 ],
             },
+            orderBy: { weekStart: "desc" },
             include: {
                 userA: {
                     select: { id: true, name: true, bio: true, city: true },

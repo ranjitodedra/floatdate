@@ -317,7 +317,7 @@ export default function DashboardPage() {
                 {/* Match Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-4">
-                        Your Match
+                        Your Latest Match
                     </h2>
 
                     {match ? (
@@ -338,7 +338,7 @@ export default function DashboardPage() {
 
                             {match.matchedUser.bio && (
                                 <p className="text-zinc-600 text-sm">
-                                    {match.matchedUser.bio}
+                                    <span className="font-semibold text-zinc-700">Bio: </span>{match.matchedUser.bio}
                                 </p>
                             )}
 
@@ -392,9 +392,9 @@ export default function DashboardPage() {
                     ) : (
                         <div className="text-center py-8">
                             <p className="text-zinc-300 text-4xl mb-3">💜</p>
-                            <p className="text-zinc-500">No match this week</p>
+                            <p className="text-zinc-500">No match yet</p>
                             <p className="text-zinc-400 text-sm mt-1">
-                                Make sure you&apos;re opted in before Wednesday 9 PM ET
+                                Opt in before Wednesday 9 PM ET to receive your first match
                             </p>
                         </div>
                     )}
