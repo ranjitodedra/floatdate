@@ -123,12 +123,17 @@ Trigger matching with unmatched users → should receive "no match" email
 Match email should show compatibility score percentage
 
 
-
-
 Take our psychology-backed compatibility quiz once. Then opt in weekly by Tuesday 9pm to get a match with a note on why we think you'll click
 
-Fresh Antigravity
+# Fresh Antigravity
+```bash
 Remove-Item -Path "$env:LocalAppData\antigravity" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:AppData\antigravity" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:TEMP\antigravity*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$env:USERPROFILE\.antigravity" -Recurse -Force -ErrorAction SilentlyContinue
+```
+
+# Run the matching script
+```bash
+npm run trigger-matching
+```

@@ -3,15 +3,7 @@ import { fromZonedTime, toZonedTime, formatInTimeZone } from "date-fns-tz";
 const TORONTO_TZ = "America/Toronto";
 const WEDNESDAY = 3; // Day of week: 0=Sun, 1=Mon, ..., 3=Wed
 
-/**
- * Returns the most recent Wednesday 9:00 PM America/Toronto as a UTC Date.
- *
- * If `now` is before Wed 9 PM ET this week, returns the *previous* Wednesday 9 PM ET.
- * If `now` is on or after Wed 9 PM ET, returns *this* Wednesday 9 PM ET.
- *
- * DST is handled automatically via the IANA "America/Toronto" zone.
- */
-export function getWeekStart(now: Date = new Date()): Date {
+function getTargetWednesday(now: Date, weeksOffset: number): Date {
     // Convert "now" to Toronto local time to determine day-of-week and hour
     const torontoNow = toZonedTime(now, TORONTO_TZ);
 
@@ -19,8 +11,6 @@ export function getWeekStart(now: Date = new Date()): Date {
     const hour = torontoNow.getHours();
 
     // How many days back to the most recent Wednesday?
-    // If today is Wednesday and it's before 21:00 local, we need LAST Wednesday.
-    // If today is Wednesday and it's >= 21:00 local, we need THIS Wednesday.
     let daysBack: number;
     if (dayOfWeek === WEDNESDAY) {
         daysBack = hour >= 21 ? 0 : 7;
@@ -32,31 +22,38 @@ export function getWeekStart(now: Date = new Date()): Date {
         daysBack = dayOfWeek + 4;
     }
 
-    // Build "Wednesday 21:00:00" in Toronto local time, then convert to UTC
-    // We use the Toronto-local date components to construct the target
+    // Apply the weekly offset (e.g. +1 week back for previous, -1 for next)
+    daysBack += weeksOffset * 7;
+
     const targetYear = torontoNow.getFullYear();
     const targetMonth = torontoNow.getMonth();
     const targetDay = torontoNow.getDate() - daysBack;
 
     // Create a Date representing "YYYY-MM-DD 21:00:00" in Toronto timezone
-    // fromZonedTime() interprets the given date as if it's in the specified timezone
-    // and returns the equivalent UTC Date.
     const localWednesday = new Date(targetYear, targetMonth, targetDay, 21, 0, 0, 0);
-    const utcWednesday = fromZonedTime(localWednesday, TORONTO_TZ);
-
-    return utcWednesday;
+    return fromZonedTime(localWednesday, TORONTO_TZ);
 }
 
 /**
- * Returns the weekStart for the cycle that just ended (i.e. 7 days before
- * the current getWeekStart). Used by the matching cron which fires at the
- * boundary — at that instant getWeekStart() has already rolled forward,
- * so we need to look back to find the users who opted in during the
- * previous cycle.
+ * Returns the most recent Wednesday 9:00 PM America/Toronto as a UTC Date.
+ *
+ * If `now` is before Wed 9 PM ET this week, returns the *previous* Wednesday 9 PM ET.
+ * If `now` is on or after Wed 9 PM ET, returns *this* Wednesday 9 PM ET.
+ *
+ * DST is handled automatically via the IANA "America/Toronto" zone.
+ */
+export function getWeekStart(now: Date = new Date()): Date {
+    return getTargetWednesday(now, 0);
+}
+
+/**
+ * Returns the weekStart for the cycle that just ended (i.e. strictly the
+ * previous Wednesday 9:00 PM America/Toronto). Used by the matching cron
+ * and scripts to correctly target users who opted in during the previous cycle.
+ * This naturally respects DST boundaries unlike subtracting exactly 7 days.
  */
 export function getPreviousWeekStart(now: Date = new Date()): Date {
-    const currentStart = getWeekStart(now);
-    return new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return getTargetWednesday(now, 1);
 }
 
 /**
@@ -64,9 +61,7 @@ export function getPreviousWeekStart(now: Date = new Date()): Date {
  * This is the end of the current cycle / start of the next cycle.
  */
 export function getNextWeekStart(now: Date = new Date()): Date {
-    const currentStart = getWeekStart(now);
-    // Add exactly 7 days worth of milliseconds
-    return new Date(currentStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return getTargetWednesday(now, -1);
 }
 
 /**

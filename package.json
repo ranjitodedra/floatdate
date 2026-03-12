@@ -9,7 +9,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "delete-user": "tsx scripts/delete-user.ts",
-    "trigger-matching": "tsx scripts/trigger-matching.ts",
+    "trigger-matching": "npx tsx scripts/trigger-matching.ts",
     "test": "vitest run"
   },
   "dependencies": {

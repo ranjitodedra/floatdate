@@ -83,12 +83,12 @@ describe("getWeekStart", () => {
 });
 
 describe("getNextWeekStart", () => {
-    it("returns exactly 7 days after getWeekStart", () => {
+    it("returns the exact calendar week difference regardless of DST", () => {
         const now = utc("2026-01-15T15:00:00Z"); // Thu Jan 15
-        const current = getWeekStart(now);
+        const current = getWeekStart(now); // Jan 15 02:00 UTC (Jan 14 9 PM ET)
         const next = getNextWeekStart(now);
-        const diffMs = next.getTime() - current.getTime();
-        expect(diffMs).toBe(7 * 24 * 60 * 60 * 1000);
+        // Expect exact 1-week calendar advance
+        expect(next.toISOString()).toBe("2026-01-22T02:00:00.000Z");
     });
 
     it("from Wednesday before 9 PM ET, next is this Wednesday 9 PM ET", () => {
@@ -138,12 +138,22 @@ describe("formatTorontoTime", () => {
 });
 
 describe("getPreviousWeekStart", () => {
-    it("returns exactly 7 days before getWeekStart", () => {
+    it("returns the exact calendar week difference regardless of DST", () => {
         const now = utc("2026-01-15T15:00:00Z"); // Thu Jan 15
-        const current = getWeekStart(now);
+        // getWeekStart returns Jan 15 02:00 UTC (Jan 14 9 PM ET)
         const previous = getPreviousWeekStart(now);
-        const diffMs = current.getTime() - previous.getTime();
-        expect(diffMs).toBe(7 * 24 * 60 * 60 * 1000);
+        // Expect exact 1-week calendar deficit
+        expect(previous.toISOString()).toBe("2026-01-08T02:00:00.000Z");
+    });
+
+    it("handles DST spring forward matching exactly 9 PM Local Time", () => {
+        // DST starts Sun Mar 8 2026
+        // Wed Mar 11 2026 9 PM EDT = Mar 12 01:00 UTC
+        const now = utc("2026-03-12T02:00:00Z"); // Wed Mar 11 10 PM EDT
+        const previous = getPreviousWeekStart(now);
+        // The previous week was Wed Mar 4 9 PM EST = Mar 5 02:00 UTC
+        // The difference is NOT 7*24h, because one week is EDT and one is EST!
+        expect(previous.toISOString()).toBe("2026-03-05T02:00:00.000Z");
     });
 
     it("at Wednesday 9 PM boundary, returns the week before the one that just started", () => {
