@@ -315,6 +315,21 @@ export default function DashboardPage() {
                     )}
                 </div>
 
+                {/* Float Live Card */}
+                <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 shadow-sm text-center">
+                    <div className="text-3xl mb-2">🎮</div>
+                    <h2 className="text-lg font-bold text-white mb-1">Float Live</h2>
+                    <p className="text-zinc-400 text-sm mb-4">
+                        Anonymous chat — daily 5-6 PM ET
+                    </p>
+                    <a
+                        href="/float-live"
+                        className="inline-block w-full py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 transition-all duration-200 text-sm"
+                    >
+                        Enter Float Live
+                    </a>
+                </div>
+
                 {/* Match Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-4">
