@@ -108,6 +108,14 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingPairRoom) {
+            const isFriendship = myParticipant.intention === "friendship";
+
+            // Soft-delete old messages so the new chat starts clean
+            await prisma.floatLiveChatMessage.updateMany({
+                where: { chatRoomId: existingPairRoom.id },
+                data: { isDeleted: true },
+            });
+
             // Reactivate the existing room for a fresh chat
             const reactivated = await prisma.floatLiveChatRoom.update({
                 where: { id: existingPairRoom.id },
@@ -115,8 +123,8 @@ export async function POST(req: NextRequest) {
                     isActive: true,
                     endedAt: null,
                     intention: myParticipant.intention,
-                    emailRevealedByA: false,
-                    emailRevealedByB: false,
+                    emailRevealedByA: isFriendship,
+                    emailRevealedByB: isFriendship,
                 },
             });
             return NextResponse.json({ status: "matched", chatRoomId: reactivated.id });
@@ -124,12 +132,15 @@ export async function POST(req: NextRequest) {
 
         // Create chat room — wrapped in try/catch for race condition safety
         try {
+            const isFriendship = myParticipant.intention === "friendship";
             const chatRoom = await prisma.floatLiveChatRoom.create({
                 data: {
                     sessionId,
                     participantAId: myParticipant.id,
                     participantBId: match.id,
                     intention: myParticipant.intention,
+                    emailRevealedByA: isFriendship,
+                    emailRevealedByB: isFriendship,
                 },
             });
 

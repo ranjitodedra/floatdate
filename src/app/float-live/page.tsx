@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import FiltersBar from "./components/FiltersBar";
 import OnlineCounter from "./components/OnlineCounter";
 import TermsModal from "./components/TermsModal";
 import TimeWarning from "./components/TimeWarning";
+
+const WAIT_TIMEOUT_SECONDS = 5 * 60; // 5 minutes
 
 const CHARACTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -37,6 +39,11 @@ export default function FloatLivePage() {
     const [showTerms, setShowTerms] = useState(false);
     const [searching, setSearching] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
+
+    // Wait timer state
+    const [waitSecondsLeft, setWaitSecondsLeft] = useState(WAIT_TIMEOUT_SECONDS);
+    const [timedOut, setTimedOut] = useState(false);
+    const searchStartRef = useRef<number | null>(null);
 
     // Fetch user and status
     useEffect(() => {
@@ -113,6 +120,74 @@ export default function FloatLivePage() {
         }
         getSession();
     }, [isActive]);
+
+    // Cancel search — calls leave API to mark offline
+    const cancelSearch = useCallback(async () => {
+        setSearching(false);
+        searchStartRef.current = null;
+        setWaitSecondsLeft(WAIT_TIMEOUT_SECONDS);
+        if (sessionId) {
+            try {
+                await fetch("/api/float-live/leave", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionId }),
+                });
+            } catch { /* ignore */ }
+        }
+    }, [sessionId]);
+
+    // 5-minute wait timer countdown
+    useEffect(() => {
+        if (!searching) return;
+        if (!searchStartRef.current) {
+            searchStartRef.current = Date.now();
+        }
+
+        const timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - (searchStartRef.current || Date.now())) / 1000);
+            const remaining = WAIT_TIMEOUT_SECONDS - elapsed;
+
+            if (remaining <= 0) {
+                clearInterval(timer);
+                setSearching(false);
+                setTimedOut(true);
+                searchStartRef.current = null;
+                setWaitSecondsLeft(0);
+                // Call leave API to clean up
+                if (sessionId) {
+                    fetch("/api/float-live/leave", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sessionId }),
+                    }).catch(() => { /* ignore */ });
+                }
+            } else {
+                setWaitSecondsLeft(remaining);
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [searching, sessionId]);
+
+    // Cleanup on page unload — mark user offline
+    useEffect(() => {
+        if (!searching || !sessionId) return;
+
+        function handleBeforeUnload() {
+            // Use sendBeacon for reliable delivery on tab close
+            navigator.sendBeacon(
+                "/api/float-live/leave",
+                new Blob(
+                    [JSON.stringify({ sessionId })],
+                    { type: "application/json" }
+                )
+            );
+        }
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [searching, sessionId]);
 
     // Match polling while searching
     useEffect(() => {
@@ -262,11 +337,26 @@ export default function FloatLivePage() {
                             <div className="text-center space-y-3">
                                 <div className="w-10 h-10 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto" />
                                 <p className="text-white font-medium text-sm">Looking for someone...</p>
+                                <p className="text-indigo-300 text-xs font-mono">
+                                    {Math.floor(waitSecondsLeft / 60)}:{String(waitSecondsLeft % 60).padStart(2, "0")}
+                                </p>
                                 <button
-                                    onClick={() => setSearching(false)}
+                                    onClick={cancelSearch}
                                     className="text-xs text-zinc-400 hover:text-zinc-200 transition"
                                 >
                                     Cancel
+                                </button>
+                            </div>
+                        ) : timedOut ? (
+                            <div className="text-center space-y-3 px-4">
+                                <div className="text-3xl">⏰</div>
+                                <p className="text-white font-medium text-sm">No one available right now</p>
+                                <p className="text-zinc-400 text-xs">Try again later!</p>
+                                <button
+                                    onClick={() => setTimedOut(false)}
+                                    className="mt-2 px-4 py-2 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 transition"
+                                >
+                                    Try Again
                                 </button>
                             </div>
                         ) : (
@@ -298,7 +388,7 @@ export default function FloatLivePage() {
                 </div>
 
                 {/* Start button */}
-                {!searching && (
+                {!searching && !timedOut && (
                     <button
                         onClick={handleStartChat}
                         className="w-full py-4 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 transition-all text-lg shadow-lg shadow-indigo-500/25"

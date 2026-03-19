@@ -47,8 +47,8 @@ export async function PATCH(req: NextRequest) {
         if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
             return NextResponse.json({ error: "Hours must be between 0 and 23" }, { status: 400 });
         }
-        if (startHour >= endHour) {
-            return NextResponse.json({ error: "startHour must be less than endHour" }, { status: 400 });
+        if (startHour === endHour) {
+            return NextResponse.json({ error: "startHour and endHour cannot be equal" }, { status: 400 });
         }
 
         const settings = await prisma.floatLiveSettings.upsert({

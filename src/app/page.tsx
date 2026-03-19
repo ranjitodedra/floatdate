@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
+import UpdatesButton from "@/components/UpdatesButton";
 import { getSession } from "@/lib/auth";
 
 export default async function Home() {
@@ -27,15 +28,19 @@ export default async function Home() {
           <Image src="/images/icon.png" alt="FloatDate" width={120} height={40} className="drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
           <div className="flex gap-3">
             {session ? (
-              <Link
-                href="/dashboard"
-                className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
-                style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
-              >
-                Dashboard
-              </Link>
+              <>
+                <UpdatesButton />
+                <Link
+                  href="/dashboard"
+                  className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
+                  style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+                >
+                  Dashboard
+                </Link>
+              </>
             ) : (
               <>
+                <UpdatesButton />
                 <Link
                   href="/login"
                   className="px-5 py-2 text-sm text-white hover:text-white/80 transition"
@@ -70,7 +75,7 @@ export default async function Home() {
                 <br />
                 the swipe fatigue.
                 <br />
-                For Laurier students
+                For University students
               </h1>
 
               <p

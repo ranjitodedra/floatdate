@@ -10,7 +10,7 @@ export default function TermsModal({ onAccept, onCancel }: TermsModalProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5 animate-in">
                 <div className="text-center">
-                    <h2 className="text-xl font-bold text-zinc-900">🎮 Welcome to Float Live!</h2>
+                    <h2 className="text-xl font-bold text-zinc-900">Welcome to Float Live!</h2>
                     <p className="text-sm text-zinc-500 mt-1">Before you start chatting, please agree to the following:</p>
                 </div>
 
@@ -35,7 +35,7 @@ export default function TermsModal({ onAccept, onCancel }: TermsModalProps) {
 
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                     <p className="text-xs text-amber-800">
-                        ⚠️ Violations may result in immediate chat termination, permanent account suspension, and reports logged for admin review. All conversations are monitored and stored for safety purposes.
+                        ⚠️ Violations may result in permanent account suspension, and reports logged for admin review.
                     </p>
                 </div>
 

@@ -86,18 +86,14 @@ export default function ChatRoomPage() {
                         setIntention(matchData.intention);
                     }
 
-                    // If friendship mode, fetch partner email
+                    // If friendship mode, fetch partner email via GET
+                    // (email flags are pre-set by find-match, no mutation needed)
                     if (matchData.intention === "friendship") {
-                        const msgsRes = await fetch(`/api/float-live/chat/${roomId}/messages`);
-                        if (msgsRes.ok) {
-                            const revealRes = await fetch(`/api/float-live/chat/${roomId}/reveal-email`, {
-                                method: "POST",
-                            });
-                            if (revealRes.ok) {
-                                const revealData = await revealRes.json();
-                                if (revealData.partnerEmail) {
-                                    setPartnerEmail(revealData.partnerEmail);
-                                }
+                        const revealRes = await fetch(`/api/float-live/chat/${roomId}/reveal-email`);
+                        if (revealRes.ok) {
+                            const revealData = await revealRes.json();
+                            if (revealData.partnerEmail) {
+                                setPartnerEmail(revealData.partnerEmail);
                             }
                         }
                     }

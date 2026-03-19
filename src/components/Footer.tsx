@@ -22,7 +22,7 @@ export default function Footer() {
             />
           </div>
           <p className="text-sm text-white/90">
-            © 2026 FloatDate. Laurier only.
+            © 2026 FloatDate. University students only.
           </p>
         </div>
 
@@ -37,6 +37,12 @@ export default function Footer() {
               className="text-sm text-white hover:text-white/90 underline-offset-2 hover:underline transition"
             >
               About
+            </Link>
+            <Link
+              href="/float-live-blog"
+              className="text-sm text-white hover:text-white/90 underline-offset-2 hover:underline transition"
+            >
+              Float Live
             </Link>
             <Link
               href="/privacy"

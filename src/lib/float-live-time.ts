@@ -42,6 +42,28 @@ export async function isFloatLiveActive(): Promise<{ active: boolean; minutesLef
     const hour = ontarioTime.getHours();
     const minutes = ontarioTime.getMinutes();
 
+    const isOvernight = startHour > endHour;
+
+    if (isOvernight) {
+        // Overnight window (e.g. 11 PM–3 AM): active when hour >= startHour OR hour < endHour
+        const active = hour >= startHour || hour < endHour;
+        if (active) {
+            let minutesLeft: number;
+            if (hour >= startHour) {
+                // Before midnight: minutes until midnight + endHour next day
+                minutesLeft = (24 - hour - 1) * 60 + (60 - minutes) + endHour * 60;
+            } else {
+                // After midnight: minutes until endHour
+                minutesLeft = (endHour - hour - 1) * 60 + (60 - minutes);
+            }
+            return { active: true, minutesLeft, startsIn: 0 };
+        }
+        // Not active: next session starts at startHour today
+        const startsIn = (startHour - hour - 1) * 60 + (60 - minutes);
+        return { active: false, minutesLeft: 0, startsIn };
+    }
+
+    // Same-day window (existing behavior; data unchanged)
     if (hour >= startHour && hour < endHour) {
         const minutesLeft = (endHour - hour - 1) * 60 + (60 - minutes);
         return { active: true, minutesLeft, startsIn: 0 };
@@ -65,21 +87,19 @@ export async function shouldShowWarning(): Promise<boolean> {
 
 /**
  * Get the start and end times for today's Float Live session in UTC.
+ * For overnight windows (startHour > endHour), endTime is on the next calendar day.
  */
 export async function getTodaySessionTimes(): Promise<{ date: Date; startTime: Date; endTime: Date }> {
     const { startHour, endHour } = await getSettings();
     const now = new Date();
     const ontarioTime = toZonedTime(now, TIMEZONE);
 
-    // Build today's date in Ontario timezone
     const year = ontarioTime.getFullYear();
     const month = ontarioTime.getMonth();
     const day = ontarioTime.getDate();
 
-    // Create date-only (midnight Ontario time converted to UTC concept)
     const dateOnly = new Date(Date.UTC(year, month, day));
 
-    // Calculate UTC offset for Ontario at this date
     const probe = new Intl.DateTimeFormat('en-US', {
         timeZone: TIMEZONE,
         hour: '2-digit',
@@ -96,7 +116,26 @@ export async function getTodaySessionTimes(): Promise<{ date: Date; startTime: D
     if (probeDay < day) offsetHours -= 24;
 
     const startTime = new Date(Date.UTC(year, month, day, startHour - offsetHours, 0, 0));
-    const endTime = new Date(Date.UTC(year, month, day, endHour - offsetHours, 0, 0));
+
+    const isOvernight = startHour > endHour;
+    let endTime: Date;
+    if (isOvernight) {
+        const endProbe = new Intl.DateTimeFormat('en-US', {
+            timeZone: TIMEZONE,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            day: '2-digit',
+        }).formatToParts(new Date(Date.UTC(year, month, day + 1, endHour, 0, 0)));
+        const endProbeHour = parseInt(endProbe.find(p => p.type === 'hour')?.value ?? '0', 10);
+        const endProbeDay = parseInt(endProbe.find(p => p.type === 'day')?.value ?? '0', 10);
+        let endOffsetHours = endProbeHour - endHour;
+        if (endProbeDay > day + 1) endOffsetHours += 24;
+        if (endProbeDay < day + 1) endOffsetHours -= 24;
+        endTime = new Date(Date.UTC(year, month, day + 1, endHour - endOffsetHours, 0, 0));
+    } else {
+        endTime = new Date(Date.UTC(year, month, day, endHour - offsetHours, 0, 0));
+    }
 
     return { date: dateOnly, startTime, endTime };
 }

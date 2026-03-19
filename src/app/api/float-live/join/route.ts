@@ -97,6 +97,22 @@ export async function POST(req: NextRequest) {
             },
         });
 
+        // Close any active chat rooms this participant is in
+        // (prevents rejoining the same partner from a previous chat)
+        await prisma.floatLiveChatRoom.updateMany({
+            where: {
+                isActive: true,
+                OR: [
+                    { participantAId: participant.id },
+                    { participantBId: participant.id },
+                ],
+            },
+            data: {
+                isActive: false,
+                endedAt: new Date(),
+            },
+        });
+
         return NextResponse.json({ participant, sessionId: liveSession.id });
     } catch (error) {
         console.error("Float Live join error:", error);

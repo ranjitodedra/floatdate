@@ -18,6 +18,11 @@ export async function GET(req: NextRequest) {
             where: {
                 sessionId,
                 isOnline: true,
+                acceptedTerms: true,
+                leftAt: null,
+                // Only count participants NOT in any active chat room (genuinely waiting)
+                chatRoomsAsA: { none: { isActive: true } },
+                chatRoomsAsB: { none: { isActive: true } },
             },
         });
 

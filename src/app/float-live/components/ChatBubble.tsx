@@ -22,8 +22,6 @@ export default function ChatBubble({ content, side }: ChatBubbleProps) {
                 fontWeight: 500,
                 boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
                 backdropFilter: "blur(4px)",
-                // Un-mirror the text if the parent container is mirrored
-                transform: side === "right" ? "scaleX(-1)" : "none",
                 ...(side === "right"
                     ? {
                         background: "linear-gradient(135deg, #6366f1, #818cf8)",

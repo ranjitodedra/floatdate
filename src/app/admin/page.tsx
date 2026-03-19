@@ -289,6 +289,31 @@ export default function AdminPage() {
                     </button>
                 </div>
 
+                {/* Float Live Quick Links */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                        onClick={() => router.push("/admin/float-live-chats")}
+                        className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left hover:bg-zinc-800 transition shadow-sm group"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-white">Float Live Chats</h2>
+                            <span className="text-zinc-400 group-hover:text-white transition group-hover:translate-x-1">→</span>
+                        </div>
+                        <p className="text-zinc-400 text-sm">View all conversations, manage reports, and delete chats.</p>
+                    </button>
+                    
+                    <button
+                        onClick={() => router.push("/admin/reports")}
+                        className="bg-white border border-zinc-200 rounded-2xl p-5 text-left hover:border-zinc-300 hover:shadow-md transition shadow-sm group"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-zinc-900">Abuse Reports</h2>
+                            <span className="text-zinc-400 group-hover:text-zinc-900 transition group-hover:translate-x-1">→</span>
+                        </div>
+                        <p className="text-zinc-500 text-sm">Review user reports and take necessary actions.</p>
+                    </button>
+                </div>
+
                 {/* Float Live Settings */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
@@ -298,7 +323,7 @@ export default function AdminPage() {
                         </div>
                         <button
                             onClick={handleSaveFloatLiveSettings}
-                            disabled={flSettingsLoading || flStartHour >= flEndHour}
+                            disabled={flSettingsLoading || flStartHour === flEndHour}
                             className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         >
                             {flSettingsLoading ? "Saving..." : flSettingsSaved ? "✓ Saved" : "Save"}
@@ -335,8 +360,11 @@ export default function AdminPage() {
                             </select>
                         </div>
                     </div>
-                    {flStartHour >= flEndHour && (
-                        <p className="text-red-500 text-xs mt-2">Start hour must be before end hour.</p>
+                    {flStartHour === flEndHour && (
+                        <p className="text-red-500 text-xs mt-2">Start and end cannot be the same.</p>
+                    )}
+                    {flStartHour > flEndHour && (
+                        <p className="text-zinc-500 text-xs mt-2">Overnight window.</p>
                     )}
                 </div>
 

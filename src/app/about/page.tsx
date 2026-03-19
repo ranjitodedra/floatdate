@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 export const metadata = {
   title: "About — FloatDate",
   description:
-    "Why we made FloatDate: meaningful connections for Laurier students, without swipe fatigue.",
+    "Why we made FloatDate: meaningful connections for University students, without swipe fatigue.",
 };
 
 export default function AboutPage() {
