@@ -35,6 +35,20 @@ export default function FloatLiveBlogPage() {
         <h1 className="text-2xl font-semibold text-zinc-900 mb-6">
           Float Live
         </h1>
+
+        {/* YouTube intro video */}
+        <div className="relative w-full mb-8 rounded-2xl overflow-hidden shadow-lg" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src="https://www.youtube.com/embed/gkg3jB3xFMY?si=gm4BV9_WHGbThqW2"
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        </div>
+
         <div className="prose prose-zinc max-w-none text-zinc-700 space-y-6 text-sm leading-relaxed">
           <p>
             Float Live is a real-time, anonymous chat feature inside FloatDate.

@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
             where: {
                 sessionId,
                 isOnline: true,
+                acceptedTerms: true,
+                leftAt: null,
                 userId: { not: authSession.userId },
                 // Not in any active chat room
                 chatRoomsAsA: { none: { isActive: true } },

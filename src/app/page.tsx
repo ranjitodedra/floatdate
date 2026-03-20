@@ -35,7 +35,7 @@ export default async function Home() {
                   className="px-5 py-2 text-sm bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white rounded-full transition border border-white/30"
                   style={{ textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
                 >
-                  Dashboard
+                  Continue
                 </Link>
               </>
             ) : (
@@ -92,7 +92,7 @@ export default async function Home() {
                     href="/dashboard"
                     className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
                   >
-                    Go to Dashboard
+                    Continue
                   </Link>
                 ) : (
                   <>
@@ -176,6 +176,21 @@ export default async function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Float Live Banner ── */}
+      <section className="bg-white px-6 pb-20">
+        <div className="max-w-5xl mx-auto">
+          <Link href="/float-live-blog" className="block rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.02] transition-all duration-300">
+            <Image
+              src="/images/floatlive.png"
+              alt="Float Live — Real-time anonymous chat"
+              width={1200}
+              height={600}
+              className="w-full h-auto"
+            />
+          </Link>
         </div>
       </section>
 
