@@ -1,19 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getWeekStart } from "@/lib/week-cycle";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const admin = await requireAdmin();
         if (!admin) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const universityId = req.nextUrl.searchParams.get("universityId");
         const weekStart = getWeekStart();
 
         const optIns = await prisma.weeklyOptIn.findMany({
-            where: { weekStart },
+            where: {
+                weekStart,
+                ...(universityId
+                    ? { user: { universityId } }
+                    : {}),
+            },
             include: {
                 user: {
                     select: {
@@ -24,6 +30,10 @@ export async function GET() {
                         gender: true,
                         genderPref: true,
                         completedSetup: true,
+                        universityId: true,
+                        university: {
+                            select: { name: true },
+                        },
                     },
                 },
             },
@@ -41,6 +51,8 @@ export async function GET() {
                 genderPref: o.user.genderPref,
                 completedSetup: o.user.completedSetup,
                 optedInAt: o.optedInAt.toISOString(),
+                universityId: o.user.universityId,
+                universityName: o.user.university.name,
             })),
         });
     } catch (error) {

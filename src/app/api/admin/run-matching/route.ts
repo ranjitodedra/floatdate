@@ -38,68 +38,80 @@ export async function POST(req: NextRequest) {
         // so we look back to find users who opted in during the previous cycle.
         const weekStart = getPreviousWeekStart();
 
-        // Run matching
-        const result = await runWeeklyMatching(weekStart);
+        // Fetch all universities
+        const universities = await prisma.university.findMany();
 
-        // Send match emails
-        let emailsSent = 0;
-        try {
-            emailsSent = await sendMatchEmails(result.matches);
-        } catch (emailError) {
-            console.error("Email sending failed:", emailError);
-        }
+        let totalMatched = 0;
+        let totalUnmatched = 0;
+        let totalEmailsSent = 0;
+        let totalNoMatchEmails = 0;
 
-        // Send no-match emails to unmatched users
-        let noMatchEmailsSent = 0;
-        try {
-            // Get all opted-in users for this week
-            const optIns = await prisma.weeklyOptIn.findMany({
-                where: { weekStart },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            email: true,
-                            name: true,
-                            completedSetup: true,
-                            emailVerified: true,
+        for (const uni of universities) {
+            // Run matching for this university
+            const result = await runWeeklyMatching(weekStart, uni.id);
+
+            totalMatched += result.matched;
+            totalUnmatched += result.unmatched;
+
+            // Send match emails
+            try {
+                const sent = await sendMatchEmails(result.matches);
+                totalEmailsSent += sent;
+            } catch (emailError) {
+                console.error(`Email sending failed for ${uni.name}:`, emailError);
+            }
+
+            // Send no-match emails to unmatched users of this university
+            try {
+                const optIns = await prisma.weeklyOptIn.findMany({
+                    where: {
+                        weekStart,
+                        user: { universityId: uni.id },
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                name: true,
+                                completedSetup: true,
+                                emailVerified: true,
+                            },
                         },
                     },
-                },
-            });
+                });
 
-            // Get matched user IDs
-            const matchedUserIds = new Set<string>();
-            for (const match of result.matches) {
-                matchedUserIds.add(match.userAId);
-                matchedUserIds.add(match.userBId);
-            }
-
-            // Send no-match emails to unmatched, verified users
-            for (const optIn of optIns) {
-                if (
-                    optIn.user.completedSetup &&
-                    optIn.user.emailVerified &&
-                    !matchedUserIds.has(optIn.user.id)
-                ) {
-                    const emailResult = await sendNoMatchEmail(
-                        optIn.user.email,
-                        optIn.user.name
-                    );
-                    if (emailResult.status === "sent") noMatchEmailsSent++;
-                    // Rate limiting
-                    await new Promise((r) => setTimeout(r, 500));
+                const matchedUserIds = new Set<string>();
+                for (const match of result.matches) {
+                    matchedUserIds.add(match.userAId);
+                    matchedUserIds.add(match.userBId);
                 }
+
+                for (const optIn of optIns) {
+                    if (
+                        optIn.user.completedSetup &&
+                        optIn.user.emailVerified &&
+                        !matchedUserIds.has(optIn.user.id)
+                    ) {
+                        const emailResult = await sendNoMatchEmail(
+                            optIn.user.email,
+                            optIn.user.name
+                        );
+                        if (emailResult.status === "sent") totalNoMatchEmails++;
+                        await new Promise((r) => setTimeout(r, 500));
+                    }
+                }
+            } catch (noMatchError) {
+                console.error(`No-match email sending failed for ${uni.name}:`, noMatchError);
             }
-        } catch (noMatchError) {
-            console.error("No-match email sending failed:", noMatchError);
         }
 
         return NextResponse.json({
-            matched: result.matched,
-            unmatched: result.unmatched,
-            emails_sent: emailsSent,
-            no_match_emails_sent: noMatchEmailsSent,
+            matched: totalMatched,
+            unmatched: totalUnmatched,
+            emails_sent: totalEmailsSent,
+            no_match_emails_sent: totalNoMatchEmails,
+            universities_processed: universities.length,
             weekStart: weekStart.toISOString(),
         });
     } catch (error) {

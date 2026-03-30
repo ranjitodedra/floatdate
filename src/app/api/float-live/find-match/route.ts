@@ -54,6 +54,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "You must join first" }, { status: 400 });
         }
 
+        // Get current user's university
+        const currentUser = await prisma.user.findUnique({
+            where: { id: authSession.userId },
+            select: { universityId: true },
+        });
+
+        if (!currentUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
         // Check if user already has an active chat room
         const existingRoom = await prisma.floatLiveChatRoom.findFirst({
             where: {
@@ -70,7 +80,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ status: "matched", chatRoomId: existingRoom.id });
         }
 
-        // Find all online, unmatched participants in this session
+        // Find all online, unmatched participants in this session (same university only)
         const candidates = await prisma.floatLiveParticipant.findMany({
             where: {
                 sessionId,
@@ -78,6 +88,8 @@ export async function POST(req: NextRequest) {
                 acceptedTerms: true,
                 leftAt: null,
                 userId: { not: authSession.userId },
+                // Only match within the same university
+                user: { universityId: currentUser.universityId },
                 // Not in any active chat room
                 chatRoomsAsA: { none: { isActive: true } },
                 chatRoomsAsB: { none: { isActive: true } },

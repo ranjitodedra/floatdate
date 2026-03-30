@@ -5,7 +5,6 @@ import { isFloatLiveActive, getTodaySessionTimes } from "@/lib/float-live-time";
 
 const VALID_PREFERENCES = ["male", "female", "nonbinary", "any"];
 const VALID_INTENTIONS = ["blind_date", "friendship"];
-const VALID_CAMPUSES = ["Waterloo", "Brantford", "Milton"];
 const VALID_CHARACTERS = ["A", "B", "C", "D", "E", "F"];
 
 export async function POST(req: NextRequest) {
@@ -33,23 +32,30 @@ export async function POST(req: NextRequest) {
         if (!VALID_INTENTIONS.includes(intention)) {
             return NextResponse.json({ error: "Invalid intention" }, { status: 400 });
         }
-        if (!VALID_CAMPUSES.includes(campus)) {
-            return NextResponse.json({ error: "Invalid campus" }, { status: 400 });
-        }
-        const selectedCharacter = VALID_CHARACTERS.includes(character) ? character : "A";
-        if (!VALID_CHARACTERS.includes(selectedCharacter)) {
-            return NextResponse.json({ error: "Invalid character" }, { status: 400 });
-        }
 
-        // Get user's gender
+        // Get user's gender and university
         const user = await prisma.user.findUnique({
             where: { id: authSession.userId },
-            select: { gender: true },
+            select: {
+                gender: true,
+                universityId: true,
+                university: {
+                    select: { campuses: true },
+                },
+            },
         });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
+
+        // Validate campus against user's university's campuses
+        const validCampuses = Array.isArray(user.university.campuses) ? user.university.campuses as string[] : [];
+        if (!validCampuses.includes(campus)) {
+            return NextResponse.json({ error: "Invalid campus for your university" }, { status: 400 });
+        }
+
+        const selectedCharacter = VALID_CHARACTERS.includes(character) ? character : "A";
 
         // Get or create today's session
         const { date, startTime, endTime } = await getTodaySessionTimes();

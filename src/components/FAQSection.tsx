@@ -11,11 +11,11 @@ const faqItems = [
   {
     question: "Who can sign up?",
     answer:
-      "FloatDate is exclusively for Wilfrid Laurier University students. You need a valid @mylaurier.ca email to sign up. We use student emails strictly for verification.",
+      "FloatDate is exclusively for University students. You need a valid university email to sign up. We use student emails strictly for verification.",
   },
   {
     question: "Is FloatDate free?",
-    answer: "Yes, FloatDate is completely free for all Laurier students.",
+    answer: "Yes, FloatDate is completely free for all University students.",
   },
   {
     question: "How does the matching algorithm work?",

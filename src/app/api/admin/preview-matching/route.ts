@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getWeekStart } from "@/lib/week-cycle";
@@ -9,18 +9,52 @@ import {
     passesHardFilters,
 } from "@/lib/matching";
 
-export async function POST() {
+type PreviewBody = {
+    weekStart?: string;
+    universityId?: string | null;
+};
+
+export async function POST(req: NextRequest) {
     try {
         const admin = await requireAdmin();
         if (!admin) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const weekStart = getWeekStart();
+        let body: PreviewBody = {};
+        try {
+            const text = await req.text();
+            if (text) body = JSON.parse(text) as PreviewBody;
+        } catch {
+            body = {};
+        }
 
-        // 1. Get opted-in users
+        let weekStart: Date;
+        if (body.weekStart) {
+            const parsed = new Date(body.weekStart);
+            if (Number.isNaN(parsed.getTime())) {
+                return NextResponse.json(
+                    { error: "Invalid weekStart" },
+                    { status: 400 }
+                );
+            }
+            weekStart = parsed;
+        } else {
+            weekStart = getWeekStart();
+        }
+
+        const universityIdFilter =
+            body.universityId && body.universityId.length > 0
+                ? body.universityId
+                : undefined;
+
         const optIns = await prisma.weeklyOptIn.findMany({
-            where: { weekStart },
+            where: {
+                weekStart,
+                ...(universityIdFilter
+                    ? { user: { universityId: universityIdFilter } }
+                    : {}),
+            },
             include: {
                 user: {
                     select: {
@@ -30,15 +64,18 @@ export async function POST() {
                         gender: true,
                         genderPref: true,
                         city: true,
+                        universityId: true,
                         createdAt: true,
                         completedSetup: true,
+                        university: {
+                            select: { name: true },
+                        },
                     },
                 },
             },
         });
 
-        // Deduplicate by user ID and filter to completed setup
-        const userMap = new Map<string, typeof optIns[0]["user"]>();
+        const userMap = new Map<string, (typeof optIns)[0]["user"]>();
         for (const o of optIns) {
             if (o.user.completedSetup && !userMap.has(o.user.id)) {
                 userMap.set(o.user.id, o.user);
@@ -46,7 +83,6 @@ export async function POST() {
         }
         const users = Array.from(userMap.values());
 
-        // 2. Get past match pairs
         const allMatches = await prisma.match.findMany({
             select: { userAId: true, userBId: true },
         });
@@ -57,10 +93,10 @@ export async function POST() {
             ])
         );
 
-        // 3. Build vectors
         const questions = await prisma.question.findMany();
         const vectors: Record<string, Record<string, number>> = {};
-        const allAnswers: Record<string, { questionId: string; value: unknown }[]> = {};
+        const allAnswers: Record<string, { questionId: string; value: unknown }[]> =
+            {};
 
         for (const user of users) {
             const answers = await prisma.answer.findMany({
@@ -71,11 +107,17 @@ export async function POST() {
             allAnswers[user.id] = answers;
         }
 
-        // 4. Determine carry-forward priority (unmatched from previous cycle)
-        const prevWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const prevWeekStart = new Date(
+            weekStart.getTime() - 7 * 24 * 60 * 60 * 1000
+        );
 
         const prevOptIns = await prisma.weeklyOptIn.findMany({
-            where: { weekStart: prevWeekStart },
+            where: {
+                weekStart: prevWeekStart,
+                ...(universityIdFilter
+                    ? { user: { universityId: universityIdFilter } }
+                    : {}),
+            },
             select: { userId: true },
         });
 
@@ -94,7 +136,6 @@ export async function POST() {
                 .map((o) => o.userId)
         );
 
-        // Sort: priority users first, then by signup date (older first)
         const sortedUsers = users.sort((a, b) => {
             const aPri = priorityUserIds.has(a.id) ? 0 : 1;
             const bPri = priorityUserIds.has(b.id) ? 0 : 1;
@@ -102,11 +143,20 @@ export async function POST() {
             return a.createdAt.getTime() - b.createdAt.getTime();
         });
 
-        // 5. Greedy matching (dry run — no DB writes)
         const matchedIds = new Set<string>();
         const matches: {
-            userA: { name: string; email: string; city: string };
-            userB: { name: string; email: string; city: string };
+            userA: {
+                name: string;
+                email: string;
+                city: string;
+                universityName: string;
+            };
+            userB: {
+                name: string;
+                email: string;
+                city: string;
+                universityName: string;
+            };
             similarityScore: number;
             reasons: string[];
         }[] = [];
@@ -140,11 +190,17 @@ export async function POST() {
             );
 
             matches.push({
-                userA: { name: user.name, email: user.email, city: user.city },
+                userA: {
+                    name: user.name,
+                    email: user.email,
+                    city: user.city,
+                    universityName: user.university.name,
+                },
                 userB: {
                     name: best.candidate.name,
                     email: best.candidate.email,
                     city: best.candidate.city,
+                    universityName: best.candidate.university.name,
                 },
                 similarityScore: best.score,
                 reasons,
@@ -154,10 +210,14 @@ export async function POST() {
             matchedIds.add(best.candidate.id);
         }
 
-        // 6. Collect unmatched users
         const unmatched = sortedUsers
             .filter((u) => !matchedIds.has(u.id))
-            .map((u) => ({ name: u.name, email: u.email, city: u.city }));
+            .map((u) => ({
+                name: u.name,
+                email: u.email,
+                city: u.city,
+                universityName: u.university.name,
+            }));
 
         return NextResponse.json({
             weekStart: weekStart.toISOString(),

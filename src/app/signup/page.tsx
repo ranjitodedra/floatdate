@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -24,13 +25,26 @@ export default function SignupPage() {
         setError("");
     }
 
+    // Supported university email domains
+    const SUPPORTED_DOMAINS = [
+        "mylaurier.ca",
+        "uwaterloo.ca",
+        "mail.utoronto.ca",
+        "uwo.ca",
+        "mcmaster.ca",
+        "uottawa.ca",
+        "queensu.ca",
+    ];
+
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setError("");
 
         const normalizedEmail = form.email.toLowerCase();
-        if (normalizedEmail !== "ranjitodedra.dev@gmail.com" && !normalizedEmail.endsWith("@mylaurier.ca")) {
-            setError("Only @mylaurier.ca emails are allowed");
+        const domain = normalizedEmail.split("@")[1];
+        const isAdmin = normalizedEmail === "ranjitodedra.dev@gmail.com";
+        if (!isAdmin && (!domain || !SUPPORTED_DOMAINS.includes(domain))) {
+            setError("Only supported university emails are allowed (e.g. @mylaurier.ca, @uwaterloo.ca)");
             return;
         }
 
@@ -118,10 +132,17 @@ export default function SignupPage() {
                             value={form.email}
                             onChange={(e) => updateField("email", e.target.value)}
                             className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
-                            placeholder="you@mylaurier.ca"
+                            placeholder="you@university.ca"
                         />
                         <p className="text-xs text-zinc-400 mt-1">
-                            Only @mylaurier.ca emails accepted
+                            Only university emails are accepted.{" "}
+                            <Link
+                                href="/universities"
+                                className="text-zinc-700 font-medium underline hover:text-zinc-900"
+                            >
+                                See which universities are supported
+                            </Link>
+                            .
                         </p>
                     </div>
 

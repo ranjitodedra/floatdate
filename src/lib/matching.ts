@@ -1,4 +1,4 @@
-﻿import { prisma } from "./db";
+import { prisma } from "./db";
 import blossom from "edmonds-blossom";
 
 // ---------- Types ----------
@@ -9,6 +9,7 @@ interface UserForMatching {
     gender: string;
     genderPref: string;
     city: string;
+    universityId: string;
     createdAt: Date;
 }
 
@@ -891,6 +892,9 @@ export function explainDetailed(
 
 // ---------- Hard Filters ----------
 export function passesHardFilters(a: UserForMatching, b: UserForMatching): boolean {
+    // Must be from the same university
+    if (a.universityId !== b.universityId) return false;
+
     // Mutual gender preference
     const aAcceptsB =
         a.genderPref === "any" || a.genderPref === b.gender;
@@ -985,10 +989,13 @@ export function findOptimalPairs(
 }
 
 // ---------- Main Matching Pipeline ----------
-export async function runWeeklyMatching(weekStart: Date) {
+export async function runWeeklyMatching(weekStart: Date, universityId?: string) {
     // 1. Get all opted-in users for this week who completed setup
     const optIns = await prisma.weeklyOptIn.findMany({
-        where: { weekStart },
+        where: {
+            weekStart,
+            ...(universityId ? { user: { universityId } } : {}),
+        },
         include: {
             user: {
                 select: {
@@ -996,6 +1003,7 @@ export async function runWeeklyMatching(weekStart: Date) {
                     gender: true,
                     genderPref: true,
                     city: true,
+                    universityId: true,
                     createdAt: true,
                     completedSetup: true,
                 },

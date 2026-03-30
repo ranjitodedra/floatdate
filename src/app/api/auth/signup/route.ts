@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { hashPassword, isValidLaurierEmail } from "@/lib/auth";
+import { hashPassword, getUniversityByEmail } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/send-match-email";
 import { randomUUID } from "crypto";
 
 const signupSchema = z.object({
-    email: z
-        .string()
-        .email("Invalid email address")
-        .refine((e) => isValidLaurierEmail(e), {
-            message: "Only @mylaurier.ca emails are allowed",
-        }),
+    email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     name: z.string().min(1, "Name is required").max(100),
     age: z.number().int().min(17, "Must be at least 17").max(100),
@@ -36,15 +31,16 @@ export async function POST(req: NextRequest) {
         const { email, password, name, age, gender, genderPref, city, bio } =
             result.data;
 
-        // Double-check Laurier email server-side
-        if (!isValidLaurierEmail(email)) {
+        const normalizedEmail = email.toLowerCase();
+
+        // Look up university by email domain
+        const university = await getUniversityByEmail(normalizedEmail);
+        if (!university) {
             return NextResponse.json(
-                { error: "Only @mylaurier.ca emails are allowed" },
+                { error: "Only supported university emails are allowed (e.g. @mylaurier.ca, @uwaterloo.ca)" },
                 { status: 400 }
             );
         }
-
-        const normalizedEmail = email.toLowerCase();
 
         // Check if a verified user already exists
         const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -86,6 +82,7 @@ export async function POST(req: NextRequest) {
                 city,
                 bio: bio || null,
                 passwordHash,
+                universityId: university.id,
                 verifyToken,
                 verifyTokenExpiry,
             },
@@ -98,6 +95,7 @@ export async function POST(req: NextRequest) {
                 city,
                 bio: bio || null,
                 passwordHash,
+                universityId: university.id,
                 verifyToken,
                 verifyTokenExpiry,
             },

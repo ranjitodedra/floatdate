@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
                     city: pending.city,
                     bio: pending.bio,
                     passwordHash: pending.passwordHash,
+                    universityId: pending.universityId,
                     emailVerified: true,
                 },
             });

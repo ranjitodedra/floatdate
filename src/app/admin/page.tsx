@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 interface OptedInUser {
@@ -14,11 +14,23 @@ interface OptedInUser {
     genderPref: string;
     completedSetup: boolean;
     optedInAt: string;
+    universityId: string;
+    universityName: string;
 }
 
 interface MatchPreview {
-    userA: { name: string; email: string; city: string };
-    userB: { name: string; email: string; city: string };
+    userA: {
+        name: string;
+        email: string;
+        city: string;
+        universityName: string;
+    };
+    userB: {
+        name: string;
+        email: string;
+        city: string;
+        universityName: string;
+    };
     similarityScore: number;
     reasons: string[];
 }
@@ -27,6 +39,7 @@ interface UnmatchedUser {
     name: string;
     email: string;
     city: string;
+    universityName: string;
 }
 
 interface PreviewResult {
@@ -74,6 +87,17 @@ interface WeekHistory {
     users: OptedInUser[];
 }
 
+interface University {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+interface WeekChoice {
+    weekStart: string;
+    label: string;
+}
+
 export default function AdminPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -101,9 +125,30 @@ export default function AdminPage() {
     const [flSettingsLoading, setFlSettingsLoading] = useState(false);
     const [flSettingsSaved, setFlSettingsSaved] = useState(false);
 
+    const [universities, setUniversities] = useState<University[]>([]);
+    const [observationUniversityId, setObservationUniversityId] = useState("");
+    const [weekChoices, setWeekChoices] = useState<WeekChoice[]>([]);
+    const [previewWeekStart, setPreviewWeekStart] = useState("");
+    const [previewUniversityId, setPreviewUniversityId] = useState("");
+
+    const fetchUniversities = useCallback(async () => {
+        try {
+            const res = await fetch("/api/admin/universities");
+            if (!res.ok) return;
+            const data = await res.json();
+            setUniversities(data.universities ?? []);
+        } catch {
+            // ignore
+        }
+    }, []);
+
     const fetchOptedIn = useCallback(async () => {
         try {
-            const res = await fetch("/api/admin/opted-in");
+            const qs =
+                observationUniversityId.length > 0
+                    ? `?universityId=${encodeURIComponent(observationUniversityId)}`
+                    : "";
+            const res = await fetch(`/api/admin/opted-in${qs}`);
             if (res.status === 401) {
                 setAuthorized(false);
                 setLoading(false);
@@ -121,12 +166,16 @@ export default function AdminPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [observationUniversityId]);
 
     const fetchWeekHistory = useCallback(async () => {
         setHistoryLoading(true);
         try {
-            const res = await fetch("/api/admin/opted-in-history");
+            const qs =
+                observationUniversityId.length > 0
+                    ? `?universityId=${encodeURIComponent(observationUniversityId)}`
+                    : "";
+            const res = await fetch(`/api/admin/opted-in-history${qs}`);
             if (!res.ok) throw new Error("Failed to fetch history");
             const data = await res.json();
             setWeekHistory(data.weeks);
@@ -137,7 +186,7 @@ export default function AdminPage() {
         } finally {
             setHistoryLoading(false);
         }
-    }, []);
+    }, [observationUniversityId]);
 
     const toggleWeekExpanded = (weekNumber: number) => {
         setExpandedWeeks((prev) => {
@@ -177,7 +226,24 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchOptedIn();
-        // Fetch Float Live settings
+        fetchUniversities();
+        fetch("/api/admin/opted-in-history")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data: { weeks?: WeekHistory[] } | null) => {
+                if (!data?.weeks?.length) return;
+                const choices: WeekChoice[] = data.weeks
+                    .map((w) => ({
+                        weekStart: w.weekStart,
+                        label: `Week ${w.weekNumber} (${new Date(w.weekStart).toLocaleDateString("en-US", { timeZone: "America/Toronto", month: "short", day: "numeric" })} – ${new Date(w.weekEnd).toLocaleDateString("en-US", { timeZone: "America/Toronto", month: "short", day: "numeric" })})`,
+                    }))
+                    .sort(
+                        (a, b) =>
+                            new Date(b.weekStart).getTime() -
+                            new Date(a.weekStart).getTime()
+                    );
+                setWeekChoices(choices);
+            })
+            .catch(() => { });
         fetch("/api/admin/float-live-settings")
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
@@ -187,7 +253,18 @@ export default function AdminPage() {
                 }
             })
             .catch(() => { });
-    }, [fetchOptedIn]);
+    }, [fetchOptedIn, fetchUniversities]);
+
+    useEffect(() => {
+        if (weekStart && !previewWeekStart) {
+            setPreviewWeekStart(weekStart);
+        }
+    }, [weekStart, previewWeekStart]);
+
+    useEffect(() => {
+        if (!showHistory) return;
+        fetchWeekHistory();
+    }, [observationUniversityId, showHistory, fetchWeekHistory]);
 
     async function handleSaveFloatLiveSettings() {
         setFlSettingsLoading(true);
@@ -216,8 +293,17 @@ export default function AdminPage() {
         setPreviewing(true);
         setError("");
         try {
+            const body: { weekStart?: string; universityId?: string | null } = {};
+            if (previewWeekStart) {
+                body.weekStart = previewWeekStart;
+            }
+            if (previewUniversityId) {
+                body.universityId = previewUniversityId;
+            }
             const res = await fetch("/api/admin/preview-matching", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error("Preview failed");
             const data: PreviewResult = await res.json();
@@ -229,6 +315,38 @@ export default function AdminPage() {
             setPreviewing(false);
         }
     }
+
+    const formatDate = (iso: string) => {
+        const d = new Date(iso);
+        return d.toLocaleString("en-US", {
+            timeZone: "America/Toronto",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
+    };
+
+    const previewWeekOptions = useMemo(() => {
+        const byIso = new Map<string, string>();
+        for (const c of weekChoices) {
+            byIso.set(c.weekStart, c.label);
+        }
+        if (weekStart && !byIso.has(weekStart)) {
+            byIso.set(
+                weekStart,
+                `Current cycle (${new Date(weekStart).toLocaleDateString("en-US", { timeZone: "America/Toronto", month: "short", day: "numeric", year: "numeric" })})`
+            );
+        }
+        return Array.from(byIso.entries())
+            .map(([ws, label]) => ({ weekStart: ws, label }))
+            .sort(
+                (a, b) =>
+                    new Date(b.weekStart).getTime() -
+                    new Date(a.weekStart).getTime()
+            );
+    }, [weekChoices, weekStart]);
 
     if (loading) {
         return (
@@ -258,35 +376,45 @@ export default function AdminPage() {
         );
     }
 
-    const formatDate = (iso: string) => {
-        const d = new Date(iso);
-        return d.toLocaleString("en-US", {
-            timeZone: "America/Toronto",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        });
-    };
-
     return (
         <div className="min-h-screen bg-zinc-50 px-4 py-8">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-zinc-900">Admin Panel</h1>
                         <p className="text-sm text-zinc-400 mt-1">
                             Week of {formatDate(weekStart)}
                         </p>
+                        <button
+                            type="button"
+                            onClick={() => router.push("/admin/users")}
+                            className="mt-3 text-sm font-medium text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-4 py-2 rounded-xl transition"
+                        >
+                            All Users →
+                        </button>
                     </div>
-                    <button
-                        onClick={() => router.push("/dashboard")}
-                        className="text-sm text-zinc-400 hover:text-zinc-700 transition"
-                    >
-                        ← Dashboard
-                    </button>
+                    <div className="flex flex-col items-end gap-2">
+                        <label className="text-xs text-zinc-500 self-end">Filter opted-in &amp; history</label>
+                        <select
+                            value={observationUniversityId}
+                            onChange={(e) => setObservationUniversityId(e.target.value)}
+                            className="border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-400 min-w-[220px]"
+                        >
+                            <option value="">All universities</option>
+                            {universities.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                    {u.name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={() => router.push("/dashboard")}
+                            className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                        >
+                            ← Dashboard
+                        </button>
+                    </div>
                 </div>
 
                 {/* Float Live Quick Links */}
@@ -600,6 +728,7 @@ export default function AdminPage() {
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">#</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Name</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Email</th>
+                                        <th className="text-left py-2 pr-4 text-zinc-400 font-medium">University</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">City</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Gender</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Pref</th>
@@ -616,6 +745,7 @@ export default function AdminPage() {
                                             <td className="py-2.5 pr-4 text-zinc-400">{i + 1}</td>
                                             <td className="py-2.5 pr-4 text-zinc-900 font-medium">{u.name}</td>
                                             <td className="py-2.5 pr-4 text-zinc-500">{u.email}</td>
+                                            <td className="py-2.5 pr-4 text-zinc-600 text-xs">{u.universityName}</td>
                                             <td className="py-2.5 pr-4 text-zinc-500">{u.city}</td>
                                             <td className="py-2.5 pr-4 text-zinc-500 capitalize">{u.gender}</td>
                                             <td className="py-2.5 pr-4 text-zinc-500 capitalize">{u.genderPref}</td>
@@ -649,12 +779,7 @@ export default function AdminPage() {
                             </p>
                         </div>
                         <button
-                            onClick={() => {
-                                if (!showHistory && weekHistory.length === 0) {
-                                    fetchWeekHistory();
-                                }
-                                setShowHistory(!showHistory);
-                            }}
+                            onClick={() => setShowHistory(!showHistory)}
                             className="px-4 py-2 bg-zinc-100 text-zinc-700 font-medium rounded-xl hover:bg-zinc-200 transition-all duration-200 text-sm"
                         >
                             {showHistory ? "Hide History" : "Show History"}
@@ -716,6 +841,7 @@ export default function AdminPage() {
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">#</th>
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Name</th>
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Email</th>
+                                                                                    <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">University</th>
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">City</th>
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Gender</th>
                                                                                     <th className="text-left py-1.5 pr-3 text-zinc-400 font-medium">Pref</th>
@@ -728,6 +854,7 @@ export default function AdminPage() {
                                                                                         <td className="py-1.5 pr-3 text-zinc-400">{idx + 1}</td>
                                                                                         <td className="py-1.5 pr-3 text-zinc-900 font-medium">{u.name}</td>
                                                                                         <td className="py-1.5 pr-3 text-zinc-500">{u.email}</td>
+                                                                                        <td className="py-1.5 pr-3 text-zinc-600">{u.universityName}</td>
                                                                                         <td className="py-1.5 pr-3 text-zinc-500">{u.city}</td>
                                                                                         <td className="py-1.5 pr-3 text-zinc-500 capitalize">{u.gender}</td>
                                                                                         <td className="py-1.5 pr-3 text-zinc-500 capitalize">{u.genderPref}</td>
@@ -767,19 +894,60 @@ export default function AdminPage() {
                     )}
                 </div>
 
-                {/* Preview Matches Button */}
+                {/* Match Preview */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <div>
-                            <h2 className="text-lg font-semibold text-zinc-900">Match Preview</h2>
-                            <p className="text-zinc-400 text-sm mt-1">
-                                Dry run — no emails sent, no data saved
-                            </p>
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-zinc-900">Match Preview</h2>
+                        <p className="text-zinc-400 text-sm mt-1">
+                            Dry run — no emails sent, no data saved. Pick a week and optionally a
+                            university pool.
+                        </p>
+                    </div>
+                    <div className="flex flex-col lg:flex-row lg:items-end gap-4 flex-wrap">
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">
+                                Week (cycle start)
+                            </label>
+                            <select
+                                value={previewWeekStart || weekStart}
+                                onChange={(e) => setPreviewWeekStart(e.target.value)}
+                                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                            >
+                                {previewWeekOptions.length === 0 && weekStart ? (
+                                    <option value={weekStart}>
+                                        Current cycle ({formatDate(weekStart)})
+                                    </option>
+                                ) : (
+                                    previewWeekOptions.map((w) => (
+                                        <option key={w.weekStart} value={w.weekStart}>
+                                            {w.label}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">
+                                University pool
+                            </label>
+                            <select
+                                value={previewUniversityId}
+                                onChange={(e) => setPreviewUniversityId(e.target.value)}
+                                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                            >
+                                <option value="">All universities</option>
+                                {universities.map((u) => (
+                                    <option key={u.id} value={u.id}>
+                                        {u.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <button
+                            type="button"
                             onClick={handlePreview}
-                            disabled={previewing || users.length < 2}
-                            className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            disabled={previewing}
+                            className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm shrink-0"
                         >
                             {previewing ? (
                                 <span className="flex items-center gap-2">
@@ -796,6 +964,12 @@ export default function AdminPage() {
                 {/* Preview Results */}
                 {preview && (
                     <>
+                        <p className="text-sm text-zinc-500 text-center">
+                            Preview for cycle starting{" "}
+                            <span className="font-medium text-zinc-800">
+                                {formatDate(preview.weekStart)}
+                            </span>
+                        </p>
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4">
                             <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm text-center">
@@ -832,6 +1006,9 @@ export default function AdminPage() {
                                                     <div className="min-w-0">
                                                         <p className="text-zinc-900 font-medium text-sm truncate">{m.userA.name}</p>
                                                         <p className="text-zinc-400 text-xs truncate">{m.userA.email}</p>
+                                                        <p className="text-zinc-500 text-[10px] truncate mt-0.5">
+                                                            {m.userA.universityName}
+                                                        </p>
                                                     </div>
                                                 </div>
 
@@ -846,6 +1023,9 @@ export default function AdminPage() {
                                                     <div className="min-w-0 text-right">
                                                         <p className="text-zinc-900 font-medium text-sm truncate">{m.userB.name}</p>
                                                         <p className="text-zinc-400 text-xs truncate">{m.userB.email}</p>
+                                                        <p className="text-zinc-500 text-[10px] truncate mt-0.5">
+                                                            {m.userB.universityName}
+                                                        </p>
                                                     </div>
                                                     <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                                                         {m.userB.name.charAt(0).toUpperCase()}
@@ -887,6 +1067,7 @@ export default function AdminPage() {
                                             <div className="min-w-0">
                                                 <p className="text-zinc-900 text-sm font-medium truncate">{u.name}</p>
                                                 <p className="text-zinc-400 text-xs truncate">{u.email} · {u.city}</p>
+                                                <p className="text-zinc-500 text-[10px] truncate">{u.universityName}</p>
                                             </div>
                                         </div>
                                     ))}

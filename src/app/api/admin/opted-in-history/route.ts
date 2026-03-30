@@ -1,16 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const admin = await requireAdmin();
         if (!admin) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Fetch ALL opt-in records grouped by weekStart
+        const universityId = req.nextUrl.searchParams.get("universityId");
+
         const allOptIns = await prisma.weeklyOptIn.findMany({
+            where: universityId
+                ? { user: { universityId } }
+                : undefined,
             include: {
                 user: {
                     select: {
@@ -21,13 +25,16 @@ export async function GET() {
                         gender: true,
                         genderPref: true,
                         completedSetup: true,
+                        universityId: true,
+                        university: {
+                            select: { name: true },
+                        },
                     },
                 },
             },
             orderBy: { optedInAt: "desc" },
         });
 
-        // Group by weekStart
         const weekMap = new Map<
             string,
             {
@@ -41,6 +48,8 @@ export async function GET() {
                     genderPref: string;
                     completedSetup: boolean;
                     optedInAt: Date;
+                    universityId: string;
+                    universityName: string;
                 }[];
             }
         >();
@@ -62,10 +71,11 @@ export async function GET() {
                 genderPref: optIn.user.genderPref,
                 completedSetup: optIn.user.completedSetup,
                 optedInAt: optIn.optedInAt,
+                universityId: optIn.user.universityId,
+                universityName: optIn.user.university.name,
             });
         }
 
-        // Sort weeks chronologically (oldest first) and number them
         const sortedWeeks = Array.from(weekMap.values()).sort(
             (a, b) => a.weekStart.getTime() - b.weekStart.getTime()
         );

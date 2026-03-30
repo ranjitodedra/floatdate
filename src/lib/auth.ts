@@ -76,6 +76,7 @@ export async function getCurrentUser() {
             genderPref: true,
             city: true,
             bio: true,
+            universityId: true,
             completedSetup: true,
             createdAt: true,
         },
@@ -83,9 +84,43 @@ export async function getCurrentUser() {
     return user;
 }
 
+/**
+ * Look up the University record for an email address based on its domain.
+ * Returns null if the email domain is not recognized.
+ * Admin email (ranjitodedra.dev@gmail.com) falls back to Laurier.
+ */
+export async function getUniversityByEmail(email: string): Promise<{ id: string; slug: string; name: string; campuses: unknown } | null> {
+    const normalizedEmail = email.toLowerCase();
+
+    // Admin exception — map to Laurier
+    if (normalizedEmail === "ranjitodedra.dev@gmail.com") {
+        return prisma.university.findUnique({
+            where: { slug: "laurier" },
+            select: { id: true, slug: true, name: true, campuses: true },
+        });
+    }
+
+    const domain = normalizedEmail.split("@")[1];
+    if (!domain) return null;
+
+    return prisma.university.findUnique({
+        where: { emailDomain: domain },
+        select: { id: true, slug: true, name: true, campuses: true },
+    });
+}
+
+/**
+ * Simple boolean check: is this a supported university email?
+ * Backward-compatible replacement for isValidLaurierEmail.
+ */
+export async function isValidUniversityEmail(email: string): Promise<boolean> {
+    const uni = await getUniversityByEmail(email);
+    return uni !== null;
+}
+
+// Keep backward compat — deprecated, use isValidUniversityEmail instead
 export function isValidLaurierEmail(email: string): boolean {
     const normalizedEmail = email.toLowerCase();
-    // Allow exception for ranjitodedra.dev@gmail.com
     if (normalizedEmail === "ranjitodedra.dev@gmail.com") {
         return true;
     }

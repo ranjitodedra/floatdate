@@ -6,6 +6,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model University {
+  id            String   @id @default(uuid())
+  slug          String   @unique    // "laurier", "waterloo", "uoft", etc.
+  name          String               // "Wilfrid Laurier University"
+  emailDomain   String   @unique    // "mylaurier.ca", "uwaterloo.ca", etc.
+  campuses      Json     @default("[]") // ["Waterloo","Brantford","Milton"]
+  createdAt     DateTime @default(now())
+
+  users          User[]
+  pendingSignups PendingSignup[]
+}
+
 model User {
   id             String       @id @default(uuid())
   email          String       @unique
@@ -16,12 +28,14 @@ model User {
   city           String
   bio            String?
   passwordHash   String
+  universityId       String
   completedSetup     Boolean      @default(false)
   emailVerified      Boolean      @default(true)
   notifyPreference   String?
   phoneVerified      Boolean      @default(false)
   createdAt          DateTime     @default(now())
 
+  university     University   @relation(fields: [universityId], references: [id])
   answers        Answer[]
   optIns         WeeklyOptIn[]
   matchesA       Match[]      @relation("matchUserA")
@@ -103,9 +117,12 @@ model PendingSignup {
   city               String
   bio                String?
   passwordHash       String
+  universityId       String
   verifyToken        String   @unique
   verifyTokenExpiry  DateTime
   createdAt          DateTime @default(now())
+
+  university     University   @relation(fields: [universityId], references: [id])
 }
 
 model PasswordResetToken {
