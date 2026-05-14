@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "delete-user": "tsx scripts/delete-user.ts",
     "trigger-matching": "npx tsx scripts/trigger-matching.ts",
+    "db:dump": "npx tsx scripts/pg-dump.ts",
     "test": "vitest run"
   },
   "dependencies": {
