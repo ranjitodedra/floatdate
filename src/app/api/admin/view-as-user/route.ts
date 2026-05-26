@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getWeekStart } from "@/lib/week-cycle";
+import { parseMatchExplanation } from "@/lib/match-explanation";
 
 /**
  * GET /api/admin/view-as-user?email=...
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
         if (match) {
             const matchedUser =
                 match.userAId === user.id ? match.userB : match.userA;
+            const parsedExplanation = parseMatchExplanation(match.explanation);
             matchData = {
                 id: match.id,
                 matchedUser: {
@@ -95,6 +97,8 @@ export async function GET(req: NextRequest) {
                 },
                 similarityScore: match.similarityScore,
                 explanation: match.explanation,
+                reasons: parsedExplanation.displayReasons,
+                explanationDebug: parsedExplanation.v2,
                 weekStart: match.weekStart.toISOString(),
             };
         }

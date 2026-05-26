@@ -4,9 +4,10 @@ import { formatInTimeZone } from "date-fns-tz";
 import { prisma } from "../src/lib/db";
 import {
     buildVector,
-    explainDetailed,
+    buildMatchExplanationForPair,
     findOptimalPairs,
 } from "../src/lib/matching";
+import { getDisplayReasonsFromExplanation } from "../src/lib/match-explanation";
 import { sendMatchEmails, sendNoMatchEmail } from "../src/lib/send-match-email";
 import { getWeekStart, getPreviousWeekStart } from "../src/lib/week-cycle";
 
@@ -33,6 +34,7 @@ interface PreviewMatch {
     userB: { id: string; name: string; email: string; city: string };
     similarityScore: number;
     reasons: string[];
+    explanation: string;
 }
 
 interface UnmatchedUser {
@@ -76,7 +78,7 @@ async function main() {
 
         // Get all past match pairs (global — to avoid re-matching across transfers)
         const allMatches = await prisma.match.findMany({
-            select: { userAId: true, userBId: true },
+            select: { userAId: true, userBId: true, weekStart: true, explanation: true },
         });
         const pastPairs = new Set(
             allMatches.flatMap((m) => [
@@ -188,19 +190,33 @@ async function main() {
                 const userA = users.find((u) => u.id === pair.userAId)!;
                 const userB = users.find((u) => u.id === pair.userBId)!;
 
-                const reasons = explainDetailed(
-                    allAnswers[pair.userAId],
-                    allAnswers[pair.userBId],
-                    questions,
-                    vectors[pair.userAId],
-                    vectors[pair.userBId]
+                const pairHistory = allMatches.filter(
+                    (match) =>
+                        match.weekStart.getTime() < weekStart.getTime() &&
+                        (match.userAId === pair.userAId ||
+                            match.userBId === pair.userAId ||
+                            match.userAId === pair.userBId ||
+                            match.userBId === pair.userBId)
                 );
+                const explanation = buildMatchExplanationForPair({
+                    answersA: allAnswers[pair.userAId],
+                    answersB: allAnswers[pair.userBId],
+                    questions,
+                    vecA: vectors[pair.userAId],
+                    vecB: vectors[pair.userBId],
+                    similarityScore: pair.score,
+                    weekStart,
+                    historicalMatches: pairHistory,
+                    pairKey: `${pair.userAId}:${pair.userBId}:${weekStart.toISOString()}`,
+                });
+                const reasons = getDisplayReasonsFromExplanation(explanation);
 
                 previewMatches.push({
                     userA: { id: userA.id, name: userA.name, email: userA.email, city: userA.city },
                     userB: { id: userB.id, name: userB.name, email: userB.email, city: userB.city },
                     similarityScore: pair.score,
                     reasons,
+                    explanation,
                 });
 
                 matchedIds.add(pair.userAId);
@@ -282,7 +298,7 @@ async function main() {
             const matchedIds = new Set<string>();
 
             for (const pm of entry.matches) {
-                const explanationStr = JSON.stringify(pm.reasons);
+                const explanationStr = pm.explanation;
 
                 await prisma.match.deleteMany({
                     where: {

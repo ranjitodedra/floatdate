@@ -1,5 +1,6 @@
 import { sendEmail, sendVerifyEmail } from "./email";
 import { prisma } from "./db";
+import { getDisplayReasonsFromExplanation } from "./match-explanation";
 
 // ─── Verification Email ───────────────────────────────────────
 
@@ -111,7 +112,7 @@ export function buildMatchEmailHtml(
     const scoreFormatted = scorePercent.toFixed(1);
 
     const reasonsList = explanation
-        .map((reason) => `<li style="color: #18181b; margin: 0 0 12px 0; line-height: 1.6;">${reason}</li>`)
+        .map((reason) => `<li style="color: #18181b; margin: 0 0 12px 0; line-height: 1.6;">${escapeHtml(reason)}</li>`)
         .join("");
 
     return `
@@ -152,6 +153,15 @@ export function buildMatchEmailHtml(
       `;
 }
 
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export async function sendMatchEmail(
     to: string,
     recipientName: string,
@@ -166,16 +176,7 @@ export async function sendMatchEmail(
         return { status: "skipped" };
     }
 
-    // Parse explanation as JSON array, with fallback for legacy string format
-    let reasons: string[];
-    try {
-        reasons = JSON.parse(explanation);
-        if (!Array.isArray(reasons)) {
-            reasons = [explanation]; // Fallback to single string
-        }
-    } catch {
-        reasons = [explanation]; // Fallback to single string
-    }
+    const reasons = getDisplayReasonsFromExplanation(explanation);
 
     const html = buildMatchEmailHtml(
         recipientName,

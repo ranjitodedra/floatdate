@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { getDisplayReasonsFromExplanation } from "@/lib/match-explanation";
 
 export async function GET() {
     try {
@@ -35,6 +36,7 @@ export async function GET() {
         // Determine the matched user (not the current user)
         const matchedUser =
             match.userAId === session.userId ? match.userB : match.userA;
+        const reasons = getDisplayReasonsFromExplanation(match.explanation);
 
         return NextResponse.json({
             match: {
@@ -46,7 +48,8 @@ export async function GET() {
                     city: matchedUser.city,
                 },
                 similarityScore: match.similarityScore,
-                explanation: match.explanation,
+                reasons,
+                explanation: JSON.stringify(reasons),
                 weekStart: match.weekStart.toISOString(),
             },
         });

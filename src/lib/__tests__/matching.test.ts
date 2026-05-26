@@ -186,9 +186,9 @@ describe("buildVector + similarity integration", () => {
 // Helper: create a mock UserForMatching
 // =============================================================
 function mockUser(id: string, gender = "male", genderPref = "female", city = "Toronto"): {
-    id: string; gender: string; genderPref: string; city: string; createdAt: Date;
+    id: string; gender: string; genderPref: string; city: string; universityId: string; createdAt: Date;
 } {
-    return { id, gender, genderPref, city, createdAt: new Date("2026-01-01") };
+    return { id, gender, genderPref, city, universityId: "uni-1", createdAt: new Date("2026-01-01") };
 }
 
 // =============================================================

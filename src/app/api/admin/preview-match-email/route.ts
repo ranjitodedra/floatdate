@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildMatchEmailHtml } from "@/lib/send-match-email";
+import { getDisplayReasonsFromExplanation } from "@/lib/match-explanation";
 
 export async function GET(req: NextRequest) {
     try {
@@ -30,14 +31,7 @@ export async function GET(req: NextRequest) {
         const explanationParam = searchParams.get("explanation");
         let explanation: string[];
         if (explanationParam) {
-            try {
-                explanation = JSON.parse(explanationParam);
-                if (!Array.isArray(explanation)) {
-                    explanation = [explanationParam];
-                }
-            } catch {
-                explanation = [explanationParam];
-            }
+            explanation = getDisplayReasonsFromExplanation(explanationParam);
         } else {
             // All defaults are real entries from the QUESTION_INSIGHTS map in matching.ts
             explanation = [

@@ -59,6 +59,8 @@ interface ViewAsUserMatch {
     };
     similarityScore: number;
     explanation: string;
+    reasons?: string[];
+    explanationDebug?: unknown;
     weekStart: string;
 }
 
@@ -675,7 +677,16 @@ export default function AdminPage() {
                                                 Here&apos;s why:
                                             </p>
                                             {(() => {
-                                                let reasons: string[];
+                                                let reasons: string[] = viewAsData.match.reasons ?? [];
+                                                if (reasons.length > 0) {
+                                                    return (
+                                                        <ul className="list-disc list-inside space-y-0.5 text-sm text-zinc-600">
+                                                            {reasons.map((reason, idx) => (
+                                                                <li key={idx}>{reason}</li>
+                                                            ))}
+                                                        </ul>
+                                                    );
+                                                }
                                                 try {
                                                     reasons = JSON.parse(viewAsData.match.explanation);
                                                     if (!Array.isArray(reasons)) {

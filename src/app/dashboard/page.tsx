@@ -14,6 +14,7 @@ interface MatchData {
     };
     similarityScore: number;
     explanation: string;
+    reasons?: string[];
     weekStart: string;
 }
 
@@ -401,7 +402,16 @@ export default function DashboardPage() {
                                 </p>
                                 {(() => {
                                     // Parse explanation as JSON array, with fallback for legacy string format
-                                    let reasons: string[];
+                                    let reasons: string[] = match.reasons ?? [];
+                                    if (reasons.length > 0) {
+                                        return (
+                                            <ul className="list-disc list-inside space-y-1 text-sm text-zinc-600">
+                                                {reasons.map((reason, idx) => (
+                                                    <li key={idx}>{reason}</li>
+                                                ))}
+                                            </ul>
+                                        );
+                                    }
                                     try {
                                         reasons = JSON.parse(match.explanation);
                                         if (!Array.isArray(reasons)) {

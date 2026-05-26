@@ -1,5 +1,10 @@
 import { prisma } from "./db";
 import blossom from "edmonds-blossom";
+import {
+    generateMatchExplanationV2,
+    isMatchReasoningV2Enabled,
+} from "./match-reasoning-v2";
+import { serializeMatchExplanationV2 } from "./match-explanation";
 
 // ---------- Types ----------
 type DimensionVec = Record<string, number>;
@@ -789,10 +794,18 @@ export function explain(a: DimensionVec, b: DimensionVec): string {
 // ---------- Detailed Explanation ----------
 interface Question {
     id: string;
+    questionText?: string;
     weightDimension: string;
     weight: number;
     type: string;
     options: unknown;
+}
+
+interface HistoricalMatchExplanation {
+    userAId: string;
+    userBId: string;
+    weekStart: Date;
+    explanation: string;
 }
 
 export function explainDetailed(
@@ -988,6 +1001,48 @@ export function findOptimalPairs(
     return result;
 }
 
+export function buildMatchExplanationForPair(input: {
+    answersA: Answer[];
+    answersB: Answer[];
+    questions: Question[];
+    vecA: DimensionVec;
+    vecB: DimensionVec;
+    similarityScore: number;
+    weekStart: Date;
+    historicalMatches?: HistoricalMatchExplanation[];
+    pairKey?: string;
+}): string {
+    if (isMatchReasoningV2Enabled()) {
+        try {
+            const result = generateMatchExplanationV2({
+                answersA: input.answersA,
+                answersB: input.answersB,
+                questions: input.questions,
+                vecA: input.vecA,
+                vecB: input.vecB,
+                similarityScore: input.similarityScore,
+                weekStart: input.weekStart,
+                historicalMatches: input.historicalMatches ?? [],
+                pairKey: input.pairKey,
+            });
+
+            return serializeMatchExplanationV2(result.explanation);
+        } catch (error) {
+            console.error("V2 match reasoning failed; falling back to legacy reasons:", error);
+        }
+    }
+
+    const reasons = explainDetailed(
+        input.answersA,
+        input.answersB,
+        input.questions,
+        input.vecA,
+        input.vecB
+    );
+
+    return JSON.stringify(reasons);
+}
+
 // ---------- Main Matching Pipeline ----------
 export async function runWeeklyMatching(weekStart: Date, universityId?: string) {
     // 1. Get all opted-in users for this week who completed setup
@@ -1017,7 +1072,7 @@ export async function runWeeklyMatching(weekStart: Date, universityId?: string) 
 
     // 2. Get all past match pairs to avoid rematching
     const allMatches = await prisma.match.findMany({
-        select: { userAId: true, userBId: true },
+        select: { userAId: true, userBId: true, weekStart: true, explanation: true },
     });
     const pastPairs = new Set(
         allMatches.flatMap((m) => [`${m.userAId}-${m.userBId}`, `${m.userBId}-${m.userAId}`])
@@ -1082,14 +1137,25 @@ export async function runWeeklyMatching(weekStart: Date, universityId?: string) 
     }[] = [];
 
     for (const pair of optimalPairs) {
-        const reasons = explainDetailed(
-            allAnswers[pair.userAId],
-            allAnswers[pair.userBId],
-            questions,
-            vectors[pair.userAId],
-            vectors[pair.userBId]
+        const pairHistory = allMatches.filter(
+            (match) =>
+                match.weekStart.getTime() < weekStart.getTime() &&
+                (match.userAId === pair.userAId ||
+                    match.userBId === pair.userAId ||
+                    match.userAId === pair.userBId ||
+                    match.userBId === pair.userBId)
         );
-        const explanationStr = JSON.stringify(reasons);
+        const explanationStr = buildMatchExplanationForPair({
+            answersA: allAnswers[pair.userAId],
+            answersB: allAnswers[pair.userBId],
+            questions,
+            vecA: vectors[pair.userAId],
+            vecB: vectors[pair.userBId],
+            similarityScore: pair.score,
+            weekStart,
+            historicalMatches: pairHistory,
+            pairKey: `${pair.userAId}:${pair.userBId}:${weekStart.toISOString()}`,
+        });
 
         matches.push({
             userAId: pair.userAId,

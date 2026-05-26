@@ -5,9 +5,10 @@ import { getWeekStart } from "@/lib/week-cycle";
 import {
     buildVector,
     similarity,
-    explainDetailed,
     passesHardFilters,
+    buildMatchExplanationForPair,
 } from "@/lib/matching";
+import { getDisplayReasonsFromExplanation } from "@/lib/match-explanation";
 
 type PreviewBody = {
     weekStart?: string;
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
         const users = Array.from(userMap.values());
 
         const allMatches = await prisma.match.findMany({
-            select: { userAId: true, userBId: true },
+            select: { userAId: true, userBId: true, weekStart: true, explanation: true },
         });
         const pastPairs = new Set(
             allMatches.flatMap((m) => [
@@ -181,13 +182,26 @@ export async function POST(req: NextRequest) {
             scored.sort((a, b) => b.score - a.score);
 
             const best = scored[0];
-            const reasons = explainDetailed(
-                allAnswers[user.id],
-                allAnswers[best.candidate.id],
-                questions,
-                vectors[user.id],
-                vectors[best.candidate.id]
+            const pairHistory = allMatches.filter(
+                (match) =>
+                    match.weekStart.getTime() < weekStart.getTime() &&
+                    (match.userAId === user.id ||
+                        match.userBId === user.id ||
+                        match.userAId === best.candidate.id ||
+                        match.userBId === best.candidate.id)
             );
+            const explanation = buildMatchExplanationForPair({
+                answersA: allAnswers[user.id],
+                answersB: allAnswers[best.candidate.id],
+                questions,
+                vecA: vectors[user.id],
+                vecB: vectors[best.candidate.id],
+                similarityScore: best.score,
+                weekStart,
+                historicalMatches: pairHistory,
+                pairKey: `${user.id}:${best.candidate.id}:${weekStart.toISOString()}`,
+            });
+            const reasons = getDisplayReasonsFromExplanation(explanation);
 
             matches.push({
                 userA: {
