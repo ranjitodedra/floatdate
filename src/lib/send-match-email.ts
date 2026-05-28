@@ -296,6 +296,7 @@ async function sendMatchEmailWithRetry(
 
 export async function sendMatchEmails(
     matches: {
+        id?: string;
         userAId: string;
         userBId: string;
         similarityScore: number;
@@ -326,7 +327,7 @@ export async function sendMatchEmails(
             orderBy: { createdAt: "desc" },
         });
 
-        const matchId = dbMatch?.id || "unknown";
+        const matchId = match.id || dbMatch?.id || "unknown";
 
         // Send to User A (with retry)
         const resultA = await sendMatchEmailWithRetry(

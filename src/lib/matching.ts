@@ -5,6 +5,7 @@ import {
     isMatchReasoningV2Enabled,
 } from "./match-reasoning-v2";
 import { serializeMatchExplanationV2 } from "./match-explanation";
+import { isMissingTableError } from "./prisma-errors";
 
 // ---------- Types ----------
 type DimensionVec = Record<string, number>;
@@ -1166,17 +1167,82 @@ export async function runWeeklyMatching(weekStart: Date, universityId?: string) 
         });
     }
 
-    // 6. Save matches to DB
-    for (const match of matches) {
-        await prisma.match.create({
-            data: match,
+    // 6. Save matches and per-user run attempts to DB
+    const savedMatches = await prisma.$transaction(async (tx) => {
+        const createdMatches: ({
+            id: string;
+            userAId: string;
+            userBId: string;
+            similarityScore: number;
+            explanation: string;
+            weekStart: Date;
+        })[] = [];
+
+        for (const match of matches) {
+            const created = await tx.match.create({
+                data: match,
+            });
+            createdMatches.push(created);
+        }
+
+        const run = await tx.matchRun.create({
+            data: {
+                weekStart,
+                universityId: universityId ?? null,
+                source: "weekly",
+                matchedCount: createdMatches.length * 2,
+                unmatchedCount: users.length - createdMatches.length * 2,
+            },
         });
-    }
+
+        const matchIdByUserId = new Map<string, string>();
+        for (const match of createdMatches) {
+            matchIdByUserId.set(match.userAId, match.id);
+            matchIdByUserId.set(match.userBId, match.id);
+        }
+
+        if (users.length > 0) {
+            await tx.matchAttempt.createMany({
+                data: users.map((user) => {
+                    const matchId = matchIdByUserId.get(user.id);
+                    return {
+                        runId: run.id,
+                        userId: user.id,
+                        matchId: matchId ?? null,
+                        weekStart,
+                        status: matchId ? "matched" : "no_match",
+                    };
+                }),
+            });
+        }
+
+        return createdMatches;
+    }).catch(async (error) => {
+        if (!isMissingTableError(error)) throw error;
+
+        const createdMatches: ({
+            id: string;
+            userAId: string;
+            userBId: string;
+            similarityScore: number;
+            explanation: string;
+            weekStart: Date;
+        })[] = [];
+
+        for (const match of matches) {
+            const created = await prisma.match.create({
+                data: match,
+            });
+            createdMatches.push(created);
+        }
+
+        return createdMatches;
+    });
 
     return {
-        matched: matches.length * 2,
-        unmatched: users.length - matches.length * 2,
+        matched: savedMatches.length * 2,
+        unmatched: users.length - savedMatches.length * 2,
         priorityUsers: users.filter((u) => priorityUserIds.has(u.id)).length,
-        matches,
+        matches: savedMatches,
     };
 }

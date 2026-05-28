@@ -18,14 +18,53 @@ interface MatchData {
     weekStart: string;
 }
 
+interface MatchAttemptData {
+    id: string;
+    status: "matched" | "no_match";
+    feedback: string | null;
+    feedbackAt: string | null;
+    weekStart: string;
+    createdAt: string;
+}
+
+interface PreviousMatchInfo {
+    matchId: string;
+    partnerName: string;
+    feedbackSubmitted: boolean;
+}
+
+const HOW_IT_WENT_OPTIONS = [
+    { value: "never_started", label: "We never really started talking", emoji: "🌱" },
+    { value: "chatted", label: "We chatted a bit", emoji: "💬" },
+    { value: "great_conversation", label: "We had a great conversation", emoji: "✨" },
+    { value: "met_in_person", label: "We met in person", emoji: "☕" },
+    { value: "keep_seeing", label: "We want to keep seeing each other", emoji: "❤️" },
+    { value: "faded", label: "Things slowly faded", emoji: "🤷" },
+    { value: "felt_off", label: "Something felt off", emoji: "🚩" },
+    { value: "ghosted", label: "I got ghosted", emoji: "😬" },
+    { value: "figuring_out", label: "We’re still figuring it out", emoji: "⏸" },
+] as const;
+
 export default function DashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [optedIn, setOptedIn] = useState(false);
     const [optingIn, setOptingIn] = useState(false);
     const [match, setMatch] = useState<MatchData | null>(null);
+    const [latestAttempt, setLatestAttempt] = useState<MatchAttemptData | null>(null);
+    const [previousMatch, setPreviousMatch] = useState<PreviousMatchInfo | null>(null);
+    
+    // Feedback Modal State
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackStep, setFeedbackStep] = useState<1 | 2>(1);
+    const [howItWent, setHowItWent] = useState<string>("");
+    const [feedbackText, setFeedbackText] = useState("");
+    const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
     const [countdown, setCountdown] = useState("");
     const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean } | null>(null);
+    const [impersonationActor, setImpersonationActor] = useState<{ id: string; name: string; email: string } | null>(null);
 
     // Edit profile state
     const [editingBio, setEditingBio] = useState(false);
@@ -46,6 +85,7 @@ export default function DashboardPage() {
             }
 
             setUser(userData.user);
+            setImpersonationActor(userData.session?.isImpersonating ? userData.session?.actor ?? null : null);
 
             if (!userData.user.completedSetup) {
                 router.push("/questions");
@@ -56,11 +96,13 @@ export default function DashboardPage() {
             const optinRes = await fetch("/api/optin/status");
             const optinData = await optinRes.json();
             setOptedIn(optinData.optedIn);
+            setPreviousMatch(optinData.previousMatch ?? null);
 
             // Check current match
             const matchRes = await fetch("/api/match/current");
             const matchData = await matchRes.json();
-            setMatch(matchData.match);
+            setMatch(matchData.match ?? null);
+            setLatestAttempt(matchData.attempt ?? null);
 
             // Fetch profile data (bio)
             const profileRes = await fetch("/api/profile");
@@ -193,7 +235,9 @@ export default function DashboardPage() {
         return () => clearInterval(interval);
     }, []);
 
-    async function handleOptIn() {
+    const needsFeedback = previousMatch && !previousMatch.feedbackSubmitted;
+
+    async function doOptInOnly() {
         setOptingIn(true);
         try {
             const res = await fetch("/api/optin", { method: "POST" });
@@ -204,6 +248,58 @@ export default function DashboardPage() {
             console.error("Opt-in error:", err);
         } finally {
             setOptingIn(false);
+        }
+    }
+
+    async function handleOptInClick() {
+        if (needsFeedback) {
+            // Open feedback modal instead of directly opting in
+            setShowFeedbackModal(true);
+            setFeedbackStep(1);
+            setHowItWent("");
+            setFeedbackText("");
+        } else {
+            // Just opt in
+            await doOptInOnly();
+        }
+    }
+
+    async function submitFeedbackAndOptIn() {
+        if (!previousMatch) return;
+        setFeedbackSubmitting(true);
+        setFeedbackMessage(null);
+
+        try {
+            // Save feedback
+            const fbRes = await fetch("/api/match/feedback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    matchId: previousMatch.matchId,
+                    howItWent,
+                    feedbackText,
+                }),
+            });
+
+            if (!fbRes.ok) {
+                const data = await fbRes.json();
+                setFeedbackMessage({ type: "error", text: data.error || "Failed to save feedback." });
+                setFeedbackSubmitting(false);
+                return;
+            }
+
+            // Mark feedback as submitted locally
+            setPreviousMatch({ ...previousMatch, feedbackSubmitted: true });
+
+            // Automatically opt in after feedback
+            await doOptInOnly();
+            
+            // Close modal
+            setShowFeedbackModal(false);
+            setFeedbackMessage(null);
+        } catch {
+            setFeedbackMessage({ type: "error", text: "Something went wrong. Please try again." });
+            setFeedbackSubmitting(false);
         }
     }
 
@@ -235,6 +331,11 @@ export default function DashboardPage() {
     async function handleLogout() {
         await fetch("/api/auth/logout", { method: "POST" });
         router.push("/login");
+    }
+
+    async function handleStopViewAsUser() {
+        await fetch("/api/admin/impersonate/clear", { method: "POST" });
+        router.push("/admin");
     }
 
     if (loading) {
@@ -279,6 +380,20 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {impersonationActor && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
+                        <p className="text-amber-800 text-sm">
+                            Admin View Mode: you are currently viewing this dashboard as a user.
+                        </p>
+                        <button
+                            onClick={handleStopViewAsUser}
+                            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 transition"
+                        >
+                            Exit to Admin
+                        </button>
+                    </div>
+                )}
+
                 {/* Countdown Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <p className="text-xs text-zinc-400 uppercase tracking-wider mb-2">
@@ -306,7 +421,7 @@ export default function DashboardPage() {
                                 Opt in to be included in this week&apos;s matching round.
                             </p>
                             <button
-                                onClick={handleOptIn}
+                                onClick={handleOptInClick}
                                 disabled={optingIn}
                                 className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
                             >
@@ -315,6 +430,32 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Pending Feedback Card (If they didn't opt in but still have a previous match) */}
+                {needsFeedback && !optedIn && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-indigo-900 mb-1">
+                                    How did your match with {previousMatch.partnerName} go?
+                                </h3>
+                                <p className="text-sm text-indigo-700/80">
+                                    We&apos;d love to hear how it went!
+                                </p>
+                            </div>
+                            <div className="text-3xl pl-2">🤔</div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setShowFeedbackModal(true);
+                                setFeedbackStep(1);
+                            }}
+                            className="mt-4 w-full py-2.5 bg-white border border-indigo-200 text-indigo-700 font-medium rounded-xl hover:bg-indigo-50 transition-all text-sm"
+                        >
+                            Share Feedback
+                        </button>
+                    </div>
+                )}
 
                 {/* Float Live Card */}
                 <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 shadow-sm text-center">
@@ -434,12 +575,18 @@ export default function DashboardPage() {
                                 Check your email for their contact info 💜
                             </p>
                         </div>
+                    ) : latestAttempt?.status === "no_match" ? (
+                        <div className="text-center py-8">
+                            <p className="text-zinc-300 text-4xl mb-3">💜</p>
+                            <p className="text-zinc-700 font-medium">
+                                We were not able to find match for you in this cycle.
+                            </p>
+                        </div>
                     ) : (
                         <div className="text-center py-8">
                             <p className="text-zinc-300 text-4xl mb-3">💜</p>
-                            <p className="text-zinc-500">No match yet</p>
-                            <p className="text-zinc-400 text-sm mt-1">
-                                Opt in before Wednesday 9 PM ET to receive your first match
+                            <p className="text-zinc-700 font-medium">
+                                We were not able to find match for you this week.
                             </p>
                         </div>
                     )}
@@ -535,7 +682,90 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Feedback Modal Overlay */}
+            {showFeedbackModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-zinc-100">
+                            <h2 className="text-lg font-bold text-zinc-900">
+                                Match Feedback
+                            </h2>
+                            <button
+                                onClick={() => setShowFeedbackModal(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            {feedbackStep === 1 ? (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold text-zinc-900 text-center mb-6">
+                                        How did your match with {previousMatch?.partnerName} go?
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-2.5">
+                                        {HOW_IT_WENT_OPTIONS.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => {
+                                                    setHowItWent(opt.value);
+                                                    setFeedbackStep(2);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-zinc-200 bg-white hover:border-zinc-900 hover:bg-zinc-50 transition-all text-left group"
+                                            >
+                                                <span className="text-xl group-hover:scale-110 transition-transform">{opt.emoji}</span>
+                                                <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">
+                                                    {opt.label}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <button
+                                        onClick={() => setFeedbackStep(1)}
+                                        className="text-sm text-zinc-500 hover:text-zinc-900 transition flex items-center gap-1 mb-2"
+                                    >
+                                        ← Back
+                                    </button>
+                                    <h3 className="text-xl font-bold text-zinc-900">
+                                        Any feedback about this match?
+                                    </h3>
+                                    <p className="text-sm text-zinc-500">
+                                        Tell us what worked, what didn&apos;t, or anything else you&apos;d like to share. This helps us improve your future matches.
+                                    </p>
+                                    
+                                    <textarea
+                                        value={feedbackText}
+                                        onChange={(e) => setFeedbackText(e.target.value)}
+                                        rows={4}
+                                        className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all mt-4"
+                                        placeholder="Optional feedback..."
+                                    />
+
+                                    {feedbackMessage && (
+                                        <p className={`text-sm mt-2 ${feedbackMessage.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                                            {feedbackMessage.text}
+                                        </p>
+                                    )}
+
+                                    <button
+                                        onClick={submitFeedbackAndOptIn}
+                                        disabled={feedbackSubmitting}
+                                        className="w-full mt-6 py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                    >
+                                        {feedbackSubmitting ? "Submitting..." : (optedIn ? "Submit Feedback" : "Submit & Opt In")}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-

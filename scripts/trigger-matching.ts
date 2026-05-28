@@ -10,6 +10,7 @@ import {
 import { getDisplayReasonsFromExplanation } from "../src/lib/match-explanation";
 import { sendMatchEmails, sendNoMatchEmail } from "../src/lib/send-match-email";
 import { getWeekStart, getPreviousWeekStart } from "../src/lib/week-cycle";
+import { isMissingTableError } from "../src/lib/prisma-errors";
 
 const TORONTO_TZ = "America/Toronto";
 
@@ -289,10 +290,12 @@ async function main() {
             console.log(`\n🏫 ${entry.university.name}:`);
 
             const savedMatches: {
+                id: string;
                 userAId: string;
                 userBId: string;
                 similarityScore: number;
                 explanation: string;
+                weekStart: Date;
             }[] = [];
 
             const matchedIds = new Set<string>();
@@ -310,7 +313,7 @@ async function main() {
                     },
                 });
 
-                await prisma.match.create({
+                const createdMatch = await prisma.match.create({
                     data: {
                         userAId: pm.userA.id,
                         userBId: pm.userB.id,
@@ -321,10 +324,12 @@ async function main() {
                 });
 
                 savedMatches.push({
+                    id: createdMatch.id,
                     userAId: pm.userA.id,
                     userBId: pm.userB.id,
                     similarityScore: pm.similarityScore,
                     explanation: explanationStr,
+                    weekStart,
                 });
 
                 matchedIds.add(pm.userA.id);
@@ -334,6 +339,48 @@ async function main() {
             }
 
             totalMatchesSaved += savedMatches.length;
+
+            const attemptedUsers = Array.from(
+                new Map(
+                    entry.optIns
+                        .filter((optIn) => optIn.user.completedSetup)
+                        .map((optIn) => [optIn.user.id, optIn.user])
+                ).values()
+            );
+            const matchIdByUserId = new Map<string, string>();
+            for (const match of savedMatches) {
+                matchIdByUserId.set(match.userAId, match.id);
+                matchIdByUserId.set(match.userBId, match.id);
+            }
+
+            try {
+                const run = await prisma.matchRun.create({
+                    data: {
+                        weekStart,
+                        universityId: entry.university.id,
+                        source: "manual",
+                        matchedCount: savedMatches.length * 2,
+                        unmatchedCount: attemptedUsers.length - savedMatches.length * 2,
+                    },
+                });
+
+                if (attemptedUsers.length > 0) {
+                    await prisma.matchAttempt.createMany({
+                        data: attemptedUsers.map((user) => {
+                            const matchId = matchIdByUserId.get(user.id);
+                            return {
+                                runId: run.id,
+                                userId: user.id,
+                                matchId: matchId ?? null,
+                                weekStart,
+                                status: matchId ? "matched" : "no_match",
+                            };
+                        }),
+                    });
+                }
+            } catch (attemptError) {
+                if (!isMissingTableError(attemptError)) throw attemptError;
+            }
 
             // Send match emails
             try {

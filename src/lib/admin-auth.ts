@@ -1,4 +1,4 @@
-import { getSession } from "./auth";
+import { getBaseSession } from "./auth";
 import { prisma } from "./db";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "ranjitodedra.dev@gmail.com")
@@ -6,7 +6,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "ranjitodedra.dev@gmail.com")
     .map((e) => e.trim().toLowerCase());
 
 export async function requireAdmin() {
-    const session = await getSession();
+    const session = await getBaseSession();
     if (!session) return null;
 
     const user = await prisma.user.findUnique({

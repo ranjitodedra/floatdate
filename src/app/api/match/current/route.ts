@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { getDisplayReasonsFromExplanation } from "@/lib/match-explanation";
+import { isMissingTableError } from "@/lib/prisma-errors";
+import { getWeekStart } from "@/lib/week-cycle";
 
 export async function GET() {
     try {
@@ -10,15 +12,77 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Find latest match (most recent weekStart) where user is either userA or userB
+        const currentWeekStart = getWeekStart();
+
+        // First check for a match attempt for the current week
+        const latestAttempt = await prisma.matchAttempt.findFirst({
+            where: { 
+                userId: session.userId,
+                weekStart: currentWeekStart 
+            },
+            include: {
+                match: {
+                    include: {
+                        userA: {
+                            select: { id: true, name: true, email: true, bio: true, city: true },
+                        },
+                        userB: {
+                            select: { id: true, name: true, email: true, bio: true, city: true },
+                        },
+                    },
+                },
+            },
+        }).catch((error) => {
+            if (isMissingTableError(error)) return null;
+            throw error;
+        });
+
+        if (latestAttempt) {
+            const match = latestAttempt.match;
+            const attempt = {
+                id: latestAttempt.id,
+                status: latestAttempt.status,
+                feedback: latestAttempt.feedback,
+                feedbackAt: latestAttempt.feedbackAt?.toISOString() ?? null,
+                weekStart: latestAttempt.weekStart.toISOString(),
+                createdAt: latestAttempt.createdAt.toISOString(),
+            };
+
+            if (!match) {
+                return NextResponse.json({ match: null, attempt });
+            }
+
+            const matchedUser =
+                match.userAId === session.userId ? match.userB : match.userA;
+            const reasons = getDisplayReasonsFromExplanation(match.explanation);
+
+            return NextResponse.json({
+                match: {
+                    id: match.id,
+                    matchedUser: {
+                        name: matchedUser.name,
+                        email: matchedUser.email,
+                        bio: matchedUser.bio,
+                        city: matchedUser.city,
+                    },
+                    similarityScore: match.similarityScore,
+                    reasons,
+                    explanation: JSON.stringify(reasons),
+                    weekStart: match.weekStart.toISOString(),
+                },
+                attempt,
+            });
+        }
+
+        // Check if there is a match created manually or somehow else for the CURRENT week
         const match = await prisma.match.findFirst({
             where: {
+                weekStart: currentWeekStart,
                 OR: [
                     { userAId: session.userId },
                     { userBId: session.userId },
                 ],
             },
-            orderBy: { weekStart: "desc" },
             include: {
                 userA: {
                     select: { id: true, name: true, email: true, bio: true, city: true },
@@ -30,10 +94,9 @@ export async function GET() {
         });
 
         if (!match) {
-            return NextResponse.json({ match: null });
+            return NextResponse.json({ match: null, attempt: null });
         }
 
-        // Determine the matched user (not the current user)
         const matchedUser =
             match.userAId === session.userId ? match.userB : match.userA;
         const reasons = getDisplayReasonsFromExplanation(match.explanation);
@@ -52,6 +115,7 @@ export async function GET() {
                 explanation: JSON.stringify(reasons),
                 weekStart: match.weekStart.toISOString(),
             },
+            attempt: null,
         });
     } catch (error) {
         console.error("Match fetch error:", error);

@@ -49,37 +49,17 @@ interface PreviewResult {
     unmatched: UnmatchedUser[];
 }
 
-interface ViewAsUserMatch {
-    id: string;
-    matchedUser: {
-        name: string;
-        email: string;
-        bio: string | null;
-        city: string;
-    };
-    similarityScore: number;
-    explanation: string;
-    reasons?: string[];
-    explanationDebug?: unknown;
-    weekStart: string;
-}
-
-interface ViewAsUserData {
-    user: {
-        name: string;
-        email: string;
-        bio: string | null;
-        city: string;
-        age: number;
-        gender: string;
-        genderPref: string;
-        completedSetup: boolean;
-        createdAt: string;
-    };
-    optedIn: boolean;
-    weekStart: string;
-    match: ViewAsUserMatch | null;
-}
+const HOW_IT_WENT_OPTIONS = [
+    { value: "never_started", label: "We never really started talking", emoji: "🌱" },
+    { value: "chatted", label: "We chatted a bit", emoji: "💬" },
+    { value: "great_conversation", label: "We had a great conversation", emoji: "✨" },
+    { value: "met_in_person", label: "We met in person", emoji: "☕" },
+    { value: "keep_seeing", label: "We want to keep seeing each other", emoji: "❤️" },
+    { value: "faded", label: "Things slowly faded", emoji: "🤷" },
+    { value: "felt_off", label: "Something felt off", emoji: "🚩" },
+    { value: "ghosted", label: "I got ghosted", emoji: "😬" },
+    { value: "figuring_out", label: "We’re still figuring it out", emoji: "⏸" },
+] as const;
 
 interface WeekHistory {
     weekNumber: number;
@@ -117,9 +97,14 @@ export default function AdminPage() {
 
     // View as User state
     const [viewAsEmail, setViewAsEmail] = useState("");
-    const [viewAsData, setViewAsData] = useState<ViewAsUserData | null>(null);
     const [viewAsLoading, setViewAsLoading] = useState(false);
     const [viewAsError, setViewAsError] = useState("");
+    const [viewAsSuccess, setViewAsSuccess] = useState("");
+
+    // Feedback preview state
+    const [previewFeedbackStep, setPreviewFeedbackStep] = useState<1 | 2>(1);
+    const [previewHowItWent, setPreviewHowItWent] = useState("");
+    const [previewFeedbackText, setPreviewFeedbackText] = useState("");
 
     // Float Live Settings
     const [flStartHour, setFlStartHour] = useState(17);
@@ -207,20 +192,23 @@ export default function AdminPage() {
         if (!viewAsEmail.trim()) return;
         setViewAsLoading(true);
         setViewAsError("");
-        setViewAsData(null);
+        setViewAsSuccess("");
         try {
-            const res = await fetch(
-                `/api/admin/view-as-user?email=${encodeURIComponent(viewAsEmail.trim())}`
-            );
+            const res = await fetch("/api/admin/impersonate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: viewAsEmail.trim() }),
+            });
             if (!res.ok) {
                 const data = await res.json();
                 setViewAsError(data.error || "Failed to fetch user data");
                 return;
             }
-            const data: ViewAsUserData = await res.json();
-            setViewAsData(data);
+            const data = await res.json();
+            setViewAsSuccess("Impersonation started. Redirecting to dashboard...");
+            router.push(data.redirectTo ?? "/dashboard");
         } catch {
-            setViewAsError("Failed to fetch user data");
+            setViewAsError("Failed to start impersonation");
         } finally {
             setViewAsLoading(false);
         }
@@ -419,8 +407,19 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Float Live Quick Links */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Float Live & Match Feedback Quick Links */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button
+                        onClick={() => router.push("/admin/feedbacks")}
+                        className="bg-indigo-600 border border-indigo-700 rounded-2xl p-5 text-left hover:bg-indigo-700 transition shadow-sm group"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-white">Match Feedbacks</h2>
+                            <span className="text-indigo-200 group-hover:text-white transition group-hover:translate-x-1">→</span>
+                        </div>
+                        <p className="text-indigo-100 text-sm">View user responses on how their matches went.</p>
+                    </button>
+
                     <button
                         onClick={() => router.push("/admin/float-live-chats")}
                         className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left hover:bg-zinc-800 transition shadow-sm group"
@@ -544,174 +543,75 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {viewAsData && (
-                        <div className="border-t border-zinc-100 pt-4">
-                            {/* Admin viewing banner */}
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-                                <p className="text-amber-800 text-sm font-medium">
-                                    👁️ Viewing as: {viewAsData.user.name} ({viewAsData.user.email})
-                                </p>
-                                <button
-                                    onClick={() => {
-                                        setViewAsData(null);
-                                        setViewAsEmail("");
-                                        setViewAsError("");
-                                    }}
-                                    className="text-amber-600 text-sm hover:text-amber-800 transition font-medium"
-                                >
-                                    Clear
-                                </button>
+                    {viewAsSuccess && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm mb-4">
+                            {viewAsSuccess}
+                        </div>
+                    )}
+                </div>
+
+                {/* Feedback Form Preview */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-zinc-900">Feedback Form Preview (Sample)</h2>
+                        <p className="text-zinc-400 text-sm mt-1">
+                            Static preview of the user feedback flow, no data is saved.
+                        </p>
+                    </div>
+                    {previewFeedbackStep === 1 ? (
+                        <div className="space-y-4">
+                            <h3 className="text-xl font-bold text-zinc-900 text-center">
+                                How did your match with Alex go?
+                            </h3>
+                            <div className="grid grid-cols-1 gap-2.5">
+                                {HOW_IT_WENT_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setPreviewHowItWent(opt.value);
+                                            setPreviewFeedbackStep(2);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-zinc-200 bg-white hover:border-zinc-900 hover:bg-zinc-50 transition-all text-left group"
+                                    >
+                                        <span className="text-xl group-hover:scale-110 transition-transform">{opt.emoji}</span>
+                                        <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">
+                                            {opt.label}
+                                        </span>
+                                    </button>
+                                ))}
                             </div>
-
-                            {/* User info row */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                                <div className="bg-zinc-50 rounded-lg p-3">
-                                    <p className="text-xs text-zinc-400">City</p>
-                                    <p className="text-sm text-zinc-900 font-medium">{viewAsData.user.city}</p>
-                                </div>
-                                <div className="bg-zinc-50 rounded-lg p-3">
-                                    <p className="text-xs text-zinc-400">Age</p>
-                                    <p className="text-sm text-zinc-900 font-medium">{viewAsData.user.age}</p>
-                                </div>
-                                <div className="bg-zinc-50 rounded-lg p-3">
-                                    <p className="text-xs text-zinc-400">Gender</p>
-                                    <p className="text-sm text-zinc-900 font-medium capitalize">{viewAsData.user.gender}</p>
-                                </div>
-                                <div className="bg-zinc-50 rounded-lg p-3">
-                                    <p className="text-xs text-zinc-400">Setup</p>
-                                    <p className="text-sm font-medium">
-                                        {viewAsData.user.completedSetup ? (
-                                            <span className="text-green-600">Complete ✓</span>
-                                        ) : (
-                                            <span className="text-red-500">Incomplete ✗</span>
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {viewAsData.user.bio && (
-                                <div className="bg-zinc-50 rounded-lg p-3 mb-4">
-                                    <p className="text-xs text-zinc-400 mb-1">Bio</p>
-                                    <p className="text-sm text-zinc-700">{viewAsData.user.bio}</p>
-                                </div>
-                            )}
-
-                            {/* Opt-in status */}
-                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 mb-4">
-                                <h3 className="text-sm font-semibold text-zinc-700 mb-2">Weekly Opt-in</h3>
-                                {viewAsData.optedIn ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-                                        <p className="text-green-600 text-sm font-medium">Opted in for this week</p>
-                                    </div>
-                                ) : (
-                                    <p className="text-zinc-400 text-sm">Not opted in this week</p>
-                                )}
-                            </div>
-
-                            {/* Match card — same design as dashboard */}
-                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-zinc-700 mb-3">Their Latest Match</h3>
-                                {viewAsData.match ? (
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-white text-lg font-bold">
-                                                {viewAsData.match.matchedUser.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <p className="text-zinc-900 font-semibold">
-                                                    {viewAsData.match.matchedUser.name}
-                                                </p>
-                                                <p className="text-zinc-400 text-sm">
-                                                    {viewAsData.match.matchedUser.city}
-                                                </p>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <p className="text-zinc-500 text-sm">
-                                                        {viewAsData.match.matchedUser.email}
-                                                    </p>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(viewAsData.match!.matchedUser.email);
-                                                            const btn = document.getElementById("admin-copy-email-btn");
-                                                            if (btn) {
-                                                                btn.textContent = "Copied!";
-                                                                setTimeout(() => { btn.textContent = "Copy"; }, 2000);
-                                                            }
-                                                        }}
-                                                        id="admin-copy-email-btn"
-                                                        className="text-xs text-zinc-400 hover:text-zinc-700 transition px-1.5 py-0.5 rounded-md hover:bg-zinc-100"
-                                                    >
-                                                        Copy
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {viewAsData.match.matchedUser.bio && (
-                                            <p className="text-zinc-600 text-sm">
-                                                <span className="font-semibold text-zinc-700">Bio: </span>{viewAsData.match.matchedUser.bio}
-                                            </p>
-                                        )}
-
-                                        {/* Compatibility bar */}
-                                        <div className="bg-white border border-zinc-200 rounded-lg p-3">
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <span className="text-xs text-zinc-500">Compatibility</span>
-                                                <span className="text-zinc-900 font-bold text-sm">
-                                                    {Math.round(viewAsData.match.similarityScore * 100)}%
-                                                </span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-zinc-800 rounded-full transition-all duration-1000"
-                                                    style={{
-                                                        width: `${Math.round(viewAsData.match.similarityScore * 100)}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Match reasons */}
-                                        <div>
-                                            <p className="text-xs font-semibold text-zinc-500 mb-1.5">
-                                                Here&apos;s why:
-                                            </p>
-                                            {(() => {
-                                                let reasons: string[] = viewAsData.match.reasons ?? [];
-                                                if (reasons.length > 0) {
-                                                    return (
-                                                        <ul className="list-disc list-inside space-y-0.5 text-sm text-zinc-600">
-                                                            {reasons.map((reason, idx) => (
-                                                                <li key={idx}>{reason}</li>
-                                                            ))}
-                                                        </ul>
-                                                    );
-                                                }
-                                                try {
-                                                    reasons = JSON.parse(viewAsData.match.explanation);
-                                                    if (!Array.isArray(reasons)) {
-                                                        reasons = [viewAsData.match.explanation];
-                                                    }
-                                                } catch {
-                                                    reasons = [viewAsData.match.explanation];
-                                                }
-                                                return (
-                                                    <ul className="list-disc list-inside space-y-0.5 text-sm text-zinc-600">
-                                                        {reasons.map((reason, idx) => (
-                                                            <li key={idx}>{reason}</li>
-                                                        ))}
-                                                    </ul>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-6">
-                                        <p className="text-zinc-300 text-3xl mb-2">💜</p>
-                                        <p className="text-zinc-500 text-sm">No match yet</p>
-                                    </div>
-                                )}
-                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <button
+                                type="button"
+                                onClick={() => setPreviewFeedbackStep(1)}
+                                className="text-sm text-zinc-500 hover:text-zinc-900 transition flex items-center gap-1"
+                            >
+                                ← Back
+                            </button>
+                            <h3 className="text-xl font-bold text-zinc-900">Any feedback about this match?</h3>
+                            <p className="text-sm text-zinc-500">
+                                Tell us what worked, what didn&apos;t, or anything else you&apos;d like to share.
+                            </p>
+                            <textarea
+                                value={previewFeedbackText}
+                                onChange={(e) => setPreviewFeedbackText(e.target.value)}
+                                rows={4}
+                                className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                                placeholder="Optional feedback..."
+                            />
+                            <button
+                                type="button"
+                                className="w-full mt-2 py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200"
+                            >
+                                Submit &amp; Opt In
+                            </button>
+                            <p className="text-xs text-zinc-400">
+                                Selected state:{" "}
+                                <span className="font-medium text-zinc-600">{previewHowItWent || "none"}</span>
+                            </p>
                         </div>
                     )}
                 </div>

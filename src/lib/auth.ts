@@ -4,9 +4,22 @@ import { cookies } from "next/headers";
 import { prisma } from "./db";
 
 const SESSION_COOKIE = "floatdate_session";
+const IMPERSONATION_COOKIE = "floatdate_impersonation";
 const JWT_SECRET = new TextEncoder().encode(
     process.env.JWT_SECRET || "dev-secret-change-in-production"
 );
+const IMPERSONATION_TTL_SECONDS = 60 * 30; // 30 minutes
+
+interface ImpersonationPayload {
+    actorUserId: string;
+    targetUserId: string;
+}
+
+export interface SessionContext {
+    actorUserId: string;
+    effectiveUserId: string;
+    isImpersonating: boolean;
+}
 
 export async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12);
@@ -36,7 +49,7 @@ export async function createSession(userId: string): Promise<void> {
     });
 }
 
-export async function getSession(): Promise<{ userId: string } | null> {
+export async function getBaseSession(): Promise<{ userId: string } | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE)?.value;
     if (!token) return null;
@@ -49,17 +62,95 @@ export async function getSession(): Promise<{ userId: string } | null> {
     }
 }
 
+async function getImpersonationPayload(): Promise<ImpersonationPayload | null> {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(IMPERSONATION_COOKIE)?.value;
+    if (!token) return null;
+
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const actorUserId = payload.actorUserId as string | undefined;
+        const targetUserId = payload.targetUserId as string | undefined;
+        if (!actorUserId || !targetUserId) return null;
+        return { actorUserId, targetUserId };
+    } catch {
+        return null;
+    }
+}
+
+export async function getSessionContext(): Promise<SessionContext | null> {
+    const baseSession = await getBaseSession();
+    if (!baseSession) return null;
+
+    const impersonation = await getImpersonationPayload();
+    if (
+        impersonation &&
+        impersonation.actorUserId === baseSession.userId &&
+        impersonation.targetUserId !== baseSession.userId
+    ) {
+        return {
+            actorUserId: baseSession.userId,
+            effectiveUserId: impersonation.targetUserId,
+            isImpersonating: true,
+        };
+    }
+
+    return {
+        actorUserId: baseSession.userId,
+        effectiveUserId: baseSession.userId,
+        isImpersonating: false,
+    };
+}
+
+export async function getSession(): Promise<{ userId: string } | null> {
+    const context = await getSessionContext();
+    if (!context) return null;
+    return { userId: context.effectiveUserId };
+}
+
 export async function destroySession(): Promise<void> {
     const cookieStore = await cookies();
     cookieStore.delete(SESSION_COOKIE);
+    cookieStore.delete(IMPERSONATION_COOKIE);
+}
+
+export async function createImpersonationSession(
+    actorUserId: string,
+    targetUserId: string
+): Promise<void> {
+    const token = await new SignJWT({ actorUserId, targetUserId })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime(`${IMPERSONATION_TTL_SECONDS}s`)
+        .setIssuedAt()
+        .sign(JWT_SECRET);
+
+    const cookieStore = await cookies();
+    cookieStore.set(IMPERSONATION_COOKIE, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: IMPERSONATION_TTL_SECONDS,
+        path: "/",
+    });
+}
+
+export async function clearImpersonationSession(): Promise<void> {
+    const cookieStore = await cookies();
+    cookieStore.delete(IMPERSONATION_COOKIE);
 }
 
 export async function requireAuth(): Promise<{
     userId: string;
+    actorUserId: string;
+    isImpersonating: boolean;
 } | null> {
-    const session = await getSession();
+    const session = await getSessionContext();
     if (!session) return null;
-    return session;
+    return {
+        userId: session.effectiveUserId,
+        actorUserId: session.actorUserId,
+        isImpersonating: session.isImpersonating,
+    };
 }
 
 export async function getCurrentUser() {
