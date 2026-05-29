@@ -137,3 +137,8 @@ Remove-Item -Path "$env:USERPROFILE\.antigravity" -Recurse -Force -ErrorAction S
 ```bash
 npm run trigger-matching
 ```
+
+how to take backup of data
+```bash
+npm run db:dump -- floatdate_backup_may_29_2025.dump
+```

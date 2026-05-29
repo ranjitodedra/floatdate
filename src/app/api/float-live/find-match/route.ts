@@ -1,21 +1,133 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive, getTodaySessionTimes } from "@/lib/float-live-time";
+import { isFloatLiveActive } from "@/lib/float-live-time";
+import {
+    canonicalParticipantPair,
+    QUEUE_STALE_S,
+} from "@/lib/float-live-presence";
+import {
+    ensureRoomParticipants,
+    markParticipantsMatched,
+} from "@/lib/float-live-room";
 
 function isCompatible(
     userA: { gender: string; preference: string; intention: string; campus: string },
     userB: { gender: string; preference: string; intention: string; campus: string }
 ): boolean {
-    // Campus must match
     if (userA.campus !== userB.campus) return false;
-    // Intention must match
     if (userA.intention !== userB.intention) return false;
-    // Gender preference must be mutual
     const aPrefersB = userA.preference === "any" || userA.preference === userB.gender;
     const bPrefersA = userB.preference === "any" || userB.preference === userA.gender;
-    if (!aPrefersB || !bPrefersA) return false;
-    return true;
+    return aPrefersB && bPrefersA;
+}
+
+async function tryClaimMatch(
+    sessionId: string,
+    myParticipant: {
+        id: string;
+        userId: string;
+        intention: string;
+        gender: string;
+        preference: string;
+        campus: string;
+    },
+    match: {
+        id: string;
+        userId: string;
+        intention: string;
+    }
+): Promise<string | null> {
+    const [participantAId, participantBId] = canonicalParticipantPair(
+        myParticipant.id,
+        match.id
+    );
+
+    const participantARecord =
+        participantAId === myParticipant.id ? myParticipant : match;
+    const participantBRecord =
+        participantBId === myParticipant.id ? myParticipant : match;
+
+    try {
+        return await prisma.$transaction(async (tx) => {
+            const locked = await tx.$queryRaw<{ id: string }[]>`
+                SELECT id FROM "FloatLiveParticipant"
+                WHERE id = ${match.id}
+                  AND "sessionId" = ${sessionId}
+                  AND status = 'waiting'
+                  AND "isOnline" = true
+                  AND "leftAt" IS NULL
+                FOR UPDATE NOWAIT
+            `;
+
+            if (locked.length === 0) {
+                return null;
+            }
+
+            const myRow = await tx.floatLiveParticipant.findUnique({
+                where: { id: myParticipant.id },
+            });
+            if (!myRow || myRow.status !== "waiting") {
+                return null;
+            }
+
+            const stillFree = await tx.floatLiveChatRoom.findFirst({
+                where: {
+                    isActive: true,
+                    OR: [
+                        { participantAId: match.id },
+                        { participantBId: match.id },
+                        { participantAId: myParticipant.id },
+                        { participantBId: myParticipant.id },
+                    ],
+                },
+            });
+            if (stillFree) {
+                const involvesMe =
+                    stillFree.participantAId === myParticipant.id ||
+                    stillFree.participantBId === myParticipant.id;
+                return involvesMe ? stillFree.id : null;
+            }
+
+            const isFriendship = myParticipant.intention === "friendship";
+            const chatRoom = await tx.floatLiveChatRoom.create({
+                data: {
+                    sessionId,
+                    participantAId,
+                    participantBId,
+                    intention: myParticipant.intention,
+                    emailRevealedByA: isFriendship,
+                    emailRevealedByB: isFriendship,
+                    isActive: true,
+                    status: "active",
+                },
+            });
+
+            await markParticipantsMatched(tx, participantAId, participantBId);
+            await ensureRoomParticipants(
+                tx,
+                chatRoom.id,
+                participantAId,
+                participantBId,
+                participantARecord.userId,
+                participantBRecord.userId
+            );
+
+            return chatRoom.id;
+        });
+    } catch (err) {
+        if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            (err.code === "P2034" || err.message.includes("could not obtain lock"))
+        ) {
+            return null;
+        }
+        if (err instanceof Error && err.message.includes("55P03")) {
+            return null;
+        }
+        throw err;
+    }
 }
 
 export async function POST(req: NextRequest) {
@@ -40,7 +152,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "sessionId required" }, { status: 400 });
         }
 
-        // Get current user's participant record
         const myParticipant = await prisma.floatLiveParticipant.findUnique({
             where: {
                 userId_sessionId: {
@@ -54,7 +165,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "You must join first" }, { status: 400 });
         }
 
-        // Get current user's university
+        const now = new Date();
+        await prisma.floatLiveParticipant.update({
+            where: { id: myParticipant.id },
+            data: { lastSeenAt: now, status: "waiting", isOnline: true },
+        });
+
         const currentUser = await prisma.user.findUnique({
             where: { id: authSession.userId },
             select: { universityId: true },
@@ -64,10 +180,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        // Check if user already has an active chat room
         const existingRoom = await prisma.floatLiveChatRoom.findFirst({
             where: {
                 isActive: true,
+                status: "active",
                 sessionId,
                 OR: [
                     { participantAId: myParticipant.id },
@@ -80,111 +196,117 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ status: "matched", chatRoomId: existingRoom.id });
         }
 
-        // Find all online, unmatched participants in this session (same university only)
+        const staleThreshold = new Date(now.getTime() - QUEUE_STALE_S * 1000);
+
         const candidates = await prisma.floatLiveParticipant.findMany({
             where: {
                 sessionId,
                 isOnline: true,
                 acceptedTerms: true,
                 leftAt: null,
+                status: "waiting",
+                lastSeenAt: { gte: staleThreshold },
                 userId: { not: authSession.userId },
-                // Only match within the same university
                 user: { universityId: currentUser.universityId },
-                // Not in any active chat room
                 chatRoomsAsA: { none: { isActive: true } },
                 chatRoomsAsB: { none: { isActive: true } },
             },
         });
 
-        // Find first compatible match
-        const match = candidates.find((candidate) =>
-            isCompatible(myParticipant, candidate)
-        );
+        const compatible = candidates.filter((c) => isCompatible(myParticipant, c));
 
-        if (!match) {
-            return NextResponse.json({
-                status: "waiting",
-                message: "Looking for someone...",
-            });
-        }
-
-        // Check if an inactive room already exists between these two participants
-        // If so, reactivate it instead of creating a new one (avoids unique constraint)
-        const existingPairRoom = await prisma.floatLiveChatRoom.findFirst({
-            where: {
-                sessionId,
-                isActive: false,
-                OR: [
-                    { participantAId: myParticipant.id, participantBId: match.id },
-                    { participantAId: match.id, participantBId: myParticipant.id },
-                ],
-            },
-        });
-
-        if (existingPairRoom) {
-            const isFriendship = myParticipant.intention === "friendship";
-
-            // Soft-delete old messages so the new chat starts clean
-            await prisma.floatLiveChatMessage.updateMany({
-                where: { chatRoomId: existingPairRoom.id },
-                data: { isDeleted: true },
-            });
-
-            // Reactivate the existing room for a fresh chat
-            const reactivated = await prisma.floatLiveChatRoom.update({
-                where: { id: existingPairRoom.id },
-                data: {
-                    isActive: true,
-                    endedAt: null,
-                    intention: myParticipant.intention,
-                    emailRevealedByA: isFriendship,
-                    emailRevealedByB: isFriendship,
-                },
-            });
-            return NextResponse.json({ status: "matched", chatRoomId: reactivated.id });
-        }
-
-        // Create chat room — wrapped in try/catch for race condition safety
-        try {
-            const isFriendship = myParticipant.intention === "friendship";
-            const chatRoom = await prisma.floatLiveChatRoom.create({
-                data: {
+        for (const match of compatible) {
+            const existingPairRoom = await prisma.floatLiveChatRoom.findFirst({
+                where: {
                     sessionId,
-                    participantAId: myParticipant.id,
-                    participantBId: match.id,
-                    intention: myParticipant.intention,
-                    emailRevealedByA: isFriendship,
-                    emailRevealedByB: isFriendship,
+                    isActive: false,
+                    OR: [
+                        {
+                            participantAId: myParticipant.id,
+                            participantBId: match.id,
+                        },
+                        {
+                            participantAId: match.id,
+                            participantBId: myParticipant.id,
+                        },
+                    ],
                 },
             });
 
-            return NextResponse.json({ status: "matched", chatRoomId: chatRoom.id });
-        } catch (createError: unknown) {
-            // If unique constraint failed, the other user's polling already created the room
-            if (
-                typeof createError === "object" &&
-                createError !== null &&
-                "code" in createError &&
-                (createError as { code: string }).code === "P2002"
-            ) {
-                // Find the room that was just created by the other side
-                const raceRoom = await prisma.floatLiveChatRoom.findFirst({
-                    where: {
-                        sessionId,
-                        isActive: true,
-                        OR: [
-                            { participantAId: myParticipant.id },
-                            { participantBId: myParticipant.id },
-                        ],
-                    },
+            if (existingPairRoom) {
+                const [participantAId, participantBId] = canonicalParticipantPair(
+                    myParticipant.id,
+                    match.id
+                );
+                const isFriendship = myParticipant.intention === "friendship";
+
+                const roomId = await prisma.$transaction(async (tx) => {
+                    const locked = await tx.$queryRaw<{ id: string }[]>`
+                        SELECT id FROM "FloatLiveParticipant"
+                        WHERE id = ${match.id} AND status = 'waiting'
+                        FOR UPDATE NOWAIT
+                    `;
+                    if (locked.length === 0) return null;
+
+                    await tx.floatLiveChatMessage.updateMany({
+                        where: { chatRoomId: existingPairRoom.id },
+                        data: { isDeleted: true },
+                    });
+
+                    const reactivated = await tx.floatLiveChatRoom.update({
+                        where: { id: existingPairRoom.id },
+                        data: {
+                            isActive: true,
+                            status: "active",
+                            endedAt: null,
+                            endedReason: null,
+                            intention: myParticipant.intention,
+                            emailRevealedByA: isFriendship,
+                            emailRevealedByB: isFriendship,
+                            participantAId,
+                            participantBId,
+                        },
+                    });
+
+                    await markParticipantsMatched(tx, participantAId, participantBId);
+
+                    const userA =
+                        participantAId === myParticipant.id
+                            ? myParticipant.userId
+                            : match.userId;
+                    const userB =
+                        participantBId === myParticipant.id
+                            ? myParticipant.userId
+                            : match.userId;
+
+                    await ensureRoomParticipants(
+                        tx,
+                        reactivated.id,
+                        participantAId,
+                        participantBId,
+                        userA,
+                        userB
+                    );
+
+                    return reactivated.id;
                 });
-                if (raceRoom) {
-                    return NextResponse.json({ status: "matched", chatRoomId: raceRoom.id });
+
+                if (roomId) {
+                    return NextResponse.json({ status: "matched", chatRoomId: roomId });
                 }
-                return NextResponse.json({ status: "waiting", message: "Looking for someone..." });
+                continue;
             }
-            throw createError;
+
+            const roomId = await tryClaimMatch(sessionId, myParticipant, match);
+            if (roomId) {
+                return NextResponse.json({ status: "matched", chatRoomId: roomId });
+            }
         }
+
+        return NextResponse.json({
+            status: "waiting",
+            message: "Looking for someone...",
+        });
     } catch (error) {
         console.error("Float Live find-match error:", error);
         return NextResponse.json({ error: "Failed to find match" }, { status: 500 });

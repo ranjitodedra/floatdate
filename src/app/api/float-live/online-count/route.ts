@@ -24,15 +24,17 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        const staleThreshold = new Date(Date.now() - 30 * 1000);
+
         const count = await prisma.floatLiveParticipant.count({
             where: {
                 sessionId,
                 isOnline: true,
                 acceptedTerms: true,
                 leftAt: null,
-                // Only count participants from the same university
+                status: "waiting",
+                lastSeenAt: { gte: staleThreshold },
                 user: { universityId: currentUser.universityId },
-                // Only count participants NOT in any active chat room (genuinely waiting)
                 chatRoomsAsA: { none: { isActive: true } },
                 chatRoomsAsB: { none: { isActive: true } },
             },

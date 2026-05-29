@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isFloatLiveActive } from "@/lib/float-live-time";
+import { isRoomActive } from "@/lib/float-live-presence";
 
 const MAX_MESSAGE_LENGTH = 500;
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        if (!chatRoom || !chatRoom.isActive) {
+        if (!chatRoom || !isRoomActive(chatRoom)) {
             return NextResponse.json({ error: "Chat room not found or inactive" }, { status: 404 });
         }
 

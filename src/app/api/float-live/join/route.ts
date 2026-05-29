@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
                 isOnline: true,
                 acceptedTerms: true,
                 leftAt: null,
+                lastSeenAt: new Date(),
+                status: "waiting",
             },
             create: {
                 userId: authSession.userId,
@@ -100,6 +102,8 @@ export async function POST(req: NextRequest) {
                 campus,
                 character: selectedCharacter,
                 acceptedTerms: true,
+                lastSeenAt: new Date(),
+                status: "waiting",
             },
         });
 
@@ -115,6 +119,8 @@ export async function POST(req: NextRequest) {
             },
             data: {
                 isActive: false,
+                status: "ended",
+                endedReason: "user_exit",
                 endedAt: new Date(),
             },
         });

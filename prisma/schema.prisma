@@ -207,14 +207,19 @@ model FloatLiveParticipant {
   acceptedTerms  Boolean  @default(false)
   joinedAt       DateTime @default(now())
   leftAt         DateTime?
+  lastSeenAt     DateTime?
+  status         String   @default("idle") // idle | waiting | matched | left
+  connectionId   String?
 
   user           User     @relation(fields: [userId], references: [id])
   session        FloatLiveSession @relation(fields: [sessionId], references: [id])
 
   chatRoomsAsA   FloatLiveChatRoom[] @relation("chatParticipantA")
   chatRoomsAsB   FloatLiveChatRoom[] @relation("chatParticipantB")
+  roomParticipations FloatLiveRoomParticipant[]
 
   @@unique([userId, sessionId])
+  @@index([sessionId, status, lastSeenAt])
 }
 
 model FloatLiveChatRoom {
@@ -226,6 +231,8 @@ model FloatLiveChatRoom {
   emailRevealedByA  Boolean  @default(false)
   emailRevealedByB  Boolean  @default(false)
   isActive          Boolean  @default(true)
+  status            String   @default("active") // active | ended
+  endedReason       String?  // user_exit | timeout | session_end
   startedAt         DateTime @default(now())
   endedAt           DateTime?
 
@@ -235,8 +242,28 @@ model FloatLiveChatRoom {
 
   messages       FloatLiveChatMessage[]
   reports        FloatLiveReport[]
+  roomParticipants FloatLiveRoomParticipant[]
 
   @@unique([participantAId, participantBId, sessionId])
+}
+
+model FloatLiveRoomParticipant {
+  id             String   @id @default(uuid())
+  roomId         String
+  participantId  String
+  userId         String
+  role           String   // A | B
+  status         String   @default("online") // online | away | left
+  lastSeenAt     DateTime @default(now())
+  awaySince      DateTime?
+  joinedAt       DateTime @default(now())
+  connectionId   String?
+
+  room           FloatLiveChatRoom @relation(fields: [roomId], references: [id])
+  participant    FloatLiveParticipant @relation(fields: [participantId], references: [id])
+
+  @@unique([roomId, userId])
+  @@index([roomId, lastSeenAt])
 }
 
 model FloatLiveChatMessage {

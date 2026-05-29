@@ -9,7 +9,11 @@ import RevealEmailButton from "../../components/RevealEmailButton";
 import TimeWarning from "../../components/TimeWarning";
 import ReportButton from "../../components/ReportButton";
 import ExitDateButton from "../../components/ExitDateButton";
+import PartnerPresence, {
+    type PartnerPresenceStatus,
+} from "../../components/PartnerPresence";
 import { supabase } from "@/lib/supabase-client";
+import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
 interface Message {
     id: string;
@@ -18,13 +22,14 @@ interface Message {
     createdAt: string;
 }
 
+type EndedReason = "user_exit" | "timeout" | "session_end" | null;
+
 export default function ChatRoomPage() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
     const roomId = params.roomId as string;
 
-    // Character from URL params
     const urlUserChar = searchParams.get("uc") || "A";
     const urlPartnerChar = searchParams.get("pc") || "A";
 
@@ -38,16 +43,29 @@ export default function ChatRoomPage() {
     const [showTranscript, setShowTranscript] = useState(false);
     const [minutesLeft, setMinutesLeft] = useState(60);
     const [chatEnded, setChatEnded] = useState(false);
-    const [partnerLeft, setPartnerLeft] = useState(false);
+    const [endedReason, setEndedReason] = useState<EndedReason>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [partnerStatus, setPartnerStatus] = useState<PartnerPresenceStatus | null>("online");
+    const [graceSecondsLeft, setGraceSecondsLeft] = useState(480);
+    const [showPartnerBack, setShowPartnerBack] = useState(false);
+    const [reconnecting, setReconnecting] = useState(false);
 
-    // Initialize
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const prevPartnerStatusRef = useRef<PartnerPresenceStatus | null>("online");
+    const connectionIdRef = useRef(
+        typeof crypto !== "undefined" ? crypto.randomUUID() : `conn-${Date.now()}`
+    );
+
+    const handleRoomEnded = useCallback((reason: EndedReason) => {
+        setChatEnded(true);
+        setEndedReason(reason);
+        setPartnerStatus("timeout");
+    }, []);
+
     useEffect(() => {
         async function init() {
             try {
-                // Get user
                 const userRes = await fetch("/api/auth/me");
                 if (!userRes.ok) {
                     router.push("/login");
@@ -56,22 +74,19 @@ export default function ChatRoomPage() {
                 const userData = await userRes.json();
                 setUserId(userData.user.id);
 
-                // Get time status
                 const statusRes = await fetch("/api/float-live/status");
                 const statusData = await statusRes.json();
                 setMinutesLeft(statusData.minutesLeft || 0);
 
                 if (!statusData.active) {
-                    setChatEnded(true);
+                    handleRoomEnded("session_end");
                 }
 
-                // Get session for match-status lookup
                 const sessionRes = await fetch("/api/float-live/session");
                 if (sessionRes.ok) {
                     const sessionData = await sessionRes.json();
                     setSessionId(sessionData.session.id);
 
-                    // Get match status to learn partner details
                     const matchRes = await fetch(
                         `/api/float-live/match-status?sessionId=${sessionData.session.id}`
                     );
@@ -86,10 +101,10 @@ export default function ChatRoomPage() {
                         setIntention(matchData.intention);
                     }
 
-                    // If friendship mode, fetch partner email via GET
-                    // (email flags are pre-set by find-match, no mutation needed)
                     if (matchData.intention === "friendship") {
-                        const revealRes = await fetch(`/api/float-live/chat/${roomId}/reveal-email`);
+                        const revealRes = await fetch(
+                            `/api/float-live/chat/${roomId}/reveal-email`
+                        );
                         if (revealRes.ok) {
                             const revealData = await revealRes.json();
                             if (revealData.partnerEmail) {
@@ -99,11 +114,15 @@ export default function ChatRoomPage() {
                     }
                 }
 
-                // Fetch existing messages
                 const msgsRes = await fetch(`/api/float-live/chat/${roomId}/messages`);
                 if (msgsRes.ok) {
                     const msgsData = await msgsRes.json();
                     setMessages(msgsData.messages || []);
+                    if (msgsData.roomActive === false) {
+                        handleRoomEnded(
+                            (msgsData.endedReason as EndedReason) || "user_exit"
+                        );
+                    }
                 }
             } catch (err) {
                 console.error("Chat init error:", err);
@@ -112,9 +131,8 @@ export default function ChatRoomPage() {
             }
         }
         init();
-    }, [roomId, router]);
+    }, [roomId, router, handleRoomEnded]);
 
-    // Supabase Realtime subscription for new messages + chat room exit detection
     useEffect(() => {
         if (!roomId) return;
 
@@ -131,7 +149,6 @@ export default function ChatRoomPage() {
                 (payload) => {
                     const newMsg = payload.new as Message;
                     setMessages((prev) => {
-                        // Avoid duplicates
                         if (prev.some((m) => m.id === newMsg.id)) return prev;
                         return [...prev, newMsg];
                     });
@@ -146,10 +163,15 @@ export default function ChatRoomPage() {
                     filter: `id=eq.${roomId}`,
                 },
                 (payload) => {
-                    const updated = payload.new as { isActive: boolean };
-                    if (!updated.isActive) {
-                        setPartnerLeft(true);
-                        setChatEnded(true);
+                    const updated = payload.new as {
+                        isActive: boolean;
+                        status?: string;
+                        endedReason?: string | null;
+                    };
+                    if (!updated.isActive || updated.status === "ended") {
+                        handleRoomEnded(
+                            (updated.endedReason as EndedReason) || "user_exit"
+                        );
                     }
                 }
             )
@@ -158,10 +180,55 @@ export default function ChatRoomPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [roomId]);
+    }, [roomId, handleRoomEnded]);
 
-    // Polling fallback for real-time chat — fetch messages every 3 seconds
-    // Also checks if the chat room is still active (partner exit detection)
+    const sendPresence = useCallback(async () => {
+        if (!roomId || chatEnded) return;
+
+        try {
+            const res = await fetch(`/api/float-live/chat/${roomId}/presence`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ connectionId: connectionIdRef.current }),
+            });
+
+            if (!res.ok) {
+                setReconnecting(true);
+                return;
+            }
+
+            setReconnecting(false);
+            const data = await res.json();
+
+            if (data.roomStatus === "ended") {
+                handleRoomEnded((data.endedReason as EndedReason) || "user_exit");
+                return;
+            }
+
+            const nextStatus = data.partner?.status as PartnerPresenceStatus;
+            const prev = prevPartnerStatusRef.current;
+
+            if (prev === "away" && nextStatus === "online") {
+                setShowPartnerBack(true);
+                setTimeout(() => setShowPartnerBack(false), 5000);
+            }
+
+            prevPartnerStatusRef.current = nextStatus;
+            setPartnerStatus(nextStatus);
+            setGraceSecondsLeft(data.partner?.graceSecondsLeft ?? 0);
+        } catch {
+            setReconnecting(true);
+        }
+    }, [roomId, chatEnded, handleRoomEnded]);
+
+    useEffect(() => {
+        if (!roomId || chatEnded) return;
+
+        sendPresence();
+        const interval = setInterval(sendPresence, HEARTBEAT_MS);
+        return () => clearInterval(interval);
+    }, [roomId, chatEnded, sendPresence]);
+
     useEffect(() => {
         if (!roomId || chatEnded) return;
 
@@ -172,33 +239,32 @@ export default function ChatRoomPage() {
                     const data = await res.json();
                     const fetched: Message[] = data.messages || [];
 
-                    // If the API returns roomActive === false, partner has left
                     if (data.roomActive === false) {
-                        setPartnerLeft(true);
-                        setChatEnded(true);
+                        handleRoomEnded(
+                            (data.endedReason as EndedReason) || "user_exit"
+                        );
                         return;
                     }
 
                     setMessages((prev) => {
-                        // Merge fetched messages, dedup by id
                         const existingIds = new Set(prev.map((m) => m.id));
                         const newMsgs = fetched.filter((m) => !existingIds.has(m.id));
                         if (newMsgs.length === 0) return prev;
                         return [...prev, ...newMsgs];
                     });
                 }
-            } catch { /* ignore polling errors */ }
+            } catch {
+                /* ignore polling errors */
+            }
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [roomId, chatEnded]);
+    }, [roomId, chatEnded, handleRoomEnded]);
 
-    // Auto-scroll on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Periodically check time status
     useEffect(() => {
         const interval = setInterval(async () => {
             try {
@@ -206,23 +272,23 @@ export default function ChatRoomPage() {
                 const data = await res.json();
                 setMinutesLeft(data.minutesLeft || 0);
                 if (!data.active) {
-                    setChatEnded(true);
+                    handleRoomEnded("session_end");
                 }
-            } catch { /* ignore */ }
+            } catch {
+                /* ignore */
+            }
         }, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [handleRoomEnded]);
 
-    // Auto-redirect when partner leaves
     useEffect(() => {
-        if (!partnerLeft) return;
+        if (!chatEnded) return;
         const timeout = setTimeout(() => {
             router.push("/float-live");
         }, 4000);
         return () => clearTimeout(timeout);
-    }, [partnerLeft, router]);
+    }, [chatEnded, router]);
 
-    // Send message
     const handleSend = useCallback(
         async (content: string) => {
             try {
@@ -234,7 +300,6 @@ export default function ChatRoomPage() {
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Add immediately for local user (realtime will bring it for partner)
                     setMessages((prev) => {
                         if (prev.some((m) => m.id === data.message.id)) return prev;
                         return [...prev, data.message];
@@ -246,6 +311,19 @@ export default function ChatRoomPage() {
         },
         [roomId]
     );
+
+    const endedMessage = (() => {
+        if (!chatEnded) return null;
+        switch (endedReason) {
+            case "timeout":
+                return "Your partner didn't come back in time.";
+            case "session_end":
+                return "Session ended. See you tomorrow at 5 PM! 👋";
+            case "user_exit":
+            default:
+                return "Your partner has left the chat. Redirecting to lobby...";
+        }
+    })();
 
     if (loading) {
         return (
@@ -267,7 +345,14 @@ export default function ChatRoomPage() {
 
     return (
         <div className="h-screen bg-zinc-900 flex flex-col overflow-hidden">
-            {/* Top bar */}
+            <PartnerPresence
+                partnerStatus={chatEnded ? null : partnerStatus}
+                graceSecondsLeft={graceSecondsLeft}
+                showBackToast={showPartnerBack}
+                reconnecting={reconnecting && !chatEnded}
+                onDismissBackToast={() => setShowPartnerBack(false)}
+            />
+
             <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <span className="text-lg">🎮</span>
@@ -297,12 +382,10 @@ export default function ChatRoomPage() {
                 </div>
             </div>
 
-            {/* Time warning */}
             <div className="px-4 pt-2 flex-shrink-0">
                 <TimeWarning minutesLeft={minutesLeft} />
             </div>
 
-            {/* Pixel scene — constrained height so everything fits on screen */}
             <div className="flex-1 min-h-0 px-4 py-2 flex items-center justify-center">
                 <PixelScene
                     userCharacter={userCharacter}
@@ -312,31 +395,33 @@ export default function ChatRoomPage() {
                 />
             </div>
 
-            {/* Partner left overlay */}
-            {partnerLeft && (
+            {chatEnded && endedMessage && (
                 <div className="px-4 pb-2 flex-shrink-0">
-                    <div className="bg-red-900/30 border border-red-500/40 rounded-xl p-4 text-center animate-pulse">
-                        <p className="text-red-300 text-sm font-medium">
-                            😔 Your partner has left the chat. Redirecting to lobby...
+                    <div
+                        className={`rounded-xl p-4 text-center ${
+                            endedReason === "session_end"
+                                ? "bg-zinc-800 border border-zinc-700"
+                                : "bg-red-900/30 border border-red-500/40 animate-pulse"
+                        }`}
+                    >
+                        <p
+                            className={`text-sm font-medium ${
+                                endedReason === "session_end"
+                                    ? "text-zinc-400"
+                                    : "text-red-300"
+                            }`}
+                        >
+                            {endedMessage}
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* Chat ended message (session timeout) */}
-            {chatEnded && !partnerLeft && (
-                <div className="px-4 pb-2 flex-shrink-0">
-                    <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-center">
-                        <p className="text-zinc-400 text-sm">
-                            Session ended. See you tomorrow at 5 PM! 👋
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Typing bar */}
             <div className="relative flex-shrink-0">
-                <TypingBar onSend={handleSend} disabled={chatEnded || partnerLeft} />
+                <TypingBar
+                    onSend={handleSend}
+                    disabled={chatEnded || partnerStatus === "timeout"}
+                />
             </div>
 
             <div ref={messagesEndRef} />

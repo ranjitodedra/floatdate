@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { endChatRoom } from "@/lib/float-live-room";
 
 export async function POST(
     req: NextRequest,
@@ -14,12 +15,11 @@ export async function POST(
 
         const { roomId } = await params;
 
-        // Verify user is a participant
         const chatRoom = await prisma.floatLiveChatRoom.findUnique({
             where: { id: roomId },
             include: {
-                participantA: { select: { userId: true } },
-                participantB: { select: { userId: true } },
+                participantA: { select: { userId: true, id: true } },
+                participantB: { select: { userId: true, id: true } },
             },
         });
 
@@ -35,19 +35,27 @@ export async function POST(
             return NextResponse.json({ error: "Not a participant" }, { status: 403 });
         }
 
-        // Close the chat room
-        await prisma.floatLiveChatRoom.update({
-            where: { id: roomId },
-            data: {
-                isActive: false,
-                endedAt: new Date(),
-            },
-        });
+        const myParticipantId =
+            chatRoom.participantA.userId === authSession.userId
+                ? chatRoom.participantA.id
+                : chatRoom.participantB.id;
 
-        // Soft-delete messages from UI
-        await prisma.floatLiveChatMessage.updateMany({
-            where: { chatRoomId: roomId },
-            data: { isDeleted: true },
+        await prisma.$transaction(async (tx) => {
+            await endChatRoom(tx, roomId, "user_exit");
+
+            await tx.floatLiveParticipant.update({
+                where: { id: myParticipantId },
+                data: {
+                    status: "left",
+                    isOnline: false,
+                    leftAt: new Date(),
+                },
+            });
+
+            await tx.floatLiveChatMessage.updateMany({
+                where: { chatRoomId: roomId },
+                data: { isDeleted: true },
+            });
         });
 
         return NextResponse.json({ success: true });

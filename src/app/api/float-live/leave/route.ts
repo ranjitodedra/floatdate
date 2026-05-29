@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
             data: {
                 isOnline: false,
                 leftAt: new Date(),
+                status: "left",
             },
         });
 
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
                 },
                 data: {
                     isActive: false,
+                    status: "ended",
+                    endedReason: "user_exit",
                     endedAt: new Date(),
                 },
             });

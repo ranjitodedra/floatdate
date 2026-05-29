@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isRoomActive } from "@/lib/float-live-presence";
 
 export async function GET(
     req: NextRequest,
@@ -50,7 +51,12 @@ export async function GET(
             },
         });
 
-        return NextResponse.json({ messages, roomActive: chatRoom.isActive });
+        return NextResponse.json({
+            messages,
+            roomActive: isRoomActive(chatRoom),
+            roomStatus: chatRoom.status ?? (chatRoom.isActive ? "active" : "ended"),
+            endedReason: chatRoom.endedReason,
+        });
     } catch (error) {
         console.error("Float Live messages error:", error);
         return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });

@@ -7,6 +7,7 @@ import FiltersBar from "./components/FiltersBar";
 import OnlineCounter from "./components/OnlineCounter";
 import TermsModal from "./components/TermsModal";
 import TimeWarning from "./components/TimeWarning";
+import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
 const WAIT_TIMEOUT_SECONDS = 5 * 60; // 5 minutes
 
@@ -187,6 +188,27 @@ export default function FloatLivePage() {
 
         window.addEventListener("beforeunload", handleBeforeUnload);
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [searching, sessionId]);
+
+    // Lobby heartbeat while searching (keeps queue presence fresh)
+    useEffect(() => {
+        if (!searching || !sessionId) return;
+
+        async function heartbeat() {
+            try {
+                await fetch("/api/float-live/heartbeat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionId }),
+                });
+            } catch {
+                /* ignore */
+            }
+        }
+
+        heartbeat();
+        const interval = setInterval(heartbeat, HEARTBEAT_MS);
+        return () => clearInterval(interval);
     }, [searching, sessionId]);
 
     // Match polling while searching
