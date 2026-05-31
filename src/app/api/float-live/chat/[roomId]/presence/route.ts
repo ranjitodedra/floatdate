@@ -5,9 +5,40 @@ import { isFloatLiveActive } from "@/lib/float-live-time";
 import {
     derivePresence,
     isRoomActive,
+    secondsSince,
+    GRACE_S,
+    type DerivedPresence,
     type PresenceStatus,
 } from "@/lib/float-live-presence";
 import { endChatRoom } from "@/lib/float-live-room";
+
+/**
+ * Partner presence that respects an EXPLICIT away signal (tab hidden) in
+ * addition to heartbeat staleness. Explicit away is shown immediately and the
+ * 8-minute grace counts from when they stepped away.
+ */
+function computePartnerPresence(
+    partnerRow: { lastSeenAt: Date; status: string; awaySince: Date | null } | undefined,
+    now: Date
+): DerivedPresence {
+    const bySeen = derivePresence(partnerRow?.lastSeenAt ?? null, now);
+    // Hard timeout from a fully silent heartbeat always wins.
+    if (bySeen.status === "timeout") return bySeen;
+
+    if (partnerRow && partnerRow.status === "away" && partnerRow.awaySince) {
+        const awayGap = secondsSince(partnerRow.awaySince, now);
+        if (awayGap > GRACE_S) {
+            return { status: "timeout", awaySeconds: awayGap, graceSecondsLeft: 0 };
+        }
+        return {
+            status: "away",
+            awaySeconds: awayGap,
+            graceSecondsLeft: Math.max(0, GRACE_S - awayGap),
+        };
+    }
+
+    return bySeen;
+}
 
 export async function POST(
     req: NextRequest,
@@ -23,6 +54,7 @@ export async function POST(
         const body = await req.json().catch(() => ({}));
         const connectionId =
             typeof body.connectionId === "string" ? body.connectionId : undefined;
+        const iAmAway = body.away === true;
 
         const chatRoom = await prisma.floatLiveChatRoom.findUnique({
             where: { id: roomId },
@@ -49,6 +81,13 @@ export async function POST(
 
         const now = new Date();
 
+        const myExistingRow = chatRoom.roomParticipants.find(
+            (r) => r.userId === authSession.userId
+        );
+        // Preserve the original awaySince so grace counts from the first time
+        // I stepped away, not from each subsequent background heartbeat.
+        const myAwaySince = iAmAway ? myExistingRow?.awaySince ?? now : null;
+
         // Upsert my room presence row
         const myRoomRow = await prisma.floatLiveRoomParticipant.upsert({
             where: {
@@ -59,14 +98,15 @@ export async function POST(
                 participantId: myParticipant.id,
                 userId: authSession.userId,
                 role: myRole,
-                status: "online",
+                status: iAmAway ? "away" : "online",
+                awaySince: myAwaySince,
                 lastSeenAt: now,
                 ...(connectionId ? { connectionId } : {}),
             },
             update: {
                 lastSeenAt: now,
-                status: "online",
-                awaySince: null,
+                status: iAmAway ? "away" : "online",
+                awaySince: myAwaySince,
                 ...(connectionId ? { connectionId } : {}),
             },
         });
@@ -83,7 +123,9 @@ export async function POST(
             (r) => r.userId === partnerParticipant.userId
         );
 
-        let partnerPresence = derivePresence(partnerRow?.lastSeenAt ?? null, now);
+        // Honors both an explicit "away" (tab hidden) signal and heartbeat
+        // staleness. The partner owns its own row, so we only READ it here.
+        let partnerPresence = computePartnerPresence(partnerRow, now);
         let partnerStatus: PresenceStatus = partnerPresence.status;
 
         const { active: sessionActive } = await isFloatLiveActive();
@@ -100,26 +142,7 @@ export async function POST(
             roomStatus = "ended";
             endedReason = reason;
             partnerStatus = "timeout";
-            partnerPresence = derivePresence(partnerRow?.lastSeenAt ?? null, now);
-        } else if (partnerRow && isRoomActive(chatRoom)) {
-            // Sync stored status for partner row when away/online
-            const derived = derivePresence(partnerRow.lastSeenAt, now);
-            if (derived.status === "away" && partnerRow.status !== "away") {
-                await prisma.floatLiveRoomParticipant.update({
-                    where: { id: partnerRow.id },
-                    data: {
-                        status: "away",
-                        awaySince: partnerRow.awaySince ?? now,
-                    },
-                });
-            } else if (derived.status === "online" && partnerRow.status === "away") {
-                await prisma.floatLiveRoomParticipant.update({
-                    where: { id: partnerRow.id },
-                    data: { status: "online", awaySince: null },
-                });
-            }
-            partnerStatus = derived.status;
-            partnerPresence = derived;
+            partnerPresence = computePartnerPresence(partnerRow, now);
         }
 
         const roomEnded = roomStatus === "ended" || !chatRoom.isActive;

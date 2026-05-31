@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 interface ExitDateButtonProps {
     chatRoomId?: string;
     sessionId?: string;
+    /** Called synchronously when the user initiates exit, before any network
+     * work — lets the chat page know THIS client is the one leaving so it does
+     * not show a "your partner left" message to the person who left. */
+    onExit?: () => void;
 }
 
-export default function ExitDateButton({ chatRoomId, sessionId }: ExitDateButtonProps) {
+export default function ExitDateButton({ chatRoomId, sessionId, onExit }: ExitDateButtonProps) {
     const router = useRouter();
 
     async function handleExit() {
+        onExit?.();
         try {
             if (chatRoomId) {
                 await fetch(`/api/float-live/chat/${chatRoomId}/exit`, {

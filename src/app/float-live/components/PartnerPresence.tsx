@@ -1,33 +1,22 @@
 "use client";
 
-import { GRACE_S } from "@/lib/float-live-presence";
-
 export type PartnerPresenceStatus = "online" | "away" | "timeout";
 
 interface PartnerPresenceProps {
     partnerStatus: PartnerPresenceStatus | null;
-    graceSecondsLeft: number;
+    /** Kept for API compatibility; no longer displayed as a live countdown. */
+    graceSecondsLeft?: number;
     showBackToast: boolean;
     reconnecting: boolean;
     onDismissBackToast?: () => void;
 }
 
-function formatGrace(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 export default function PartnerPresence({
     partnerStatus,
-    graceSecondsLeft,
     showBackToast,
     reconnecting,
     onDismissBackToast,
 }: PartnerPresenceProps) {
-    const graceDisplay = formatGrace(Math.max(0, graceSecondsLeft));
-    const maxGrace = formatGrace(GRACE_S);
-
     return (
         <>
             {reconnecting && (
@@ -68,7 +57,7 @@ export default function PartnerPresence({
                             Your partner stepped away temporarily
                         </p>
                         <p className="text-amber-300/80 text-xs mt-1">
-                            Will wait up to {maxGrace} — {graceDisplay} remaining
+                            Will wait up to 8 minutes
                         </p>
                     </div>
                 </div>

@@ -56,11 +56,21 @@ export default function ChatRoomPage() {
     const connectionIdRef = useRef(
         typeof crypto !== "undefined" ? crypto.randomUUID() : `conn-${Date.now()}`
     );
+    // True once THIS client initiates leaving the chat. Used to suppress the
+    // "your partner left" message on the client that is itself leaving.
+    const leavingRef = useRef(false);
 
     const handleRoomEnded = useCallback((reason: EndedReason) => {
+        // If I'm the one leaving, don't flash "your partner left" at myself —
+        // the exit flow handles navigation away from the chat.
+        if (leavingRef.current) return;
         setChatEnded(true);
         setEndedReason(reason);
         setPartnerStatus("timeout");
+    }, []);
+
+    const handleSelfExit = useCallback(() => {
+        leavingRef.current = true;
     }, []);
 
     useEffect(() => {
@@ -189,7 +199,10 @@ export default function ChatRoomPage() {
             const res = await fetch(`/api/float-live/chat/${roomId}/presence`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ connectionId: connectionIdRef.current }),
+                body: JSON.stringify({
+                    connectionId: connectionIdRef.current,
+                    away: typeof document !== "undefined" && document.hidden,
+                }),
             });
 
             if (!res.ok) {
@@ -227,6 +240,23 @@ export default function ChatRoomPage() {
         sendPresence();
         const interval = setInterval(sendPresence, HEARTBEAT_MS);
         return () => clearInterval(interval);
+    }, [roomId, chatEnded, sendPresence]);
+
+    // Report away/back the instant this tab is hidden or refocused so the
+    // partner sees "stepped away" immediately instead of after a heartbeat gap.
+    useEffect(() => {
+        if (!roomId || chatEnded) return;
+        const onVisibility = () => {
+            sendPresence();
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+        window.addEventListener("blur", onVisibility);
+        window.addEventListener("focus", onVisibility);
+        return () => {
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("blur", onVisibility);
+            window.removeEventListener("focus", onVisibility);
+        };
     }, [roomId, chatEnded, sendPresence]);
 
     useEffect(() => {
@@ -378,7 +408,11 @@ export default function ChatRoomPage() {
                         View Transcript
                     </button>
                     <ReportButton chatRoomId={roomId} />
-                    <ExitDateButton chatRoomId={roomId} sessionId={sessionId || undefined} />
+                    <ExitDateButton
+                        chatRoomId={roomId}
+                        sessionId={sessionId || undefined}
+                        onExit={handleSelfExit}
+                    />
                 </div>
             </div>
 

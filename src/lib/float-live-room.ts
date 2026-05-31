@@ -62,7 +62,7 @@ export async function endChatRoom(
     endedReason: string
 ): Promise<void> {
     const now = new Date();
-    await tx.floatLiveChatRoom.update({
+    const room = await tx.floatLiveChatRoom.update({
         where: { id: roomId },
         data: {
             isActive: false,
@@ -75,6 +75,16 @@ export async function endChatRoom(
     await tx.floatLiveRoomParticipant.updateMany({
         where: { roomId },
         data: { status: "left" },
+    });
+
+    // Reconcile queue state: neither participant should stay stuck as "matched"
+    // once the room is over. The caller may further mark the leaver as "left".
+    await tx.floatLiveParticipant.updateMany({
+        where: {
+            id: { in: [room.participantAId, room.participantBId] },
+            status: "matched",
+        },
+        data: { status: "idle" },
     });
 }
 

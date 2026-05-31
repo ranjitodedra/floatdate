@@ -7,6 +7,12 @@ export const HEARTBEAT_MS = 8_000;
 export const ONLINE_WINDOW_S = 25;
 export const GRACE_S = 480; // 8 minutes
 export const QUEUE_STALE_S = 30;
+/**
+ * After a room between two participants ends, they may not be re-paired with
+ * each other until this cooldown elapses. Prevents the "instantly rejoined the
+ * partner who just left" bug while still allowing a later rematch.
+ */
+export const REMATCH_COOLDOWN_S = 45;
 
 export type PresenceStatus = "online" | "away" | "timeout";
 export type ParticipantQueueStatus = "idle" | "waiting" | "matched" | "left";

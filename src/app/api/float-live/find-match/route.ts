@@ -6,6 +6,7 @@ import { isFloatLiveActive } from "@/lib/float-live-time";
 import {
     canonicalParticipantPair,
     QUEUE_STALE_S,
+    REMATCH_COOLDOWN_S,
 } from "@/lib/float-live-presence";
 import {
     ensureRoomParticipants,
@@ -123,6 +124,15 @@ async function tryClaimMatch(
         ) {
             return null;
         }
+        // Unique violation: the partner pair room was created concurrently by the
+        // other client. Treat as "claimed by someone else"; the caller's next
+        // poll will pick up the existing active room.
+        if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === "P2002"
+        ) {
+            return null;
+        }
         if (err instanceof Error && err.message.includes("55P03")) {
             return null;
         }
@@ -215,6 +225,8 @@ export async function POST(req: NextRequest) {
 
         const compatible = candidates.filter((c) => isCompatible(myParticipant, c));
 
+        const cooldownThreshold = new Date(now.getTime() - REMATCH_COOLDOWN_S * 1000);
+
         for (const match of compatible) {
             const existingPairRoom = await prisma.floatLiveChatRoom.findFirst({
                 where: {
@@ -234,6 +246,15 @@ export async function POST(req: NextRequest) {
             });
 
             if (existingPairRoom) {
+                // Don't re-pair the same two people immediately after a room
+                // between them ended (e.g. one of them just left). Skip this
+                // candidate until the cooldown elapses.
+                if (
+                    !existingPairRoom.endedAt ||
+                    existingPairRoom.endedAt > cooldownThreshold
+                ) {
+                    continue;
+                }
                 const [participantAId, participantBId] = canonicalParticipantPair(
                     myParticipant.id,
                     match.id
