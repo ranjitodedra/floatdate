@@ -128,7 +128,7 @@ In your Vercel project dashboard, go to **Settings → Environment Variables** a
 2. **Test signup**: Create a test account
 3. **Test email verification**: Check your email for verification link
 4. **Test login**: Log in with your test account
-5. **Check cron job**: Go to **Settings → Cron Jobs** and verify `/api/admin/run-matching` appears
+5. **Check cron job**: Go to **Settings → Cron Jobs** and verify `/api/admin/float-live/cleanup` appears (runs daily). Weekly matching is triggered manually (see below).
 
 ---
 

@@ -1,16 +1,8 @@
 {
     "crons": [
         {
-            "path": "/api/admin/run-matching",
-            "schedule": "0 1 * * 4"
-        },
-        {
-            "path": "/api/admin/run-matching",
-            "schedule": "0 2 * * 4"
-        },
-        {
             "path": "/api/admin/float-live/cleanup",
-            "schedule": "*/5 * * * *"
+            "schedule": "0 4 * * *"
         }
     ]
 }

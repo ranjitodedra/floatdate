@@ -31,4 +31,4 @@ This app uses custom JWT (not Supabase Auth). Realtime uses the anon key; ensure
 
 1. Run SQL above
 2. Deploy app (includes heartbeat/presence APIs)
-3. Optional: Vercel cron hits `/api/admin/float-live/cleanup` every 5 minutes (needs `CRON_SECRET`)
+3. Optional: Vercel cron hits `/api/admin/float-live/cleanup` daily (needs `CRON_SECRET`). On the Vercel Hobby plan crons may run at most once per day; call the endpoint manually for more frequent cleanup.
