@@ -30,6 +30,8 @@ export default function AdminUsersPage() {
     const [universities, setUniversities] = useState<University[]>([]);
     const [universityId, setUniversityId] = useState<string>("");
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const fetchUniversities = useCallback(async () => {
         try {
@@ -74,6 +76,36 @@ export default function AdminUsersPage() {
         setLoading(true);
         fetchUsers();
     }, [fetchUsers]);
+
+    async function handleDelete(user: AdminUser) {
+        const confirmed = window.confirm(
+            `Permanently delete ${user.name} (${user.email})?\n\nThis removes their account and ALL related data (answers, matches, Float Live chats, feedback). This cannot be undone.`
+        );
+        if (!confirmed) return;
+
+        setDeletingId(user.id);
+        setError("");
+        setSuccess("");
+        try {
+            const res = await fetch("/api/admin/delete-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: user.email }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setError(data.error || "Failed to delete user.");
+                return;
+            }
+            setUsers((prev) => prev.filter((u) => u.id !== user.id));
+            setSuccess(`Deleted ${user.email}.`);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to delete user.");
+        } finally {
+            setDeletingId(null);
+        }
+    }
 
     const formatDate = (iso: string) => {
         const d = new Date(iso);
@@ -155,6 +187,12 @@ export default function AdminUsersPage() {
                     </div>
                 )}
 
+                {success && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-green-700 text-sm">
+                        {success}
+                    </div>
+                )}
+
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-zinc-900">Users</h2>
@@ -180,7 +218,8 @@ export default function AdminUsersPage() {
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Gender</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Pref</th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Setup</th>
-                                        <th className="text-left py-2 text-zinc-400 font-medium">Created</th>
+                                        <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Created</th>
+                                        <th className="text-right py-2 text-zinc-400 font-medium">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -203,8 +242,17 @@ export default function AdminUsersPage() {
                                                     <span className="text-red-400">✗</span>
                                                 )}
                                             </td>
-                                            <td className="py-2.5 text-zinc-400 text-xs">
+                                            <td className="py-2.5 pr-4 text-zinc-400 text-xs">
                                                 {formatDate(u.createdAt)}
+                                            </td>
+                                            <td className="py-2.5 text-right">
+                                                <button
+                                                    onClick={() => handleDelete(u)}
+                                                    disabled={deletingId === u.id}
+                                                    className="text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                                                >
+                                                    {deletingId === u.id ? "Deleting..." : "Delete"}
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
