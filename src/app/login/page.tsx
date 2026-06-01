@@ -41,11 +41,8 @@ export default function LoginPage() {
                 return;
             }
 
-            if (data.completedSetup) {
-                router.push("/dashboard");
-            } else {
-                router.push("/questions");
-            }
+            // Questionnaire is optional; everyone lands on the dashboard.
+            router.push("/dashboard");
         } catch {
             setError("Something went wrong. Please try again.");
             setShowResendLink(false);

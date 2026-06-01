@@ -49,18 +49,6 @@ interface PreviewResult {
     unmatched: UnmatchedUser[];
 }
 
-const HOW_IT_WENT_OPTIONS = [
-    { value: "never_started", label: "We never really started talking", emoji: "🌱" },
-    { value: "chatted", label: "We chatted a bit", emoji: "💬" },
-    { value: "great_conversation", label: "We had a great conversation", emoji: "✨" },
-    { value: "met_in_person", label: "We met in person", emoji: "☕" },
-    { value: "keep_seeing", label: "We want to keep seeing each other", emoji: "❤️" },
-    { value: "faded", label: "Things slowly faded", emoji: "🤷" },
-    { value: "felt_off", label: "Something felt off", emoji: "🚩" },
-    { value: "ghosted", label: "I got ghosted", emoji: "😬" },
-    { value: "figuring_out", label: "We’re still figuring it out", emoji: "⏸" },
-] as const;
-
 interface WeekHistory {
     weekNumber: number;
     weekStart: string;
@@ -100,17 +88,6 @@ export default function AdminPage() {
     const [viewAsLoading, setViewAsLoading] = useState(false);
     const [viewAsError, setViewAsError] = useState("");
     const [viewAsSuccess, setViewAsSuccess] = useState("");
-
-    // Feedback preview state
-    const [previewFeedbackStep, setPreviewFeedbackStep] = useState<1 | 2>(1);
-    const [previewHowItWent, setPreviewHowItWent] = useState("");
-    const [previewFeedbackText, setPreviewFeedbackText] = useState("");
-
-    // Float Live Settings
-    const [flStartHour, setFlStartHour] = useState(17);
-    const [flEndHour, setFlEndHour] = useState(18);
-    const [flSettingsLoading, setFlSettingsLoading] = useState(false);
-    const [flSettingsSaved, setFlSettingsSaved] = useState(false);
 
     const [universities, setUniversities] = useState<University[]>([]);
     const [observationUniversityId, setObservationUniversityId] = useState("");
@@ -234,15 +211,6 @@ export default function AdminPage() {
                 setWeekChoices(choices);
             })
             .catch(() => { });
-        fetch("/api/admin/float-live-settings")
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-                if (data) {
-                    setFlStartHour(data.startHour);
-                    setFlEndHour(data.endHour);
-                }
-            })
-            .catch(() => { });
     }, [fetchOptedIn, fetchUniversities]);
 
     useEffect(() => {
@@ -255,29 +223,6 @@ export default function AdminPage() {
         if (!showHistory) return;
         fetchWeekHistory();
     }, [observationUniversityId, showHistory, fetchWeekHistory]);
-
-    async function handleSaveFloatLiveSettings() {
-        setFlSettingsLoading(true);
-        setFlSettingsSaved(false);
-        try {
-            const res = await fetch("/api/admin/float-live-settings", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ startHour: flStartHour, endHour: flEndHour }),
-            });
-            if (!res.ok) {
-                const data = await res.json();
-                setError(data.error || "Failed to save settings");
-            } else {
-                setFlSettingsSaved(true);
-                setTimeout(() => setFlSettingsSaved(false), 3000);
-            }
-        } catch {
-            setError("Failed to save Float Live settings.");
-        } finally {
-            setFlSettingsLoading(false);
-        }
-    }
 
     async function handlePreview() {
         setPreviewing(true);
@@ -443,60 +388,6 @@ export default function AdminPage() {
                     </button>
                 </div>
 
-                {/* Float Live Settings */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-lg font-semibold text-zinc-900">Float Live Settings</h2>
-                            <p className="text-zinc-400 text-sm mt-1">Configure the daily time window</p>
-                        </div>
-                        <button
-                            onClick={handleSaveFloatLiveSettings}
-                            disabled={flSettingsLoading || flStartHour === flEndHour}
-                            className="px-5 py-2.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                        >
-                            {flSettingsLoading ? "Saving..." : flSettingsSaved ? "✓ Saved" : "Save"}
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">Start Hour (ET)</label>
-                            <select
-                                value={flStartHour}
-                                onChange={(e) => setFlStartHour(Number(e.target.value))}
-                                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                            >
-                                {Array.from({ length: 24 }, (_, i) => (
-                                    <option key={i} value={i}>
-                                        {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <span className="text-zinc-400 text-lg mt-5">→</span>
-                        <div className="flex-1">
-                            <label className="block text-xs text-zinc-500 font-medium mb-1.5">End Hour (ET)</label>
-                            <select
-                                value={flEndHour}
-                                onChange={(e) => setFlEndHour(Number(e.target.value))}
-                                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                            >
-                                {Array.from({ length: 24 }, (_, i) => (
-                                    <option key={i} value={i}>
-                                        {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    {flStartHour === flEndHour && (
-                        <p className="text-red-500 text-xs mt-2">Start and end cannot be the same.</p>
-                    )}
-                    {flStartHour > flEndHour && (
-                        <p className="text-zinc-500 text-xs mt-2">Overnight window.</p>
-                    )}
-                </div>
-
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">
                         {error}
@@ -546,72 +437,6 @@ export default function AdminPage() {
                     {viewAsSuccess && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm mb-4">
                             {viewAsSuccess}
-                        </div>
-                    )}
-                </div>
-
-                {/* Feedback Form Preview */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <div className="mb-4">
-                        <h2 className="text-lg font-semibold text-zinc-900">Feedback Form Preview (Sample)</h2>
-                        <p className="text-zinc-400 text-sm mt-1">
-                            Static preview of the user feedback flow, no data is saved.
-                        </p>
-                    </div>
-                    {previewFeedbackStep === 1 ? (
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-bold text-zinc-900 text-center">
-                                How did your match with Alex go?
-                            </h3>
-                            <div className="grid grid-cols-1 gap-2.5">
-                                {HOW_IT_WENT_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => {
-                                            setPreviewHowItWent(opt.value);
-                                            setPreviewFeedbackStep(2);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-zinc-200 bg-white hover:border-zinc-900 hover:bg-zinc-50 transition-all text-left group"
-                                    >
-                                        <span className="text-xl group-hover:scale-110 transition-transform">{opt.emoji}</span>
-                                        <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">
-                                            {opt.label}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <button
-                                type="button"
-                                onClick={() => setPreviewFeedbackStep(1)}
-                                className="text-sm text-zinc-500 hover:text-zinc-900 transition flex items-center gap-1"
-                            >
-                                ← Back
-                            </button>
-                            <h3 className="text-xl font-bold text-zinc-900">Any feedback about this match?</h3>
-                            <p className="text-sm text-zinc-500">
-                                Tell us what worked, what didn&apos;t, or anything else you&apos;d like to share.
-                            </p>
-                            <textarea
-                                value={previewFeedbackText}
-                                onChange={(e) => setPreviewFeedbackText(e.target.value)}
-                                rows={4}
-                                className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
-                                placeholder="Optional feedback..."
-                            />
-                            <button
-                                type="button"
-                                className="w-full mt-2 py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200"
-                            >
-                                Submit &amp; Opt In
-                            </button>
-                            <p className="text-xs text-zinc-400">
-                                Selected state:{" "}
-                                <span className="font-medium text-zinc-600">{previewHowItWent || "none"}</span>
-                            </p>
                         </div>
                     )}
                 </div>

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
             await createSession(existingUser.id);
             return NextResponse.json({
                 success: true,
-                redirect: "/questions",
+                redirect: "/dashboard",
             });
         }
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         // Return success with redirect path
         return NextResponse.json({
             success: true,
-            redirect: "/questions",
+            redirect: "/dashboard",
         });
     } catch (error) {
         console.error("Verify error:", error);

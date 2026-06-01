@@ -7,6 +7,7 @@ import FiltersBar from "./components/FiltersBar";
 import OnlineCounter from "./components/OnlineCounter";
 import TermsModal from "./components/TermsModal";
 import TimeWarning from "./components/TimeWarning";
+import AppShell from "@/components/AppShell";
 import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
 const WAIT_TIMEOUT_SECONDS = 5 * 60; // 5 minutes
@@ -24,7 +25,6 @@ export default function FloatLivePage() {
     // Time gate state
     const [isActive, setIsActive] = useState(false);
     const [minutesLeft, setMinutesLeft] = useState(0);
-    const [startsIn, setStartsIn] = useState(0);
 
     // Filter state
     const [preference, setPreference] = useState("any");
@@ -66,7 +66,6 @@ export default function FloatLivePage() {
                 const statusData = await statusRes.json();
                 setIsActive(statusData.active);
                 setMinutesLeft(statusData.minutesLeft);
-                setStartsIn(statusData.startsIn);
             } catch (err) {
                 console.error("Init error:", err);
             } finally {
@@ -84,7 +83,6 @@ export default function FloatLivePage() {
                 const data = await res.json();
                 setIsActive(data.active);
                 setMinutesLeft(data.minutesLeft);
-                setStartsIn(data.startsIn);
             } catch { /* ignore */ }
         }, 30000);
         return () => clearInterval(interval);
@@ -281,14 +279,6 @@ export default function FloatLivePage() {
         }
     }
 
-    // Countdown display for startsIn
-    function formatCountdown(totalMinutes: number) {
-        const hours = Math.floor(totalMinutes / 60);
-        const mins = totalMinutes % 60;
-        if (hours > 0) return `${hours}h ${mins}m`;
-        return `${mins}m`;
-    }
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900">
@@ -297,41 +287,14 @@ export default function FloatLivePage() {
         );
     }
 
-    // Not active — show countdown
-    if (!isActive) {
-        return (
-            <div className="min-h-screen bg-zinc-900 flex items-center justify-center px-4">
-                <div className="text-center space-y-6 max-w-md">
-                    <div className="text-6xl">🎮</div>
-                    <h1 className="text-2xl font-bold text-white">Float Live</h1>
-                    <p className="text-zinc-400">
-                        Float Live opens at <span className="text-indigo-400 font-semibold">5:00 PM ET</span> daily
-                    </p>
-                    <div className="bg-zinc-800 rounded-2xl p-6 border border-zinc-700">
-                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Opens in</p>
-                        <p className="text-3xl font-bold text-white font-mono">
-                            {formatCountdown(startsIn)}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => router.push("/dashboard")}
-                        className="text-sm text-zinc-500 hover:text-zinc-300 transition"
-                    >
-                        ← Back to Dashboard
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Lobby (active)
+    // Lobby (active) — Float Live is now available 24/7
     return (
-        <div className="min-h-screen bg-zinc-900 px-4 py-6">
+        <AppShell>
+            <div className="min-h-screen bg-zinc-900 px-4 py-6">
             <div className="max-w-lg mx-auto space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-2xl">🎮</span>
                         <h1 className="text-xl font-bold text-white">Float Live</h1>
                     </div>
                     <button
@@ -404,9 +367,7 @@ export default function FloatLivePage() {
                 {/* Online count */}
                 <div className="flex items-center justify-between">
                     <OnlineCounter count={onlineCount} />
-                    <span className="text-xs text-zinc-500">
-                        {minutesLeft} min left today
-                    </span>
+                    <span className="text-xs text-zinc-500">Available 24/7</span>
                 </div>
 
                 {/* Start button */}
@@ -466,6 +427,7 @@ export default function FloatLivePage() {
                     onCancel={() => setShowTerms(false)}
                 />
             )}
-        </div>
+            </div>
+        </AppShell>
     );
 }

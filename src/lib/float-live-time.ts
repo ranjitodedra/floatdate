@@ -2,7 +2,6 @@ import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '@/lib/db';
 
 const TIMEZONE = 'America/Toronto';
-const WARNING_MINUTES = 10; // Warn 10 min before end
 
 // Cache settings for 60 seconds to avoid DB query on every call
 let cachedSettings: { startHour: number; endHour: number } | null = null;
@@ -35,54 +34,18 @@ async function getSettings(): Promise<{ startHour: number; endHour: number }> {
     return cachedSettings;
 }
 
+/**
+ * Float Live is now available 24/7. The previous admin-controlled daily time
+ * window has been removed, so this always reports active. `minutesLeft` is kept
+ * as a large sentinel so the time-warning banner and session-end logic stay
+ * inert without needing changes in the API routes that call this.
+ */
 export async function isFloatLiveActive(): Promise<{ active: boolean; minutesLeft: number; startsIn: number }> {
-    const { startHour, endHour } = await getSettings();
-    const now = new Date();
-    const ontarioTime = toZonedTime(now, TIMEZONE);
-    const hour = ontarioTime.getHours();
-    const minutes = ontarioTime.getMinutes();
-
-    const isOvernight = startHour > endHour;
-
-    if (isOvernight) {
-        // Overnight window (e.g. 11 PM–3 AM): active when hour >= startHour OR hour < endHour
-        const active = hour >= startHour || hour < endHour;
-        if (active) {
-            let minutesLeft: number;
-            if (hour >= startHour) {
-                // Before midnight: minutes until midnight + endHour next day
-                minutesLeft = (24 - hour - 1) * 60 + (60 - minutes) + endHour * 60;
-            } else {
-                // After midnight: minutes until endHour
-                minutesLeft = (endHour - hour - 1) * 60 + (60 - minutes);
-            }
-            return { active: true, minutesLeft, startsIn: 0 };
-        }
-        // Not active: next session starts at startHour today
-        const startsIn = (startHour - hour - 1) * 60 + (60 - minutes);
-        return { active: false, minutesLeft: 0, startsIn };
-    }
-
-    // Same-day window (existing behavior; data unchanged)
-    if (hour >= startHour && hour < endHour) {
-        const minutesLeft = (endHour - hour - 1) * 60 + (60 - minutes);
-        return { active: true, minutesLeft, startsIn: 0 };
-    }
-
-    // Calculate time until next session
-    let startsIn: number;
-    if (hour < startHour) {
-        startsIn = (startHour - hour - 1) * 60 + (60 - minutes);
-    } else {
-        startsIn = (24 - hour + startHour - 1) * 60 + (60 - minutes);
-    }
-
-    return { active: false, minutesLeft: 0, startsIn };
+    return { active: true, minutesLeft: 999, startsIn: 0 };
 }
 
 export async function shouldShowWarning(): Promise<boolean> {
-    const { active, minutesLeft } = await isFloatLiveActive();
-    return active && minutesLeft <= WARNING_MINUTES;
+    return false;
 }
 
 /**

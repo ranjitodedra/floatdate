@@ -89,15 +89,14 @@ export default function UpdatesButton() {
           {/* Body */}
           <div className="px-5 py-4 space-y-3">
             <div className="flex items-start gap-3">
-              <span className="text-2xl mt-0.5">🎮</span>
               <div>
                 <p className="text-sm font-semibold text-zinc-900">
                   Float Live is here!
                 </p>
                 <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                  Jump into real-time anonymous chats with other students every
-                  day from 5 - 6 PM ET. Choose Blind Date or Friendship mode
-                  and start connecting instantly.
+                  Jump into real-time anonymous chats with other students
+                  anytime. Choose Blind Date or Friendship mode and start
+                  connecting instantly.
                 </p>
               </div>
             </div>

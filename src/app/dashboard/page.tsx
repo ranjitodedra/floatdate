@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import AppShell from "@/components/AppShell";
 
 interface MatchData {
     id: string;
@@ -87,10 +88,9 @@ export default function DashboardPage() {
             setUser(userData.user);
             setImpersonationActor(userData.session?.isImpersonating ? userData.session?.actor ?? null : null);
 
-            if (!userData.user.completedSetup) {
-                router.push("/questions");
-                return;
-            }
+            // Note: the questionnaire is optional. Users land on the dashboard
+            // directly and are only sent to /questions when they click Opt In
+            // without having completed it (see handleOptInClick).
 
             // Check opt-in status  
             const optinRes = await fetch("/api/optin/status");
@@ -252,6 +252,12 @@ export default function DashboardPage() {
     }
 
     async function handleOptInClick() {
+        // Opting into weekly matching requires a completed questionnaire.
+        // Send users who haven't finished it to the questionnaire first.
+        if (!user?.completedSetup) {
+            router.push("/questions");
+            return;
+        }
         if (needsFeedback) {
             // Open feedback modal instead of directly opting in
             setShowFeedbackModal(true);
@@ -347,7 +353,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50 px-4 py-8">
+        <AppShell>
+            <div className="min-h-screen bg-zinc-50 px-4 py-8">
             <div className="max-w-lg mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -456,21 +463,6 @@ export default function DashboardPage() {
                         </button>
                     </div>
                 )}
-
-                {/* Float Live Card */}
-                <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 shadow-sm text-center">
-                    <div className="text-3xl mb-2">🎮</div>
-                    <h2 className="text-lg font-bold text-white mb-1">Float Live</h2>
-                    <p className="text-zinc-400 text-sm mb-4">
-                        Anonymous chat — daily 5-6 PM ET
-                    </p>
-                    <a
-                        href="/float-live"
-                        className="inline-block w-full py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 transition-all duration-200 text-sm"
-                    >
-                        Enter Float Live
-                    </a>
-                </div>
 
                 {/* Match Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
@@ -766,6 +758,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+        </AppShell>
     );
 }

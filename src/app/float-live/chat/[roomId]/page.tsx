@@ -385,7 +385,6 @@ export default function ChatRoomPage() {
 
             <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <span className="text-lg">🎮</span>
                     <span className="text-white font-semibold text-sm">Float Live</span>
                     {intention === "friendship" && partnerEmail && (
                         <span className="text-xs text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full">
