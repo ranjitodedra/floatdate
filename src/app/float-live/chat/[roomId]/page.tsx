@@ -12,6 +12,9 @@ import ExitDateButton from "../../components/ExitDateButton";
 import PartnerPresence, {
     type PartnerPresenceStatus,
 } from "../../components/PartnerPresence";
+import AudioChatButton from "../../components/AudioChatButton";
+import AudioStatusBadge from "../../components/AudioStatusBadge";
+import { useWebRTC } from "../../hooks/useWebRTC";
 import { supabase } from "@/lib/supabase-client";
 import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
@@ -45,6 +48,8 @@ export default function ChatRoomPage() {
     const [chatEnded, setChatEnded] = useState(false);
     const [endedReason, setEndedReason] = useState<EndedReason>(null);
     const [sessionId, setSessionId] = useState<string | null>(null);
+    const [myParticipantId, setMyParticipantId] = useState("");
+    const [partnerParticipantId, setPartnerParticipantId] = useState("");
 
     const [partnerStatus, setPartnerStatus] = useState<PartnerPresenceStatus | null>("online");
     const [graceSecondsLeft, setGraceSecondsLeft] = useState(480);
@@ -68,6 +73,15 @@ export default function ChatRoomPage() {
         setEndedReason(reason);
         setPartnerStatus("timeout");
     }, []);
+
+    // WebRTC hook
+    const { callState, isMuted, error: audioError, startCall, endCall, toggleMute } = useWebRTC({
+        roomId,
+        userId,
+        participantId: myParticipantId,
+        partnerParticipantId,
+        chatEnded,
+    });
 
     const handleSelfExit = useCallback(() => {
         leavingRef.current = true;
@@ -109,6 +123,12 @@ export default function ChatRoomPage() {
                     }
                     if (matchData.intention) {
                         setIntention(matchData.intention);
+                    }
+                    if (matchData.participantId) {
+                        setMyParticipantId(matchData.participantId);
+                    }
+                    if (matchData.partnerParticipantId) {
+                        setPartnerParticipantId(matchData.partnerParticipantId);
                     }
 
                     if (matchData.intention === "friendship") {
@@ -391,8 +411,18 @@ export default function ChatRoomPage() {
                             📧 {partnerEmail}
                         </span>
                     )}
+                    <AudioStatusBadge callState={callState} isMuted={isMuted} />
                 </div>
                 <div className="flex items-center gap-3">
+                    <AudioChatButton 
+                        callState={callState}
+                        isMuted={isMuted}
+                        error={audioError}
+                        onStartCall={startCall}
+                        onEndCall={endCall}
+                        onToggleMute={toggleMute}
+                        disabled={chatEnded || partnerStatus === "timeout" || !myParticipantId || !partnerParticipantId}
+                    />
                     {intention === "blind_date" && (
                         <RevealEmailButton
                             chatRoomId={roomId}
