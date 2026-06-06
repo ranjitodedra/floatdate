@@ -3,7 +3,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Privacy — FloatDate",
+  title: "Privacy | FloatDate",
   description: "FloatDate privacy policy: how we collect, use, and protect your data.",
 };
 
@@ -69,6 +69,18 @@ export default function PrivacyPage() {
               We store data securely and follow industry-standard practices to
               protect it. Access to personal data is limited to what is needed to
               operate the service and support you.
+            </p>
+          </section>
+          <section>
+            <h2 className="text-base font-semibold text-zinc-900 mt-6 mb-2">
+              Float Live
+            </h2>
+            <p>
+              We take your privacy seriously. All chats and transcripts are
+              automatically deleted at the end of each day. Only chats that are
+              reported are reviewed by our team for safety purposes. We never
+              train, share, or store your data beyond that. Your conversations
+              are yours, always.
             </p>
           </section>
           <section>

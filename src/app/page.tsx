@@ -185,7 +185,7 @@ export default async function Home() {
           <Link href="/float-live-blog" className="block rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.02] transition-all duration-300">
             <Image
               src="/images/floatlive.png"
-              alt="Float Live — Real-time anonymous chat"
+              alt="Float Live: real-time anonymous chat"
               width={1200}
               height={600}
               className="w-full h-auto"

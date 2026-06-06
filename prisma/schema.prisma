@@ -243,6 +243,7 @@ model FloatLiveChatRoom {
   messages       FloatLiveChatMessage[]
   reports        FloatLiveReport[]
   roomParticipants FloatLiveRoomParticipant[]
+  voiceTranscripts FloatLiveVoiceTranscript[]
 
   @@unique([participantAId, participantBId, sessionId])
 }
@@ -313,4 +314,14 @@ model MatchFeedback {
   @@unique([matchId, userId])
   @@index([userId])
   @@index([matchId])
+}
+
+model FloatLiveVoiceTranscript {
+  id           String   @id @default(uuid())
+  chatRoomId   String
+  senderId     String   // User.id — who spoke this line
+  content      String   // The transcribed text
+  createdAt    DateTime @default(now())
+
+  chatRoom     FloatLiveChatRoom @relation(fields: [chatRoomId], references: [id])
 }

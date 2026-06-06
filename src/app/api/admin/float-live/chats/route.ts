@@ -24,6 +24,15 @@ export async function GET() {
                                 createdAt: true,
                             },
                         },
+                        voiceTranscripts: {
+                            orderBy: { createdAt: "asc" },
+                            select: {
+                                id: true,
+                                senderId: true,
+                                content: true,
+                                createdAt: true,
+                            },
+                        },
                         participantA: {
                             include: {
                                 user: {
@@ -70,6 +79,7 @@ export async function GET() {
                         character: room.participantB.character,
                     },
                     messages: room.messages,
+                    voiceTranscripts: room.voiceTranscripts,
                     hasReports: room.reports.length > 0,
                     reportCount: room.reports.length,
                 })),
@@ -110,7 +120,11 @@ export async function DELETE(req: NextRequest) {
         const chatRoomIds = session.chatRooms.map((r) => r.id);
 
         if (chatRoomIds.length > 0) {
-            // Delete in correct FK order: messages → reports → chatRooms
+            // Delete in correct FK order: messages/transcripts → reports → chatRooms
+            await prisma.floatLiveVoiceTranscript.deleteMany({
+                where: { chatRoomId: { in: chatRoomIds } },
+            });
+
             await prisma.floatLiveChatMessage.deleteMany({
                 where: { chatRoomId: { in: chatRoomIds } },
             });

@@ -19,12 +19,12 @@ const delius = Delius({
 });
 
 export const metadata: Metadata = {
-  title: "FloatDate — Find Your Person",
+  title: "FloatDate | Find Your Person",
   description:
     "Answer 74 research-backed compatibility questions. Get matched with one person each week. Exclusive to Wilfrid Laurier University.",
   metadataBase: new URL("https://www.floatdate.com"),
   openGraph: {
-    title: "FloatDate — Find Your Person",
+    title: "FloatDate | Find Your Person",
     description:
       "Answer 74 research-backed compatibility questions. Get matched with one person each week. Exclusive to Wilfrid Laurier University.",
     url: "https://www.floatdate.com",

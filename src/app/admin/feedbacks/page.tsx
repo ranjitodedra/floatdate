@@ -214,7 +214,7 @@ export default function AdminFeedbacksPage() {
                                                             &ldquo;{fb.feedbackText}&rdquo;
                                                         </div>
                                                     ) : (
-                                                        <span className="text-zinc-300 italic">—</span>
+                                                        <span className="text-zinc-300 italic">-</span>
                                                     )}
                                                 </td>
                                             </tr>

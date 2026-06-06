@@ -61,7 +61,12 @@ interface SignalEndCall {
     from: string;
 }
 
-type SignalMessage = SignalOffer | SignalAnswer | SignalIceCandidates | SignalEndCall;
+interface SignalPing {
+    type: "ping";
+    from: string;
+}
+
+type SignalMessage = SignalOffer | SignalAnswer | SignalIceCandidates | SignalEndCall | SignalPing;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -207,8 +212,10 @@ export class WebRTCService {
         // 5. If I'm the offerer, create and send offer
         if (this.isOfferer) {
             await this.createAndSendOffer();
+        } else {
+            // Tell the offerer we are ready, in case they sent the offer before we were listening
+            this.sendSignal({ type: "ping", from: this.myUserId });
         }
-        // If I'm the answerer, I wait for an offer via the signaling channel
     }
 
     /**
@@ -308,6 +315,11 @@ export class WebRTCService {
                 break;
             case "end-call":
                 this.handleRemoteEndCall();
+                break;
+            case "ping":
+                if (this.isOfferer && this.peerConnection && (this.callState === "connecting" || this.callState === "connected")) {
+                    await this.createAndSendOffer();
+                }
                 break;
         }
     }

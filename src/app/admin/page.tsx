@@ -635,7 +635,7 @@ export default function AdminPage() {
                     <div className="mb-4">
                         <h2 className="text-lg font-semibold text-zinc-900">Match Preview</h2>
                         <p className="text-zinc-400 text-sm mt-1">
-                            Dry run — no emails sent, no data saved. Pick a week and optionally a
+                            Dry run: no emails sent, no data saved. Pick a week and optionally a
                             university pool.
                         </p>
                     </div>

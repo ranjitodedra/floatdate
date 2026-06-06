@@ -24,7 +24,11 @@ export async function DELETE(
             return NextResponse.json({ error: "Chat room not found" }, { status: 404 });
         }
 
-        // Delete in correct FK order: messages → reports → chatRoom
+        // Delete in correct FK order: messages/transcripts → reports → chatRoom
+        await prisma.floatLiveVoiceTranscript.deleteMany({
+            where: { chatRoomId },
+        });
+
         await prisma.floatLiveChatMessage.deleteMany({
             where: { chatRoomId },
         });

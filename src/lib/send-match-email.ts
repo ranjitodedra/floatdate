@@ -84,7 +84,7 @@ export async function sendPasswordResetEmail(
             <p style="color: #71717a; font-size: 13px; margin: 24px 0 8px 0;">Or copy and paste this link into your browser:</p>
             <p style="color: #18181b; font-size: 13px; word-break: break-all; background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #e4e4e7; margin: 0 0 24px 0;">${resetUrl}</p>
 
-            <p style="color: #71717a; font-size: 12px; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your password will remain unchanged.</p>
+            <p style="color: #71717a; font-size: 12px; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
           </div>
         </div>
       `,

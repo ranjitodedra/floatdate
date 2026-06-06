@@ -155,7 +155,7 @@ export default function AdminUsersPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-zinc-900">All Users</h1>
                         <p className="text-sm text-zinc-400 mt-1">
-                            Full userbase — filter by university or view everyone
+                            Full userbase. Filter by university or view everyone.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">

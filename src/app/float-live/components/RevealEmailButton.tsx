@@ -81,7 +81,7 @@ export default function RevealEmailButton({
         return (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                 <span className="text-amber-700 text-xs font-medium">
-                    ✅ You&apos;ve agreed to reveal — waiting for partner...
+                    ✅ You&apos;ve agreed to reveal. Waiting for partner...
                 </span>
             </div>
         );

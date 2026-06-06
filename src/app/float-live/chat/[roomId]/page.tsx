@@ -15,6 +15,7 @@ import PartnerPresence, {
 import AudioChatButton from "../../components/AudioChatButton";
 import AudioStatusBadge from "../../components/AudioStatusBadge";
 import { useWebRTC } from "../../hooks/useWebRTC";
+import { useSpeechTranscription } from "../../hooks/useSpeechTranscription";
 import { supabase } from "@/lib/supabase-client";
 import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
@@ -81,6 +82,12 @@ export default function ChatRoomPage() {
         participantId: myParticipantId,
         partnerParticipantId,
         chatEnded,
+    });
+
+    useSpeechTranscription({
+        callState,
+        roomId,
+        userId,
     });
 
     const handleSelfExit = useCallback(() => {

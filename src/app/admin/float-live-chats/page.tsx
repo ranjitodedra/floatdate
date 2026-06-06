@@ -25,6 +25,7 @@ interface ChatRoom {
     participantA: Participant;
     participantB: Participant;
     messages: ChatMessage[];
+    voiceTranscripts: ChatMessage[];
     hasReports: boolean;
     reportCount: number;
 }
@@ -173,7 +174,7 @@ export default function FloatLiveChatsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900">Float Live — Chats</h1>
+                        <h1 className="text-2xl font-bold text-zinc-900">Float Live: Chats</h1>
                         <p className="text-sm text-zinc-500 mt-1">
                             View all conversations &amp; manage reported chats
                         </p>
@@ -301,6 +302,11 @@ export default function FloatLiveChatsPage() {
                                                         <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-full">
                                                             {room.messages.length} msg{room.messages.length !== 1 ? "s" : ""}
                                                         </span>
+                                                        {room.voiceTranscripts?.length > 0 && (
+                                                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                                                🎙️ {room.voiceTranscripts.length}
+                                                            </span>
+                                                        )}
                                                         <span className="capitalize text-xs text-zinc-400">
                                                             {room.intention.replace("_", " ")}
                                                         </span>
@@ -370,8 +376,42 @@ export default function FloatLiveChatsPage() {
                                                             )}
                                                         </div>
 
+                                                        {/* Voice Transcripts (if any) */}
+                                                        {room.voiceTranscripts?.length > 0 && (
+                                                            <div className="bg-purple-50 rounded-xl p-4 mt-4 space-y-2 max-h-[300px] overflow-y-auto border border-purple-100">
+                                                                <h4 className="text-xs font-bold text-purple-800 mb-3 flex items-center gap-1">
+                                                                    🎙️ Voice Transcript
+                                                                </h4>
+                                                                {room.voiceTranscripts.map((msg) => {
+                                                                    const isA = msg.senderId === room.participantA.userId;
+                                                                    return (
+                                                                        <div
+                                                                            key={msg.id}
+                                                                            className={`flex ${isA ? "justify-start" : "justify-end"}`}
+                                                                        >
+                                                                            <div
+                                                                                className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${
+                                                                                    isA
+                                                                                        ? "bg-purple-100 text-purple-900 rounded-bl-md"
+                                                                                        : "bg-fuchsia-100 text-fuchsia-900 rounded-br-md"
+                                                                                }`}
+                                                                            >
+                                                                                <p className={`text-xs font-bold mb-0.5 ${isA ? "text-purple-600" : "text-fuchsia-600"}`}>
+                                                                                    {isA ? room.participantA.name : room.participantB.name}
+                                                                                </p>
+                                                                                <p className="text-sm italic leading-relaxed">"{msg.content}"</p>
+                                                                                <p className={`text-xs mt-1 ${isA ? "text-purple-400" : "text-fuchsia-400"}`}>
+                                                                                    {formatTime(msg.createdAt)}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
                                                         {/* Chat metadata */}
-                                                        <div className="flex items-center gap-4 mt-2 px-2">
+                                                        <div className="flex items-center gap-4 mt-4 px-2 border-t border-zinc-100 pt-3">
                                                             <span className="text-xs text-zinc-400">
                                                                 Started: {formatTime(room.startedAt)}
                                                             </span>
@@ -489,6 +529,11 @@ export default function FloatLiveChatsPage() {
                                                 <span className="px-2 py-0.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-full">
                                                     {room.messages.length} msg{room.messages.length !== 1 ? "s" : ""}
                                                 </span>
+                                                {room.voiceTranscripts?.length > 0 && (
+                                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                                        🎙️ {room.voiceTranscripts.length}
+                                                    </span>
+                                                )}
                                                 <span className="text-zinc-300 text-sm">
                                                     {isExpanded ? "▲" : "▼"}
                                                 </span>
@@ -554,6 +599,40 @@ export default function FloatLiveChatsPage() {
                                                         })
                                                     )}
                                                 </div>
+
+                                                {/* Voice Transcripts */}
+                                                {room.voiceTranscripts?.length > 0 && (
+                                                    <div className="bg-purple-50 rounded-xl p-4 mt-4 space-y-2 max-h-[300px] overflow-y-auto border border-purple-100">
+                                                        <h4 className="text-xs font-bold text-purple-800 mb-3 flex items-center gap-1">
+                                                            🎙️ Voice Transcript
+                                                        </h4>
+                                                        {room.voiceTranscripts.map((msg) => {
+                                                            const isA = msg.senderId === room.participantA.userId;
+                                                            return (
+                                                                <div
+                                                                    key={msg.id}
+                                                                    className={`flex ${isA ? "justify-start" : "justify-end"}`}
+                                                                >
+                                                                    <div
+                                                                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${
+                                                                            isA
+                                                                                ? "bg-purple-100 text-purple-900 rounded-bl-md"
+                                                                                : "bg-fuchsia-100 text-fuchsia-900 rounded-br-md"
+                                                                        }`}
+                                                                    >
+                                                                        <p className={`text-xs font-bold mb-0.5 ${isA ? "text-purple-600" : "text-fuchsia-600"}`}>
+                                                                            {isA ? room.participantA.name : room.participantB.name}
+                                                                        </p>
+                                                                        <p className="text-sm italic leading-relaxed">"{msg.content}"</p>
+                                                                        <p className={`text-xs mt-1 ${isA ? "text-purple-400" : "text-fuchsia-400"}`}>
+                                                                            {formatTime(msg.createdAt)}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

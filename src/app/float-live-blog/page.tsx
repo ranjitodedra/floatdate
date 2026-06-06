@@ -3,7 +3,7 @@ import Link from "next/link";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Float Live — FloatDate",
+  title: "Float Live | FloatDate",
   description:
     "Learn about Float Live: real-time anonymous chat for Laurier students. Two modes, one hour, real connections.",
 };
@@ -95,14 +95,14 @@ export default function FloatLiveBlogPage() {
           </p>
           <ul className="list-disc list-inside space-y-3">
             <li>
-              <strong>Blind Date 💌</strong> — Identities stay anonymous. If you
+              <strong>Blind Date 💌</strong>: Identities stay anonymous. If you
               both enjoy the conversation, either person can request an email
               reveal. The other person has to agree before any contact info is
               shared. Think of it as a mutual opt-in to keep talking after the
               session.
             </li>
             <li>
-              <strong>Friendship 🤝</strong> — Emails are visible from the
+              <strong>Friendship 🤝</strong>: Emails are visible from the
               start. This mode is for students looking for friends, study
               partners, or casual conversation without the dating context.
             </li>

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
         const result = await sendEmail({
             to,
-            subject: "FloatDate — Test Email ✅",
+            subject: "FloatDate Test Email ✅",
             html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #0f0f0f; color: #e4e4e7;">
           <h1 style="font-size: 28px; background: linear-gradient(to right, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">FloatDate</h1>
