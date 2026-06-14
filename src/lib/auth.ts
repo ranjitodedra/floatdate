@@ -168,7 +168,11 @@ export async function getCurrentUser() {
             city: true,
             bio: true,
             universityId: true,
+            university: {
+                select: { id: true, name: true },
+            },
             completedSetup: true,
+            verificationStatus: true,
             createdAt: true,
         },
     });

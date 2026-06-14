@@ -49,15 +49,26 @@ export async function GET(req: NextRequest) {
             const isA = chatRoom.participantAId === participant.id;
             const partner = isA ? chatRoom.participantB : chatRoom.participantA;
 
+            let partnerName: string | null = null;
+            if (chatRoom.intention === "friendship") {
+                const partnerUser = await prisma.user.findUnique({
+                    where: { id: partner.userId },
+                    select: { name: true },
+                });
+                partnerName = partnerUser?.name || null;
+            }
+
             return NextResponse.json({
                 status: "matched",
                 chatRoomId: chatRoom.id,
                 participantId: participant.id,
                 partnerParticipantId: partner.id,
+                isParticipantA: isA,
                 partnerGender: partner.gender,
                 partnerCharacter: partner.character || "A",
                 userCharacter: (isA ? chatRoom.participantA : chatRoom.participantB).character || "A",
                 intention: chatRoom.intention,
+                partnerName,
             });
         }
 

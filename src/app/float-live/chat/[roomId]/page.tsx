@@ -12,12 +12,15 @@ import ExitDateButton from "../../components/ExitDateButton";
 import PartnerPresence, {
     type PartnerPresenceStatus,
 } from "../../components/PartnerPresence";
-import AudioChatButton from "../../components/AudioChatButton";
+import { VoiceCallTrigger, VoiceCallControlBar } from "../../components/AudioChatButton";
 import AudioStatusBadge from "../../components/AudioStatusBadge";
+import ChatActionNotification from "../../components/ChatActionNotification";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { useSpeechTranscription } from "../../hooks/useSpeechTranscription";
 import { supabase } from "@/lib/supabase-client";
 import { HEARTBEAT_MS } from "@/lib/float-live-presence";
+import type { WebRTCCallState } from "@/lib/webrtc-service";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface Message {
     id: string;
@@ -42,6 +45,7 @@ export default function ChatRoomPage() {
     const [userCharacter, setUserCharacter] = useState(urlUserChar);
     const [partnerCharacter, setPartnerCharacter] = useState(urlPartnerChar);
     const [partnerEmail, setPartnerEmail] = useState<string | null>(null);
+    const [partnerName, setPartnerName] = useState<string | null>(null);
     const [intention, setIntention] = useState("blind_date");
     const [messages, setMessages] = useState<Message[]>([]);
     const [showTranscript, setShowTranscript] = useState(false);
@@ -57,8 +61,19 @@ export default function ChatRoomPage() {
     const [showPartnerBack, setShowPartnerBack] = useState(false);
     const [reconnecting, setReconnecting] = useState(false);
 
+    const [emailRevealedByMe, setEmailRevealedByMe] = useState(false);
+    const [emailRevealedByPartner, setEmailRevealedByPartner] = useState(false);
+    const [emailRevealNotice, setEmailRevealNotice] = useState(false);
+    const [incomingCallNotice, setIncomingCallNotice] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const prevPartnerStatusRef = useRef<PartnerPresenceStatus | null>("online");
+    const notifyChannelRef = useRef<RealtimeChannel | null>(null);
+    const prevCallStateRef = useRef<WebRTCCallState>("idle");
+    const callStateRef = useRef<WebRTCCallState>("idle");
+    const isParticipantARef = useRef<boolean | null>(null);
+    const emailRevealedByPartnerRef = useRef(false);
+    const emailRevealedByMeRef = useRef(false);
     const connectionIdRef = useRef(
         typeof crypto !== "undefined" ? crypto.randomUUID() : `conn-${Date.now()}`
     );
@@ -93,6 +108,39 @@ export default function ChatRoomPage() {
     const handleSelfExit = useCallback(() => {
         leavingRef.current = true;
     }, []);
+
+    const applyRevealStatus = useCallback(
+        (
+            revealData: {
+                emailRevealedByA: boolean;
+                emailRevealedByB: boolean;
+                bothRevealed: boolean;
+                partnerEmail: string | null;
+            },
+            isA: boolean
+        ) => {
+            const revealedByMe = isA ? revealData.emailRevealedByA : revealData.emailRevealedByB;
+            const revealedByPartner = isA ? revealData.emailRevealedByB : revealData.emailRevealedByA;
+
+            setEmailRevealedByMe(revealedByMe);
+            setEmailRevealedByPartner(revealedByPartner);
+            emailRevealedByMeRef.current = revealedByMe;
+            emailRevealedByPartnerRef.current = revealedByPartner;
+
+            if (revealData.bothRevealed && revealData.partnerEmail) {
+                setPartnerEmail(revealData.partnerEmail);
+                setEmailRevealNotice(false);
+            } else if (revealedByPartner && !revealedByMe) {
+                setEmailRevealNotice(true);
+            }
+        },
+        []
+    );
+
+    const handleJoinCall = useCallback(async () => {
+        setIncomingCallNotice(false);
+        await startCall();
+    }, [startCall]);
 
     useEffect(() => {
         async function init() {
@@ -137,16 +185,22 @@ export default function ChatRoomPage() {
                     if (matchData.partnerParticipantId) {
                         setPartnerParticipantId(matchData.partnerParticipantId);
                     }
+                    if (typeof matchData.isParticipantA === "boolean") {
+                        isParticipantARef.current = matchData.isParticipantA;
+                    }
+                    if (matchData.partnerName) {
+                        setPartnerName(matchData.partnerName);
+                    }
 
-                    if (matchData.intention === "friendship") {
-                        const revealRes = await fetch(
-                            `/api/float-live/chat/${roomId}/reveal-email`
-                        );
-                        if (revealRes.ok) {
-                            const revealData = await revealRes.json();
-                            if (revealData.partnerEmail) {
-                                setPartnerEmail(revealData.partnerEmail);
-                            }
+                    const revealRes = await fetch(
+                        `/api/float-live/chat/${roomId}/reveal-email`
+                    );
+                    if (revealRes.ok) {
+                        const revealData = await revealRes.json();
+                        if (typeof matchData.isParticipantA === "boolean") {
+                            applyRevealStatus(revealData, matchData.isParticipantA);
+                        } else if (revealData.partnerEmail) {
+                            setPartnerEmail(revealData.partnerEmail);
                         }
                     }
                 }
@@ -168,13 +222,56 @@ export default function ChatRoomPage() {
             }
         }
         init();
-    }, [roomId, router, handleRoomEnded]);
+    }, [roomId, router, handleRoomEnded, applyRevealStatus]);
+
+    useEffect(() => {
+        callStateRef.current = callState;
+    }, [callState]);
+
+    useEffect(() => {
+        if (chatEnded) {
+            setIncomingCallNotice(false);
+            setEmailRevealNotice(false);
+        }
+    }, [chatEnded]);
+
+    useEffect(() => {
+        const prev = prevCallStateRef.current;
+
+        if (prev !== "connecting" && callState === "connecting") {
+            notifyChannelRef.current?.send({
+                type: "broadcast",
+                event: "call-invite",
+                payload: { fromUserId: userId },
+            });
+        }
+
+        const endedBeforeConnect =
+            (callState === "ended" || callState === "failed") &&
+            (prev === "connecting" || prev === "requesting_mic");
+
+        if (endedBeforeConnect) {
+            notifyChannelRef.current?.send({
+                type: "broadcast",
+                event: "call-cancelled",
+                payload: {},
+            });
+        }
+
+        if (callState === "connecting" || callState === "connected") {
+            setIncomingCallNotice(false);
+        }
+
+        prevCallStateRef.current = callState;
+    }, [callState, userId]);
 
     useEffect(() => {
         if (!roomId) return;
 
         const channel = supabase
-            .channel(`chat-room-${roomId}`)
+            .channel(`chat-room-${roomId}`, {
+                config: { broadcast: { self: false } },
+            })
             .on(
                 "postgres_changes",
                 {
@@ -204,17 +301,71 @@ export default function ChatRoomPage() {
                         isActive: boolean;
                         status?: string;
                         endedReason?: string | null;
+                        emailRevealedByA?: boolean;
+                        emailRevealedByB?: boolean;
                     };
+
                     if (!updated.isActive || updated.status === "ended") {
                         handleRoomEnded(
                             (updated.endedReason as EndedReason) || "user_exit"
                         );
+                        return;
+                    }
+
+                    const isA = isParticipantARef.current;
+                    if (isA === null) return;
+
+                    const prevPartnerRevealed = emailRevealedByPartnerRef.current;
+                    const revealedByMe = isA
+                        ? !!updated.emailRevealedByA
+                        : !!updated.emailRevealedByB;
+                    const revealedByPartner = isA
+                        ? !!updated.emailRevealedByB
+                        : !!updated.emailRevealedByA;
+
+                    setEmailRevealedByMe(revealedByMe);
+                    setEmailRevealedByPartner(revealedByPartner);
+                    emailRevealedByMeRef.current = revealedByMe;
+                    emailRevealedByPartnerRef.current = revealedByPartner;
+
+                    if (!prevPartnerRevealed && revealedByPartner && !revealedByMe) {
+                        setEmailRevealNotice(true);
+                    }
+
+                    if (revealedByMe && revealedByPartner) {
+                        setEmailRevealNotice(false);
+                        fetch(`/api/float-live/chat/${roomId}/reveal-email`)
+                            .then((res) => (res.ok ? res.json() : null))
+                            .then((data) => {
+                                if (data?.partnerEmail) {
+                                    setPartnerEmail(data.partnerEmail);
+                                }
+                            })
+                            .catch(() => {
+                                /* ignore */
+                            });
                     }
                 }
             )
+            .on("broadcast", { event: "call-invite" }, () => {
+                const state = callStateRef.current;
+                if (
+                    state === "idle" ||
+                    state === "ended" ||
+                    state === "failed"
+                ) {
+                    setIncomingCallNotice(true);
+                }
+            })
+            .on("broadcast", { event: "call-cancelled" }, () => {
+                setIncomingCallNotice(false);
+            })
             .subscribe();
 
+        notifyChannelRef.current = channel;
+
         return () => {
+            notifyChannelRef.current = null;
             supabase.removeChannel(channel);
         };
     }, [roomId, handleRoomEnded]);
@@ -382,6 +533,9 @@ export default function ChatRoomPage() {
         }
     })();
 
+    const partnerLabel =
+        intention === "friendship" && partnerName ? partnerName : "Your partner";
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-900">
@@ -410,6 +564,22 @@ export default function ChatRoomPage() {
                 onDismissBackToast={() => setShowPartnerBack(false)}
             />
 
+            {incomingCallNotice && !chatEnded && (
+                <ChatActionNotification
+                    message={`${partnerLabel} is calling you. Click Call to join the call.`}
+                    actionLabel="Join Call"
+                    onAction={handleJoinCall}
+                    onDismiss={() => setIncomingCallNotice(false)}
+                />
+            )}
+
+            {emailRevealNotice && !chatEnded && intention === "blind_date" && (
+                <ChatActionNotification
+                    message={`${partnerLabel} has revealed their email address. Click 'Reveal Email' to view it as well.`}
+                    onDismiss={() => setEmailRevealNotice(false)}
+                />
+            )}
+
             <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <span className="text-white font-semibold text-sm">Float Live</span>
@@ -421,20 +591,12 @@ export default function ChatRoomPage() {
                     <AudioStatusBadge callState={callState} isMuted={isMuted} />
                 </div>
                 <div className="flex items-center gap-3">
-                    <AudioChatButton 
-                        callState={callState}
-                        isMuted={isMuted}
-                        error={audioError}
-                        onStartCall={startCall}
-                        onEndCall={endCall}
-                        onToggleMute={toggleMute}
-                        disabled={chatEnded || partnerStatus === "timeout" || !myParticipantId || !partnerParticipantId}
-                    />
                     {intention === "blind_date" && (
                         <RevealEmailButton
                             chatRoomId={roomId}
                             intention={intention}
                             partnerEmail={partnerEmail}
+                            partnerHasRevealed={emailRevealedByPartner && !emailRevealedByMe}
                         />
                     )}
                     <button
@@ -488,9 +650,31 @@ export default function ChatRoomPage() {
             )}
 
             <div className="relative flex-shrink-0">
+                {(callState === "requesting_mic" ||
+                    callState === "connecting" ||
+                    callState === "connected" ||
+                    callState === "disconnected" ||
+                    callState === "reconnecting") && (
+                    <div className="absolute left-3 right-3 bottom-full mb-2 z-10 flex items-center justify-center gap-3 bg-zinc-800/95 border border-zinc-600 rounded-xl shadow-lg px-4 py-2 backdrop-blur-sm">
+                        <VoiceCallControlBar
+                            callState={callState}
+                            isMuted={isMuted}
+                            onEndCall={endCall}
+                            onToggleMute={toggleMute}
+                        />
+                    </div>
+                )}
                 <TypingBar
                     onSend={handleSend}
                     disabled={chatEnded || partnerStatus === "timeout"}
+                    voiceTrigger={
+                        <VoiceCallTrigger
+                            callState={callState}
+                            error={audioError}
+                            onStartCall={startCall}
+                            disabled={chatEnded || partnerStatus === "timeout" || !myParticipantId || !partnerParticipantId}
+                        />
+                    }
                 />
             </div>
 

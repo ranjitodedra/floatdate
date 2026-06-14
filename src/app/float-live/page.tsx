@@ -20,6 +20,7 @@ export default function FloatLivePage() {
     const [user, setUser] = useState<{
         gender: string;
         name: string;
+        universityName: string;
     } | null>(null);
 
     // Time gate state
@@ -29,7 +30,6 @@ export default function FloatLivePage() {
     // Filter state
     const [preference, setPreference] = useState("any");
     const [intention, setIntention] = useState("blind_date");
-    const [campus, setCampus] = useState("Waterloo");
 
     // Character selection
     const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
@@ -61,7 +61,11 @@ export default function FloatLivePage() {
                 }
 
                 const userData = await userRes.json();
-                setUser({ gender: userData.user.gender, name: userData.user.name });
+                setUser({
+                    gender: userData.user.gender,
+                    name: userData.user.name,
+                    universityName: userData.user.university?.name || "Your university",
+                });
 
                 const statusData = await statusRes.json();
                 setIsActive(statusData.active);
@@ -269,7 +273,6 @@ export default function FloatLivePage() {
                 body: JSON.stringify({
                     preference,
                     intention,
-                    campus,
                     character: selectedCharacter || "A",
                 }),
             });
@@ -355,12 +358,11 @@ export default function FloatLivePage() {
                 {/* Filters */}
                 <FiltersBar
                     userGender={user?.gender || "nonbinary"}
+                    universityName={user?.universityName || "Your university"}
                     preference={preference}
                     intention={intention}
-                    campus={campus}
                     onPreferenceChange={setPreference}
                     onIntentionChange={setIntention}
-                    onCampusChange={setCampus}
                     disabled={searching}
                 />
 

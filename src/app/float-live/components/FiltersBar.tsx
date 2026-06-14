@@ -1,26 +1,22 @@
 "use client";
 
-const CAMPUSES = ["Waterloo", "Brantford", "Milton"] as const;
-
 interface FiltersBarProps {
     userGender: string;
+    universityName: string;
     preference: string;
     intention: string;
-    campus: string;
     onPreferenceChange: (val: string) => void;
     onIntentionChange: (val: string) => void;
-    onCampusChange: (val: string) => void;
     disabled?: boolean;
 }
 
 export default function FiltersBar({
     userGender,
+    universityName,
     preference,
     intention,
-    campus,
     onPreferenceChange,
     onIntentionChange,
-    onCampusChange,
     disabled = false,
 }: FiltersBarProps) {
     const selectClass =
@@ -33,6 +29,14 @@ export default function FiltersBar({
                 <span className="text-zinc-400 text-xs">You:</span>
                 <span className="bg-zinc-700 text-white text-xs px-3 py-1.5 rounded-lg capitalize">
                     {userGender}
+                </span>
+            </div>
+
+            {/* University (read-only) */}
+            <div className="flex items-center gap-1.5">
+                <span className="text-zinc-400 text-xs">University:</span>
+                <span className="bg-zinc-700 text-white text-xs px-3 py-1.5 rounded-lg max-w-[180px] truncate">
+                    {universityName}
                 </span>
             </div>
 
@@ -63,23 +67,6 @@ export default function FiltersBar({
                 >
                     <option value="blind_date">Blind Date 💜</option>
                     <option value="friendship">Friendship 🤝</option>
-                </select>
-            </div>
-
-            {/* Campus */}
-            <div className="flex items-center gap-1.5">
-                <span className="text-zinc-400 text-xs">Campus:</span>
-                <select
-                    value={campus}
-                    onChange={(e) => onCampusChange(e.target.value)}
-                    disabled={disabled}
-                    className={selectClass}
-                >
-                    {CAMPUSES.map((c) => (
-                        <option key={c} value={c}>
-                            {c}
-                        </option>
-                    ))}
                 </select>
             </div>
         </div>

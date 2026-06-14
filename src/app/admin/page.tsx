@@ -353,7 +353,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Float Live & Match Feedback Quick Links */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button
                         onClick={() => router.push("/admin/feedbacks")}
                         className="bg-indigo-600 border border-indigo-700 rounded-2xl p-5 text-left hover:bg-indigo-700 transition shadow-sm group"
@@ -385,6 +385,17 @@ export default function AdminPage() {
                             <span className="text-zinc-400 group-hover:text-zinc-900 transition group-hover:translate-x-1">→</span>
                         </div>
                         <p className="text-zinc-500 text-sm">Review user reports and take necessary actions.</p>
+                    </button>
+
+                    <button
+                        onClick={() => router.push("/admin/verification-requests")}
+                        className="bg-amber-600 border border-amber-700 rounded-2xl p-5 text-left hover:bg-amber-700 transition shadow-sm group"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-white">Verification Requests</h2>
+                            <span className="text-amber-200 group-hover:text-white transition group-hover:translate-x-1">→</span>
+                        </div>
+                        <p className="text-amber-100 text-sm">Review Gmail document verifications and university requests.</p>
                     </button>
                 </div>
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/auth";
+import { VERIFICATION_METHOD, VERIFICATION_STATUS } from "@/lib/verification";
 
 const verifySchema = z.object({
     token: z.string().min(1, "Token is required"),
@@ -21,7 +22,6 @@ export async function POST(req: NextRequest) {
 
         const { token } = result.data;
 
-        // Look up the pending signup by verification token
         const pending = await prisma.pendingSignup.findUnique({
             where: { verifyToken: token },
         });
@@ -40,13 +40,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Check if a user already exists with this email (edge case: double-click or scanner already processed)
         const existingUser = await prisma.user.findUnique({
             where: { email: pending.email },
         });
 
         if (existingUser) {
-            // Already verified — just clean up and log them in
             await prisma.$transaction(async (tx) => {
                 await tx.pendingSignup.delete({ where: { id: pending.id } });
             });
@@ -57,7 +55,9 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Create the real User account from the pending signup data and delete pending signup in a transaction
+        const isDocumentVerification =
+            pending.verificationMethod === VERIFICATION_METHOD.DOCUMENT;
+
         const user = await prisma.$transaction(async (tx) => {
             const newUser = await tx.user.create({
                 data: {
@@ -71,19 +71,24 @@ export async function POST(req: NextRequest) {
                     passwordHash: pending.passwordHash,
                     universityId: pending.universityId,
                     emailVerified: true,
+                    verificationMethod: pending.verificationMethod,
+                    verificationStatus: isDocumentVerification
+                        ? VERIFICATION_STATUS.PENDING
+                        : VERIFICATION_STATUS.APPROVED,
+                    verificationDocPath: isDocumentVerification
+                        ? pending.verificationDocPath
+                        : null,
+                    verifiedAt: isDocumentVerification ? null : new Date(),
                 },
             });
 
-            // Delete the pending signup record
             await tx.pendingSignup.delete({ where: { id: pending.id } });
 
             return newUser;
         });
 
-        // Create session so the user is logged in
         await createSession(user.id);
 
-        // Return success with redirect path
         return NextResponse.json({
             success: true,
             redirect: "/dashboard",

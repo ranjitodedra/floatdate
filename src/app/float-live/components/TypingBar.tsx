@@ -5,9 +5,10 @@ import { useState, useRef, useEffect } from "react";
 interface TypingBarProps {
     onSend: (content: string) => void;
     disabled?: boolean;
+    voiceTrigger?: React.ReactNode;
 }
 
-export default function TypingBar({ onSend, disabled = false }: TypingBarProps) {
+export default function TypingBar({ onSend, disabled = false, voiceTrigger }: TypingBarProps) {
     const [text, setText] = useState("");
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -57,6 +58,7 @@ export default function TypingBar({ onSend, disabled = false }: TypingBarProps) 
                 style={{ maxHeight: "100px" }}
             />
             <div className="flex items-center gap-2 flex-shrink-0">
+                {voiceTrigger}
                 <span className="text-xs text-zinc-500 select-none tabular-nums">
                     {text.length}/500
                 </span>

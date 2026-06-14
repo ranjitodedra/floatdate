@@ -64,7 +64,7 @@ export default function FloatLiveBlogPage() {
           <ol className="list-decimal list-inside space-y-2">
             <li>
               <strong>Set your filters.</strong> Choose your gender preference,
-              campus, and chat mode before you start.
+              university, and chat mode before you start.
             </li>
             <li>
               <strong>Pick a character.</strong> Select one of six pixel-art

@@ -391,7 +391,7 @@ export class WebRTCService {
             });
         } catch (err) {
             console.error("[WebRTC] Failed to create offer:", err);
-            this.setError("Failed to start voice call. Please try again.");
+            this.setError("Failed to start call. Please try again.");
             this.setState("failed");
         }
     }
@@ -436,7 +436,7 @@ export class WebRTCService {
             this.setState("connecting");
         } catch (err) {
             console.error("[WebRTC] Failed to handle offer:", err);
-            this.setError("Failed to connect voice call.");
+            this.setError("Failed to connect call.");
             this.setState("failed");
         }
     }

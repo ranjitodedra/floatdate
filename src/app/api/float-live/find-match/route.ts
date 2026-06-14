@@ -12,17 +12,7 @@ import {
     ensureRoomParticipants,
     markParticipantsMatched,
 } from "@/lib/float-live-room";
-
-function isCompatible(
-    userA: { gender: string; preference: string; intention: string; campus: string },
-    userB: { gender: string; preference: string; intention: string; campus: string }
-): boolean {
-    if (userA.campus !== userB.campus) return false;
-    if (userA.intention !== userB.intention) return false;
-    const aPrefersB = userA.preference === "any" || userA.preference === userB.gender;
-    const bPrefersA = userB.preference === "any" || userB.preference === userA.gender;
-    return aPrefersB && bPrefersA;
-}
+import { isFloatLiveCompatible } from "@/lib/float-live-matching";
 
 async function tryClaimMatch(
     sessionId: string,
@@ -32,7 +22,7 @@ async function tryClaimMatch(
         intention: string;
         gender: string;
         preference: string;
-        campus: string;
+        universityId: string;
     },
     match: {
         id: string;
@@ -181,15 +171,6 @@ export async function POST(req: NextRequest) {
             data: { lastSeenAt: now, status: "waiting", isOnline: true },
         });
 
-        const currentUser = await prisma.user.findUnique({
-            where: { id: authSession.userId },
-            select: { universityId: true },
-        });
-
-        if (!currentUser) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
-        }
-
         const existingRoom = await prisma.floatLiveChatRoom.findFirst({
             where: {
                 isActive: true,
@@ -217,13 +198,13 @@ export async function POST(req: NextRequest) {
                 status: "waiting",
                 lastSeenAt: { gte: staleThreshold },
                 userId: { not: authSession.userId },
-                user: { universityId: currentUser.universityId },
+                universityId: myParticipant.universityId,
                 chatRoomsAsA: { none: { isActive: true } },
                 chatRoomsAsB: { none: { isActive: true } },
             },
         });
 
-        const compatible = candidates.filter((c) => isCompatible(myParticipant, c));
+        const compatible = candidates.filter((c) => isFloatLiveCompatible(myParticipant, c));
 
         const cooldownThreshold = new Date(now.getTime() - REMATCH_COOLDOWN_S * 1000);
 

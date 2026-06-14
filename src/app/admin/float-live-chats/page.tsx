@@ -133,7 +133,7 @@ export default function FloatLiveChatsPage() {
 
     function formatDate(iso: string) {
         return new Date(iso).toLocaleDateString("en-US", {
-            timeZone: "America/Toronto",
+            timeZone: "UTC",
             weekday: "long",
             year: "numeric",
             month: "long",

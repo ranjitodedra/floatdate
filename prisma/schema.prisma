@@ -17,6 +17,7 @@ model University {
   users          User[]
   pendingSignups PendingSignup[]
   matchRuns      MatchRun[]
+  floatLiveParticipants FloatLiveParticipant[]
 }
 
 model User {
@@ -34,6 +35,12 @@ model User {
   emailVerified      Boolean      @default(true)
   notifyPreference   String?
   phoneVerified      Boolean      @default(false)
+  verificationStatus       String   @default("approved") // approved | pending | rejected
+  verificationMethod       String   @default("email_domain") // email_domain | document
+  verificationDocPath      String?
+  verifiedAt               DateTime?
+  verificationReviewedAt   DateTime?
+  verificationNotes        String?
   createdAt          DateTime     @default(now())
 
   university     University   @relation(fields: [universityId], references: [id])
@@ -163,9 +170,25 @@ model PendingSignup {
   universityId       String
   verifyToken        String   @unique
   verifyTokenExpiry  DateTime
+  verificationMethod String   @default("email_domain") // email_domain | document
+  verificationDocPath String?
   createdAt          DateTime @default(now())
 
   university     University   @relation(fields: [universityId], references: [id])
+}
+
+model UniversityRequest {
+  id              String   @id @default(uuid())
+  requesterEmail  String
+  requesterName   String
+  universityName  String
+  status          String   @default("pending") // pending | approved | rejected
+  adminNotes      String?
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model PasswordResetToken {
@@ -201,7 +224,8 @@ model FloatLiveParticipant {
   gender         String   // "male" | "female" | "nonbinary" — copied from User at join time
   preference     String   // "male" | "female" | "nonbinary" | "any" — who they want to chat with
   intention      String   // "blind_date" | "friendship"
-  campus         String   // Campus filter value
+  campus         String?  // Deprecated — historical data only
+  universityId   String
   character      String   @default("A") // Character avatar letter: "A" | "B" | "C" | "D" | "E" | "F"
   isOnline       Boolean  @default(true)
   acceptedTerms  Boolean  @default(false)
@@ -212,6 +236,7 @@ model FloatLiveParticipant {
   connectionId   String?
 
   user           User     @relation(fields: [userId], references: [id])
+  university     University @relation(fields: [universityId], references: [id])
   session        FloatLiveSession @relation(fields: [sessionId], references: [id])
 
   chatRoomsAsA   FloatLiveChatRoom[] @relation("chatParticipantA")
@@ -220,6 +245,7 @@ model FloatLiveParticipant {
 
   @@unique([userId, sessionId])
   @@index([sessionId, status, lastSeenAt])
+  @@index([sessionId, universityId, status, lastSeenAt])
 }
 
 model FloatLiveChatRoom {

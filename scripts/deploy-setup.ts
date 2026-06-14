@@ -27,13 +27,13 @@ async function main() {
     console.log("🚀 Starting deployment setup...\n");
 
     try {
-        // Step 1: Push schema to database
-        console.log("📦 Step 1: Pushing Prisma schema to database...");
-        execSync("npx prisma db push", {
+        // Step 1: Apply pending migrations to database
+        console.log("📦 Step 1: Applying Prisma migrations to database...");
+        execSync("npx prisma migrate deploy", {
             stdio: "inherit",
             env: { ...process.env, DATABASE_URL },
         });
-        console.log("✅ Schema pushed successfully\n");
+        console.log("✅ Migrations applied successfully\n");
 
         // Step 2: Seed questions
         console.log("🌱 Step 2: Seeding questions...");

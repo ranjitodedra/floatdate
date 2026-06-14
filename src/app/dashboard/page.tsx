@@ -64,7 +64,7 @@ export default function DashboardPage() {
     const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     const [countdown, setCountdown] = useState("");
-    const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean } | null>(null);
+    const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean; verificationStatus?: string } | null>(null);
     const [impersonationActor, setImpersonationActor] = useState<{ id: string; name: string; email: string } | null>(null);
 
     // Edit profile state
@@ -398,6 +398,37 @@ export default function DashboardPage() {
                         >
                             Exit to Admin
                         </button>
+                    </div>
+                )}
+
+                {user?.verificationStatus === "pending" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
+                        <p className="text-amber-800 text-sm font-medium">
+                            Your university verification is pending review.
+                        </p>
+                        <p className="text-amber-700 text-xs mt-1">
+                            You can continue using FloatDate while we review your
+                            submitted document. We&apos;ll notify you once a
+                            decision is made.
+                        </p>
+                    </div>
+                )}
+
+                {user?.verificationStatus === "rejected" && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+                        <p className="text-red-800 text-sm font-medium">
+                            We couldn&apos;t verify your account.
+                        </p>
+                        <p className="text-red-700 text-xs mt-1">
+                            If you believe this was a mistake, please contact{" "}
+                            <a
+                                href="mailto:support@floatdate.com"
+                                className="underline font-medium hover:text-red-900"
+                            >
+                                support@floatdate.com
+                            </a>{" "}
+                            to appeal.
+                        </p>
                     </div>
                 )}
 

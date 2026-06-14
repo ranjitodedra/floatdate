@@ -6,17 +6,26 @@ interface RevealEmailButtonProps {
     chatRoomId: string;
     intention: string;
     partnerEmail?: string | null;
+    partnerHasRevealed?: boolean;
 }
 
 export default function RevealEmailButton({
     chatRoomId,
     intention,
     partnerEmail: initialPartnerEmail,
+    partnerHasRevealed = false,
 }: RevealEmailButtonProps) {
     const [revealed, setRevealed] = useState(false);
     const [loading, setLoading] = useState(false);
     const [partnerEmail, setPartnerEmail] = useState(initialPartnerEmail || null);
     const [waitingForPartner, setWaitingForPartner] = useState(false);
+
+    useEffect(() => {
+        if (initialPartnerEmail) {
+            setPartnerEmail(initialPartnerEmail);
+            setRevealed(true);
+        }
+    }, [initialPartnerEmail]);
 
     // Poll for partner reveal when waiting
     useEffect(() => {
@@ -84,6 +93,18 @@ export default function RevealEmailButton({
                     ✅ You&apos;ve agreed to reveal. Waiting for partner...
                 </span>
             </div>
+        );
+    }
+
+    if (partnerHasRevealed) {
+        return (
+            <button
+                onClick={handleReveal}
+                disabled={loading}
+                className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50"
+            >
+                {loading ? "Revealing..." : "💌 Partner is ready — Reveal Email"}
+            </button>
         );
     }
 

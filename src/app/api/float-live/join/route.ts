@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { preference, intention, campus, character } = body;
+        const { preference, intention, character } = body;
 
         // Validate filters
         if (!VALID_PREFERENCES.includes(preference)) {
@@ -33,26 +33,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid intention" }, { status: 400 });
         }
 
-        // Get user's gender and university
         const user = await prisma.user.findUnique({
             where: { id: authSession.userId },
             select: {
                 gender: true,
                 universityId: true,
-                university: {
-                    select: { campuses: true },
-                },
             },
         });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
-        }
-
-        // Validate campus against user's university's campuses
-        const validCampuses = Array.isArray(user.university.campuses) ? user.university.campuses as string[] : [];
-        if (!validCampuses.includes(campus)) {
-            return NextResponse.json({ error: "Invalid campus for your university" }, { status: 400 });
         }
 
         const selectedCharacter = VALID_CHARACTERS.includes(character) ? character : "A";
@@ -85,7 +75,7 @@ export async function POST(req: NextRequest) {
             update: {
                 preference,
                 intention,
-                campus,
+                universityId: user.universityId,
                 character: selectedCharacter,
                 isOnline: true,
                 acceptedTerms: true,
@@ -99,7 +89,7 @@ export async function POST(req: NextRequest) {
                 gender: user.gender,
                 preference,
                 intention,
-                campus,
+                universityId: user.universityId,
                 character: selectedCharacter,
                 acceptedTerms: true,
                 lastSeenAt: new Date(),
