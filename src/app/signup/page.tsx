@@ -251,7 +251,6 @@ export default function SignupPage() {
                             placeholder="you@university.ca"
                         />
                         <p className="text-xs text-zinc-400 mt-1">
-                            Only university emails are accepted.{" "}
                             <Link
                                 href="/universities"
                                 className="text-zinc-700 font-medium underline hover:text-zinc-900"
@@ -260,7 +259,7 @@ export default function SignupPage() {
                             </Link>
                             .
                         </p>
-                        <p className="text-xs text-zinc-500 mt-2">
+                        <p className="text-sm font-medium text-zinc-700 mt-2">
                             Having trouble with your university email? Gmail is
                             also supported with document verification.
                         </p>
@@ -306,6 +305,11 @@ export default function SignupPage() {
                                     Upload Transcript or Student ID (Image
                                     format)
                                 </label>
+                                <p className="text-xs text-zinc-600 mb-2">
+                                    Choose an image now. It will be uploaded
+                                    securely when you click Create Account
+                                    below.
+                                </p>
                                 <input
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
@@ -319,7 +323,8 @@ export default function SignupPage() {
                                 />
                                 {documentFile && (
                                     <p className="text-xs text-zinc-500 mt-1">
-                                        Selected: {documentFile.name}
+                                        Selected: {documentFile.name} — will
+                                        upload when you create your account.
                                     </p>
                                 )}
                             </div>
