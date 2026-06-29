@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
+import HeroCarousel from "@/components/HeroCarousel";
 import UpdatesButton from "@/components/UpdatesButton";
 import { getSession } from "@/lib/auth";
 
@@ -11,20 +12,13 @@ export default async function Home() {
     <div className="min-h-screen flex flex-col">
       {/* ── Hero Section (dark, with background image) ── */}
       <section className="relative min-h-screen overflow-hidden">
-        {/* Background Image */}
-        <Image
-          src="/images/Hero_section.png"
-          alt="Hero background"
-          fill
-          className="object-cover object-right"
-          priority
-        />
+        <HeroCarousel />
 
         {/* Bottom fade to white */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 z-[1] h-32 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none" />
 
         {/* Nav */}
-        <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto w-full">
+        <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto w-full pointer-events-auto">
           <Image src="/images/icon.png" alt="FloatDate" width={120} height={40} className="drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
           <div className="flex gap-3">
             {session ? (
@@ -61,7 +55,7 @@ export default async function Home() {
         </nav>
 
         {/* Hero Content — overlaid on the left */}
-        <div className="relative z-10 flex items-center min-h-[calc(100vh-80px)] px-6">
+        <div className="relative z-10 flex items-center min-h-[calc(100vh-80px)] px-6 pointer-events-none">
           <div className="max-w-6xl mx-auto w-full">
             <div className="max-w-xl space-y-8">
               <h1
@@ -88,23 +82,23 @@ export default async function Home() {
 
               <div className="flex flex-col sm:flex-row items-start gap-4">
                 {session ? (
-                  <Link
-                    href="/dashboard"
-                    className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
-                  >
+                    <Link
+                      href="/dashboard"
+                      className="pointer-events-auto px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
+                    >
                     Continue
                   </Link>
                 ) : (
                   <>
                     <Link
                       href="/signup"
-                      className="px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
+                      className="pointer-events-auto px-8 py-4 bg-white text-gray-600 font-semibold rounded-2xl hover:bg-gray-50 transition-all duration-200 shadow-xl text-lg"
                     >
                       Get Started
                     </Link>
                     <Link
                       href="/login"
-                      className="px-8 py-4 text-white hover:text-white/80 transition text-lg"
+                      className="pointer-events-auto px-8 py-4 text-white hover:text-white/80 transition text-lg"
                       style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}
                     >
                       I have an account →

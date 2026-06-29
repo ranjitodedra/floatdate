@@ -378,3 +378,82 @@ export async function sendMatchEmails(
 
     return sent;
 }
+
+// ─── Scheduled Float Live Date Emails ─────────────────────────
+
+function scheduledDateEmailShell(title: string, bodyHtml: string): string {
+    return `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 24px; background: #fafafa;">
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 32px 24px;">
+            <h1 style="font-size: 28px; color: #18181b; margin-bottom: 8px; font-weight: 700;">Float Live</h1>
+            <p style="color: #71717a; font-size: 14px; margin-bottom: 24px;">${title}</p>
+            ${bodyHtml}
+            <p style="color: #71717a; font-size: 12px; margin: 32px 0 0 0; border-top: 1px solid #e4e4e7; padding-top: 24px;">Return to Float Live when it's time and tap Join Date to start chatting.</p>
+          </div>
+        </div>
+      `;
+}
+
+export async function sendScheduledDateClaimedToCreator(
+    to: string,
+    name: string,
+    scheduledAtLabel: string
+): Promise<{ status: string; messageId?: string }> {
+    if (process.env.EMAILS_ENABLED !== "true") {
+        console.log(`[EMAIL DISABLED] Scheduled date claimed — notify creator ${to}`);
+        return { status: "skipped" };
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const result = await sendVerifyEmail({
+        to,
+        subject: "Someone joined your scheduled Float Live date 💜",
+        html: scheduledDateEmailShell(
+            "Scheduled date matched",
+            `
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${name} 👋</p>
+            <p style="color: #18181b; margin: 0 0 24px 0;">Someone agreed to join your scheduled date on <strong>${scheduledAtLabel}</strong>.</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${appUrl}/float-live" style="display: inline-block; padding: 14px 32px; background: #18181b; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Open Float Live</a>
+            </div>
+            `
+        ),
+        replyTo: "support@floatdate.com",
+    });
+
+    return result.success
+        ? { status: "sent", messageId: result.messageId }
+        : { status: "failed" };
+}
+
+export async function sendScheduledDateClaimedToJoiner(
+    to: string,
+    name: string,
+    scheduledAtLabel: string
+): Promise<{ status: string; messageId?: string }> {
+    if (process.env.EMAILS_ENABLED !== "true") {
+        console.log(`[EMAIL DISABLED] Scheduled date claimed — confirm joiner ${to}`);
+        return { status: "skipped" };
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const result = await sendVerifyEmail({
+        to,
+        subject: "You're matched for a Float Live date 🎉",
+        html: scheduledDateEmailShell(
+            "Date confirmed",
+            `
+            <p style="color: #18181b; margin: 0 0 16px 0;">Hey ${name} 👋</p>
+            <p style="color: #18181b; margin: 0 0 24px 0;">You're all set for a scheduled date on <strong>${scheduledAtLabel}</strong>.</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${appUrl}/float-live" style="display: inline-block; padding: 14px 32px; background: #18181b; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;">Open Float Live</a>
+            </div>
+            `
+        ),
+        replyTo: "support@floatdate.com",
+    });
+
+    return result.success
+        ? { status: "sent", messageId: result.messageId }
+        : { status: "failed" };
+}

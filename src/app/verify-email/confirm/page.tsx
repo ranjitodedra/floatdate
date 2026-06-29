@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import Image from "next/image";
+import { clearStoredRef } from "@/lib/referral-client";
 
 function VerifyEmailConfirmContent() {
     const searchParams = useSearchParams();
@@ -43,6 +44,8 @@ function VerifyEmailConfirmContent() {
                 setError(errorCode);
                 return;
             }
+
+            clearStoredRef();
 
             // Success - redirect to questions page
             if (data.redirect) {

@@ -3,6 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/auth";
 import { VERIFICATION_METHOD, VERIFICATION_STATUS } from "@/lib/verification";
+import {
+    attributeReferral,
+    generateUniqueReferralCode,
+} from "@/lib/referral";
 
 const verifySchema = z.object({
     token: z.string().min(1, "Token is required"),
@@ -59,6 +63,8 @@ export async function POST(req: NextRequest) {
             pending.verificationMethod === VERIFICATION_METHOD.DOCUMENT;
 
         const user = await prisma.$transaction(async (tx) => {
+            const referralCode = await generateUniqueReferralCode(tx);
+
             const newUser = await tx.user.create({
                 data: {
                     email: pending.email,
@@ -79,7 +85,15 @@ export async function POST(req: NextRequest) {
                         ? pending.verificationDocPath
                         : null,
                     verifiedAt: isDocumentVerification ? null : new Date(),
+                    referralCode,
                 },
+            });
+
+            await attributeReferral(tx, {
+                newUserId: newUser.id,
+                newUserEmail: newUser.email,
+                newUserReferralCode: referralCode,
+                pendingReferralCode: pending.referralCode,
             });
 
             await tx.pendingSignup.delete({ where: { id: pending.id } });

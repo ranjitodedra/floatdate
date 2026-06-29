@@ -24,6 +24,12 @@ const TABS: NavTab[] = [
         subtitle: "Anonymous chat",
         match: (p) => p.startsWith("/float-live"),
     },
+    {
+        href: "/float-pop-or-match",
+        label: "Float Pop or Match",
+        subtitle: "Live show casting",
+        match: (p) => p.startsWith("/float-pop-or-match"),
+    },
 ];
 
 const STORAGE_KEY = "floatdate-sidenav-open";

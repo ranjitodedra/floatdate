@@ -8,11 +8,20 @@ import OnlineCounter from "./components/OnlineCounter";
 import TermsModal from "./components/TermsModal";
 import TimeWarning from "./components/TimeWarning";
 import AppShell from "@/components/AppShell";
+import ReferralGate from "@/components/ReferralGate";
+import ScheduledDatesPanel from "./components/scheduled/ScheduledDatesPanel";
 import { HEARTBEAT_MS } from "@/lib/float-live-presence";
 
 const WAIT_TIMEOUT_SECONDS = 5 * 60; // 5 minutes
 
 const CHARACTERS = ["A", "B", "C", "D", "E", "F"];
+
+type LobbyTab = "live" | "scheduled";
+type PendingAction =
+    | { type: "live" }
+    | { type: "claim"; dateId: string }
+    | { type: "join"; dateId: string }
+    | null;
 
 export default function FloatLivePage() {
     const router = useRouter();
@@ -45,6 +54,10 @@ export default function FloatLivePage() {
     const [waitSecondsLeft, setWaitSecondsLeft] = useState(WAIT_TIMEOUT_SECONDS);
     const [timedOut, setTimedOut] = useState(false);
     const searchStartRef = useRef<number | null>(null);
+
+    const [activeTab, setActiveTab] = useState<LobbyTab>("live");
+    const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+    const [scheduledRefreshKey, setScheduledRefreshKey] = useState(0);
 
     // Fetch user and status
     useEffect(() => {
@@ -253,6 +266,17 @@ export default function FloatLivePage() {
     }, [searching, sessionId, router, selectedCharacter]);
 
     function handleStartChat() {
+        setPendingAction({ type: "live" });
+        setShowCharacterSelect(true);
+    }
+
+    function handleClaimScheduledDate(dateId: string) {
+        setPendingAction({ type: "claim", dateId });
+        setShowCharacterSelect(true);
+    }
+
+    function handleJoinScheduledDate(dateId: string) {
+        setPendingAction({ type: "join", dateId });
         setShowCharacterSelect(true);
     }
 
@@ -264,6 +288,63 @@ export default function FloatLivePage() {
 
     async function handleAcceptTerms() {
         setShowTerms(false);
+        const action = pendingAction;
+        setPendingAction(null);
+
+        if (action?.type === "claim") {
+            try {
+                const res = await fetch(
+                    `/api/float-live/scheduled-dates/${action.dateId}/claim`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            character: selectedCharacter || "A",
+                            preference,
+                        }),
+                    }
+                );
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Failed to join date");
+                    return;
+                }
+                setScheduledRefreshKey((k) => k + 1);
+                setActiveTab("scheduled");
+            } catch (err) {
+                console.error("Claim error:", err);
+            }
+            return;
+        }
+
+        if (action?.type === "join") {
+            try {
+                const res = await fetch(
+                    `/api/float-live/scheduled-dates/${action.dateId}/join`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            character: selectedCharacter || "A",
+                        }),
+                    }
+                );
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Failed to join date");
+                    return;
+                }
+                const params = new URLSearchParams({
+                    uc: data.userCharacter || selectedCharacter || "A",
+                    pc: data.partnerCharacter || "A",
+                });
+                router.push(`/float-live/chat/${data.chatRoomId}?${params.toString()}`);
+            } catch (err) {
+                console.error("Scheduled join error:", err);
+            }
+            return;
+        }
+
         if (!sessionId) return;
 
         try {
@@ -293,6 +374,7 @@ export default function FloatLivePage() {
     // Lobby (active) — Float Live is now available 24/7
     return (
         <AppShell>
+            <ReferralGate featureName="FloatLive">
             <div className="min-h-screen bg-zinc-900 px-4 py-6">
             <div className="max-w-lg mx-auto space-y-4">
                 {/* Header */}
@@ -311,6 +393,32 @@ export default function FloatLivePage() {
                 {/* Time warning */}
                 <TimeWarning minutesLeft={minutesLeft} />
 
+                {/* Tab switcher */}
+                <div className="flex rounded-xl bg-zinc-800 p-1 border border-zinc-700">
+                    <button
+                        onClick={() => setActiveTab("live")}
+                        className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${
+                            activeTab === "live"
+                                ? "bg-indigo-500 text-white"
+                                : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                    >
+                        Live Date Now
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("scheduled")}
+                        className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${
+                            activeTab === "scheduled"
+                                ? "bg-indigo-500 text-white"
+                                : "text-zinc-400 hover:text-zinc-200"
+                        }`}
+                    >
+                        Schedule a Date
+                    </button>
+                </div>
+
+                {activeTab === "live" ? (
+                    <>
                 {/* Pixel scene preview */}
                 <div className="relative rounded-2xl overflow-hidden border border-zinc-700" style={{ aspectRatio: "16/9" }}>
                     <Image
@@ -381,6 +489,20 @@ export default function FloatLivePage() {
                         🚀 Start Chat
                     </button>
                 )}
+                    </>
+                ) : (
+                    <ScheduledDatesPanel
+                        preference={preference}
+                        intention={intention}
+                        onPreferenceChange={setPreference}
+                        onIntentionChange={setIntention}
+                        onClaimDate={handleClaimScheduledDate}
+                        onJoinDate={handleJoinScheduledDate}
+                        actionDisabled={searching}
+                        refreshKey={scheduledRefreshKey}
+                        onRefresh={() => setScheduledRefreshKey((k) => k + 1)}
+                    />
+                )}
             </div>
 
             {/* Character selection modal */}
@@ -413,7 +535,10 @@ export default function FloatLivePage() {
                         </div>
 
                         <button
-                            onClick={() => setShowCharacterSelect(false)}
+                            onClick={() => {
+                                setShowCharacterSelect(false);
+                                setPendingAction(null);
+                            }}
                             className="w-full py-2 text-sm text-zinc-400 hover:text-zinc-200 transition"
                         >
                             Cancel
@@ -426,10 +551,14 @@ export default function FloatLivePage() {
             {showTerms && (
                 <TermsModal
                     onAccept={handleAcceptTerms}
-                    onCancel={() => setShowTerms(false)}
+                    onCancel={() => {
+                        setShowTerms(false);
+                        setPendingAction(null);
+                    }}
                 />
             )}
             </div>
+            </ReferralGate>
         </AppShell>
     );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AppShell from "@/components/AppShell";
+import ReferralWidget from "@/components/ReferralWidget";
 
 interface MatchData {
     id: string;
@@ -614,6 +615,8 @@ export default function DashboardPage() {
                         </div>
                     )}
                 </div>
+
+                <ReferralWidget />
 
                 {/* Edit Profile Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">

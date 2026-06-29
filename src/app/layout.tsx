@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Delius } from "next/font/google";
+import { Suspense } from "react";
+import ReferralCapture from "@/components/ReferralCapture";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,6 +45,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${delius.variable} antialiased`}
       >
+        <Suspense fallback={null}>
+          <ReferralCapture />
+        </Suspense>
         {children}
       </body>
     </html>

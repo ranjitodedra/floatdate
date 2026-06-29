@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { readStoredRef } from "@/lib/referral-client";
 
 interface University {
     id: string;
@@ -151,6 +152,7 @@ export default function SignupPage() {
 
         try {
             let res: Response;
+            const storedReferralCode = readStoredRef();
 
             if (showGmailVerification) {
                 const formData = new FormData();
@@ -164,6 +166,9 @@ export default function SignupPage() {
                 if (form.bio) formData.append("bio", form.bio);
                 formData.append("universityId", selectedUniversityId);
                 formData.append("document", documentFile!);
+                if (storedReferralCode) {
+                    formData.append("referralCode", storedReferralCode);
+                }
 
                 res = await fetch("/api/auth/signup", {
                     method: "POST",
@@ -177,6 +182,9 @@ export default function SignupPage() {
                         ...form,
                         email: normalizedEmail,
                         age: parseInt(form.age, 10),
+                        ...(storedReferralCode
+                            ? { referralCode: storedReferralCode }
+                            : {}),
                     }),
                 });
             }

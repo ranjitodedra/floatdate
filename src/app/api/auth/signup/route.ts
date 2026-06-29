@@ -15,6 +15,7 @@ import {
     ADMIN_GMAIL,
 } from "@/lib/supabase-admin";
 import { VERIFICATION_METHOD } from "@/lib/verification";
+import { normalizeReferralCode } from "@/lib/referral";
 
 const signupSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -25,6 +26,7 @@ const signupSchema = z.object({
     genderPref: z.enum(["male", "female", "any"]),
     city: z.string().min(1, "City is required").max(100),
     bio: z.string().max(500).optional(),
+    referralCode: z.string().max(20).optional(),
 });
 
 interface SignupFields {
@@ -62,8 +64,9 @@ async function upsertPendingSignup(params: {
     universityId: string;
     verificationMethod: string;
     verificationDocPath: string | null;
+    referralCode?: string | null;
 }) {
-    const { fields, universityId, verificationMethod, verificationDocPath } =
+    const { fields, universityId, verificationMethod, verificationDocPath, referralCode } =
         params;
     const normalizedEmail = fields.email.toLowerCase();
     const passwordHash = await hashPassword(fields.password);
@@ -107,6 +110,7 @@ async function upsertPendingSignup(params: {
             verifyTokenExpiry,
             verificationMethod,
             verificationDocPath,
+            referralCode: referralCode ?? null,
         },
         create: {
             email: normalizedEmail,
@@ -122,6 +126,7 @@ async function upsertPendingSignup(params: {
             verifyTokenExpiry,
             verificationMethod,
             verificationDocPath,
+            referralCode: referralCode ?? null,
         },
     });
 
@@ -174,6 +179,7 @@ async function handleJsonSignup(body: unknown) {
         universityId: university.id,
         verificationMethod: VERIFICATION_METHOD.EMAIL_DOMAIN,
         verificationDocPath: null,
+        referralCode: normalizeReferralCode(fields.referralCode),
     });
 
     const emailResult = await sendVerificationEmail(
@@ -211,6 +217,7 @@ async function handleMultipartSignup(formData: FormData) {
     const bio = String(formData.get("bio") || "").trim();
     const universityId = String(formData.get("universityId") || "").trim();
     const document = formData.get("document");
+    const referralCodeRaw = String(formData.get("referralCode") || "").trim();
 
     const parsed = signupSchema.safeParse({
         email,
@@ -221,6 +228,7 @@ async function handleMultipartSignup(formData: FormData) {
         genderPref,
         city,
         bio: bio || undefined,
+        referralCode: referralCodeRaw || undefined,
     });
 
     if (!parsed.success) {
@@ -304,6 +312,7 @@ async function handleMultipartSignup(formData: FormData) {
         universityId: university.id,
         verificationMethod,
         verificationDocPath,
+        referralCode: normalizeReferralCode(fields.referralCode),
     });
 
     const emailResult = await sendVerificationEmail(

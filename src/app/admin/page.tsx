@@ -388,6 +388,17 @@ export default function AdminPage() {
                     </button>
 
                     <button
+                        onClick={() => router.push("/admin/show-applications")}
+                        className="bg-emerald-600 border border-emerald-700 rounded-2xl p-5 text-left hover:bg-emerald-700 transition shadow-sm group"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-white">Show Applications</h2>
+                            <span className="text-emerald-200 group-hover:text-white transition group-hover:translate-x-1">→</span>
+                        </div>
+                        <p className="text-emerald-100 text-sm">Review Float Pop or Match casting applications.</p>
+                    </button>
+
+                    <button
                         onClick={() => router.push("/admin/verification-requests")}
                         className="bg-amber-600 border border-amber-700 rounded-2xl p-5 text-left hover:bg-amber-700 transition shadow-sm group"
                     >

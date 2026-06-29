@@ -18,6 +18,7 @@ model University {
   pendingSignups PendingSignup[]
   matchRuns      MatchRun[]
   floatLiveParticipants FloatLiveParticipant[]
+  floatLiveScheduledDates FloatLiveScheduledDate[]
 }
 
 model User {
@@ -43,6 +44,9 @@ model User {
   verificationNotes        String?
   createdAt          DateTime     @default(now())
 
+  referralCode       String?      @unique
+  referredByCode     String?
+
   university     University   @relation(fields: [universityId], references: [id])
   answers        Answer[]
   optIns         WeeklyOptIn[]
@@ -52,6 +56,10 @@ model User {
   emailLogs      EmailLog[]
   floatLiveParticipations FloatLiveParticipant[]
   matchFeedbacks MatchFeedback[]
+  scheduledDatesCreated FloatLiveScheduledDate[] @relation("ScheduledDateCreator")
+  scheduledDatesJoined FloatLiveScheduledDate[] @relation("ScheduledDateJoiner")
+  referralsMade      Referral[] @relation("Referrer")
+  referralReceived   Referral?  @relation("Referred")
 }
 
 model Question {
@@ -172,9 +180,23 @@ model PendingSignup {
   verifyTokenExpiry  DateTime
   verificationMethod String   @default("email_domain") // email_domain | document
   verificationDocPath String?
+  referralCode       String?
   createdAt          DateTime @default(now())
 
   university     University   @relation(fields: [universityId], references: [id])
+}
+
+model Referral {
+  id             String   @id @default(uuid())
+  referrerUserId String
+  referredUserId String   @unique
+  status         String   @default("completed")
+  createdAt      DateTime @default(now())
+
+  referrer User @relation("Referrer", fields: [referrerUserId], references: [id])
+  referred User @relation("Referred", fields: [referredUserId], references: [id])
+
+  @@index([referrerUserId])
 }
 
 model UniversityRequest {
@@ -270,6 +292,7 @@ model FloatLiveChatRoom {
   reports        FloatLiveReport[]
   roomParticipants FloatLiveRoomParticipant[]
   voiceTranscripts FloatLiveVoiceTranscript[]
+  scheduledDate FloatLiveScheduledDate?
 
   @@unique([participantAId, participantBId, sessionId])
 }
@@ -350,4 +373,83 @@ model FloatLiveVoiceTranscript {
   createdAt    DateTime @default(now())
 
   chatRoom     FloatLiveChatRoom @relation(fields: [chatRoomId], references: [id])
+}
+
+model FloatLiveScheduledDate {
+  id              String   @id @default(uuid())
+  creatorId       String
+  universityId    String
+  scheduledAt     DateTime
+  durationMinutes Int
+  gender          String   // creator gender at create time
+  preference      String   // partner gender preference
+  intention       String   // blind_date | friendship
+  expectations    String?
+  status          String   @default("open") // open | claimed | in_progress | completed | cancelled | expired
+  joinerId        String?
+  chatRoomId      String?  @unique
+  creatorCharacter String?
+  joinerCharacter  String?
+  claimedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator    User         @relation("ScheduledDateCreator", fields: [creatorId], references: [id])
+  joiner     User?        @relation("ScheduledDateJoiner", fields: [joinerId], references: [id])
+  university University   @relation(fields: [universityId], references: [id])
+  chatRoom   FloatLiveChatRoom? @relation(fields: [chatRoomId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@index([universityId, status, scheduledAt])
+  @@index([creatorId, status])
+}
+
+model CampusShowApplication {
+  id                      String   @id @default(uuid())
+  userId                  String?
+  createdAt               DateTime @default(now())
+
+  role                    String   // spotlight | panel | either
+
+  fullName                String
+  age                     Int
+  pronouns                String?
+  yearOfStudy             String
+  program                 String
+  email                   String
+  socialHandle            String
+
+  datingGenders           Json     // array of gender preference strings
+  ageRangeMin             Int
+  ageRangeMax             Int
+  lookingFor              String   // casual | serious | either
+
+  threeWords              String
+  unexpected              String
+  bringToRelationship     String
+  dealbreaker             String
+  questionToAsk           String
+  controversialOpinion    String
+  balloonPoppedFeeling    String
+
+  inRelationship          Boolean
+  partnerKnows            String?  // yes | no
+  previousHistory         String   // yes | no | not_sure
+  uncomfortableWith       String?
+
+  availability            Json     // array of availability window strings
+  cannotAttendDates       String?
+  preShowBriefing         String   // yes | no | maybe
+  anythingElse            String?
+
+  consentRecorded         Boolean
+  consentNoDiscrimination Boolean
+  consentPhotography      Boolean
+  consentLiveFormat       Boolean
+  consentVoluntary        Boolean
+  waitlistOptIn           Boolean  @default(false)
+
+  status                  String?    // null = pending | approved | rejected | waitlisted
+  adminNotes              String?
+  statusUpdatedAt         DateTime?
 }

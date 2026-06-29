@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { GRACE_S, QUEUE_STALE_S } from "@/lib/float-live-presence";
 import { endChatRoom } from "@/lib/float-live-room";
+import { expirePastScheduledDates } from "@/lib/float-live-scheduled-expiry";
 
 /**
  * Safety-net cleanup for stale queue entries and abandoned rooms.
@@ -66,10 +67,13 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        const expiredScheduled = await expirePastScheduledDates();
+
         return NextResponse.json({
             ok: true,
             expiredQueue: expiredQueue.count,
             roomsEnded,
+            scheduledDates: expiredScheduled,
         });
     } catch (error) {
         console.error("Float Live cleanup error:", error);
