@@ -57,6 +57,11 @@ export async function getReferralCount(userId: string): Promise<number> {
 }
 
 export async function isReferralUnlocked(userId: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { referredByCode: true },
+    });
+    if (user?.referredByCode) return true;
     const count = await getReferralCount(userId);
     return count >= 1;
 }

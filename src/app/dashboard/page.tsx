@@ -616,8 +616,6 @@ export default function DashboardPage() {
                     )}
                 </div>
 
-                <ReferralWidget />
-
                 {/* Edit Profile Card */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-4">
@@ -707,6 +705,8 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                <ReferralWidget />
             </div>
 
             {/* Feedback Modal Overlay */}

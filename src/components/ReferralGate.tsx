@@ -56,8 +56,8 @@ export default function ReferralGate({ featureName, children }: ReferralGateProp
                             Unlock {featureName}
                         </h2>
                         <p className="text-sm text-zinc-500 mt-2">
-                            Invite one friend to join FloatLive. Once they sign up, this
-                            unlocks for you — no strings attached.
+                            Invite one friend to FloatLive. Once they sign up, this
+                            unlocks for both of you instantly.
                         </p>
                     </div>
 
