@@ -11,7 +11,6 @@ async function deleteUser(email: string) {
     try {
         console.log(`Looking for user with email: ${email}`);
 
-        // Find user by email
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
             select: { id: true, email: true, name: true },
@@ -25,45 +24,112 @@ async function deleteUser(email: string) {
         console.log(`Found user: ${user.name} (${user.email})`);
         console.log(`Deleting user and all related records...`);
 
-        // Delete related records in the correct order using a transaction
         await prisma.$transaction(async (tx) => {
-            // 1. Delete EmailLogs
-            const emailLogsCount = await tx.emailLog.deleteMany({
-                where: { userId: user.id },
-            });
-            console.log(`Deleted ${emailLogsCount.count} email log(s)`);
-
-            // 2. Delete Matches (where user is either userA or userB)
-            const matchesCount = await tx.match.deleteMany({
+            const scheduled = await tx.floatLiveScheduledDate.deleteMany({
                 where: {
-                    OR: [
-                        { userAId: user.id },
-                        { userBId: user.id },
-                    ],
+                    OR: [{ creatorId: user.id }, { joinerId: user.id }],
                 },
             });
-            console.log(`Deleted ${matchesCount.count} match(es)`);
+            console.log(`Deleted ${scheduled.count} scheduled date(s)`);
 
-            // 3. Delete WeeklyOptIns
-            const optInsCount = await tx.weeklyOptIn.deleteMany({
+            const referrals = await tx.referral.deleteMany({
+                where: {
+                    OR: [{ referrerUserId: user.id }, { referredUserId: user.id }],
+                },
+            });
+            console.log(`Deleted ${referrals.count} referral(s)`);
+
+            const participants = await tx.floatLiveParticipant.findMany({
+                where: { userId: user.id },
+                select: { id: true },
+            });
+            const participantIds = participants.map((p) => p.id);
+
+            let roomIds: string[] = [];
+            if (participantIds.length > 0) {
+                const rooms = await tx.floatLiveChatRoom.findMany({
+                    where: {
+                        OR: [
+                            { participantAId: { in: participantIds } },
+                            { participantBId: { in: participantIds } },
+                        ],
+                    },
+                    select: { id: true },
+                });
+                roomIds = rooms.map((r) => r.id);
+            }
+
+            if (roomIds.length > 0) {
+                const roomParticipants = await tx.floatLiveRoomParticipant.deleteMany({
+                    where: { roomId: { in: roomIds } },
+                });
+                console.log(`Deleted ${roomParticipants.count} room participant(s)`);
+
+                const messages = await tx.floatLiveChatMessage.deleteMany({
+                    where: { chatRoomId: { in: roomIds } },
+                });
+                console.log(`Deleted ${messages.count} chat message(s)`);
+
+                const transcripts = await tx.floatLiveVoiceTranscript.deleteMany({
+                    where: { chatRoomId: { in: roomIds } },
+                });
+                console.log(`Deleted ${transcripts.count} voice transcript(s)`);
+
+                const reports = await tx.floatLiveReport.deleteMany({
+                    where: { chatRoomId: { in: roomIds } },
+                });
+                console.log(`Deleted ${reports.count} report(s)`);
+
+                const roomsDeleted = await tx.floatLiveChatRoom.deleteMany({
+                    where: { id: { in: roomIds } },
+                });
+                console.log(`Deleted ${roomsDeleted.count} chat room(s)`);
+            }
+
+            const floatLiveParticipants = await tx.floatLiveParticipant.deleteMany({
                 where: { userId: user.id },
             });
-            console.log(`Deleted ${optInsCount.count} weekly opt-in(s)`);
+            console.log(`Deleted ${floatLiveParticipants.count} Float Live participant(s)`);
 
-            // 4. Delete Answers
-            const answersCount = await tx.answer.deleteMany({
+            const feedback = await tx.matchFeedback.deleteMany({
                 where: { userId: user.id },
             });
-            console.log(`Deleted ${answersCount.count} answer(s)`);
+            console.log(`Deleted ${feedback.count} match feedback record(s)`);
 
-            // 5. Finally, delete the User
+            const attempts = await tx.matchAttempt.deleteMany({
+                where: { userId: user.id },
+            });
+            console.log(`Deleted ${attempts.count} match attempt(s)`);
+
+            const emailLogs = await tx.emailLog.deleteMany({
+                where: { userId: user.id },
+            });
+            console.log(`Deleted ${emailLogs.count} email log(s)`);
+
+            const matches = await tx.match.deleteMany({
+                where: {
+                    OR: [{ userAId: user.id }, { userBId: user.id }],
+                },
+            });
+            console.log(`Deleted ${matches.count} match(es)`);
+
+            const optIns = await tx.weeklyOptIn.deleteMany({
+                where: { userId: user.id },
+            });
+            console.log(`Deleted ${optIns.count} weekly opt-in(s)`);
+
+            const answers = await tx.answer.deleteMany({
+                where: { userId: user.id },
+            });
+            console.log(`Deleted ${answers.count} answer(s)`);
+
             await tx.user.delete({
                 where: { id: user.id },
             });
             console.log(`Deleted user: ${user.email}`);
         });
 
-        console.log(`\n✅ Successfully deleted user ${email} and all related records.`);
+        console.log(`\nSuccessfully deleted user ${email} and all related records.`);
     } catch (error) {
         console.error("Error deleting user:", error);
         throw error;
@@ -72,7 +138,6 @@ async function deleteUser(email: string) {
     }
 }
 
-// Get email from command line argument
 const email = process.argv[2];
 
 if (!email) {

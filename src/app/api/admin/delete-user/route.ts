@@ -62,6 +62,18 @@ export async function POST(req: NextRequest) {
         // Float Live data is the deepest tree: room participants/messages/reports
         // must go before the rooms, which go before the participants.
         await prisma.$transaction(async (tx) => {
+            await tx.floatLiveScheduledDate.deleteMany({
+                where: {
+                    OR: [{ creatorId: user.id }, { joinerId: user.id }],
+                },
+            });
+
+            await tx.referral.deleteMany({
+                where: {
+                    OR: [{ referrerUserId: user.id }, { referredUserId: user.id }],
+                },
+            });
+
             // Every Float Live participant row this user owns.
             const participants = await tx.floatLiveParticipant.findMany({
                 where: { userId: user.id },
@@ -95,55 +107,52 @@ export async function POST(req: NextRequest) {
                     where: { chatRoomId: { in: roomIds } },
                 });
 
-                // 3. Reports tied to those rooms
+                // 3. Voice transcripts in those rooms
+                await tx.floatLiveVoiceTranscript.deleteMany({
+                    where: { chatRoomId: { in: roomIds } },
+                });
+
+                // 4. Reports tied to those rooms
                 await tx.floatLiveReport.deleteMany({
                     where: { chatRoomId: { in: roomIds } },
                 });
 
-                // 4. The rooms themselves
+                // 5. The rooms themselves
                 await tx.floatLiveChatRoom.deleteMany({
                     where: { id: { in: roomIds } },
                 });
             }
 
-            // 5. This user's Float Live participant rows
             await tx.floatLiveParticipant.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 6. Match feedback
             await tx.matchFeedback.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 7. Match attempts
             await tx.matchAttempt.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 8. Email logs
             await tx.emailLog.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 9. Matches (where user is either userA or userB)
             await tx.match.deleteMany({
                 where: {
                     OR: [{ userAId: user.id }, { userBId: user.id }],
                 },
             });
 
-            // 10. Weekly opt-ins
             await tx.weeklyOptIn.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 11. Answers
             await tx.answer.deleteMany({
                 where: { userId: user.id },
             });
 
-            // 12. Finally, the User
             await tx.user.delete({
                 where: { id: user.id },
             });
