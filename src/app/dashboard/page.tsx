@@ -469,6 +469,21 @@ export default function DashboardPage() {
                             </button>
                         </div>
                     )}
+
+                    <div
+                        className="relative w-full mt-6 rounded-xl overflow-hidden"
+                        style={{ paddingBottom: "56.25%" }}
+                    >
+                        <iframe
+                            className="absolute inset-0 w-full h-full"
+                            src="https://www.youtube.com/embed/jS_jBbkU4SI?si=x8wsNIxAd5lItM55"
+                            title="YouTube video player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
+                        />
+                    </div>
                 </div>
 
                 {/* Pending Feedback Card (If they didn't opt in but still have a previous match) */}
