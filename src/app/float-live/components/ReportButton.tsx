@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { glassInputClass } from "@/lib/ui-classes";
 
 interface ReportButtonProps {
     chatRoomId: string;
@@ -39,7 +40,7 @@ export default function ReportButton({ chatRoomId }: ReportButtonProps) {
 
     if (submitted) {
         return (
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-cream-muted">
                 ✅ Report submitted
             </span>
         );
@@ -56,9 +57,9 @@ export default function ReportButton({ chatRoomId }: ReportButtonProps) {
 
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4">
-                        <h3 className="text-lg font-bold text-zinc-900">Report User</h3>
-                        <p className="text-sm text-zinc-500">
+                    <div className="glass-panel-strong rounded-2xl shadow-modal max-w-sm w-full p-5 space-y-4">
+                        <h3 className="text-lg font-bold text-cream">Report User</h3>
+                        <p className="text-sm text-cream-muted">
                             Select a reason for reporting this user:
                         </p>
 
@@ -67,8 +68,8 @@ export default function ReportButton({ chatRoomId }: ReportButtonProps) {
                                 <label
                                     key={r.value}
                                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${reason === r.value
-                                            ? "border-indigo-400 bg-indigo-50"
-                                            : "border-zinc-200 hover:bg-zinc-50"
+                                            ? "border-cream/40 glass-panel-strong"
+                                            : "glass-input hover:bg-gold-soft/10"
                                         }`}
                                 >
                                     <input
@@ -79,7 +80,7 @@ export default function ReportButton({ chatRoomId }: ReportButtonProps) {
                                         onChange={() => setReason(r.value)}
                                         className="accent-indigo-500"
                                     />
-                                    <span className="text-sm text-zinc-700">{r.label}</span>
+                                    <span className="text-sm text-cream/90">{r.label}</span>
                                 </label>
                             ))}
                         </div>
@@ -91,21 +92,21 @@ export default function ReportButton({ chatRoomId }: ReportButtonProps) {
                                 placeholder="Please describe..."
                                 maxLength={1000}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                className={`${glassInputClass} text-sm resize-none`}
                             />
                         )}
 
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="flex-1 py-2.5 bg-zinc-100 text-zinc-600 rounded-xl text-sm font-medium hover:bg-zinc-200 transition"
+                                className="flex-1 py-2.5 glass-input text-cream/90 rounded-xl text-sm font-medium hover:bg-gold-soft/10 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSubmit}
                                 disabled={!reason || loading}
-                                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition disabled:opacity-50"
+                                className="flex-1 py-2.5 bg-red-500 text-cream rounded-xl text-sm font-semibold hover:bg-red-600 transition disabled:opacity-50"
                             >
                                 {loading ? "Submitting..." : "Submit Report"}
                             </button>

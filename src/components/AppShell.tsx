@@ -57,13 +57,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
     return (
         <>
-            {/* Open button — shown when the sidebar is closed */}
             {!open && (
                 <button
                     type="button"
                     onClick={() => setOpen(true)}
                     aria-label="Open menu"
-                    className="fixed top-4 left-4 z-50 flex flex-col items-center justify-center gap-1 w-10 h-10 rounded-lg bg-white border border-zinc-200 text-zinc-700 shadow-sm hover:bg-zinc-50 transition"
+                    className="fixed top-4 left-4 z-50 flex flex-col items-center justify-center gap-1 w-10 h-10 rounded-lg glass-panel text-cream-muted hover:text-cream transition"
                 >
                     <span className="block w-4 h-0.5 bg-current" />
                     <span className="block w-4 h-0.5 bg-current" />
@@ -73,19 +72,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
             {open && (
                 <>
-                    {/* Mobile backdrop */}
                     <div
                         onClick={() => setOpen(false)}
-                        className="md:hidden fixed inset-0 z-40 bg-black/30"
+                        className="md:hidden fixed inset-0 z-40 bg-mahogany-deep/60"
                     />
-                    <aside className="fixed left-0 top-0 h-screen w-56 z-50 bg-white border-r border-zinc-200 px-4 py-6 flex flex-col">
+                    <aside className="fixed left-0 top-0 h-screen w-56 z-50 glass-panel-strong px-4 py-6 flex flex-col">
                         <div className="flex items-center justify-between mb-8 px-1">
-                            <span className="text-zinc-900 font-bold text-lg">FloatDate</span>
+                            <span className="text-cream font-bold text-lg">FloatDate</span>
                             <button
                                 type="button"
                                 onClick={() => setOpen(false)}
                                 aria-label="Close menu"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition text-xl leading-none"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-cream-faint hover:text-cream hover:bg-cream/10 transition text-xl leading-none"
                             >
                                 &lsaquo;
                             </button>
@@ -98,20 +96,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
                                         key={tab.href}
                                         href={tab.href}
                                         onClick={handleNavClick}
-                                        className={`flex flex-col rounded-xl px-3 py-2.5 border transition-all ${
+                                        className={`flex flex-col rounded-xl px-3 py-2.5 transition-all ${
                                             active
-                                                ? "bg-indigo-50 border-indigo-200"
-                                                : "border-transparent hover:bg-zinc-50"
+                                                ? "bg-gold-soft"
+                                                : "hover:bg-cream/5"
                                         }`}
                                     >
                                         <span
                                             className={`text-sm font-semibold ${
-                                                active ? "text-indigo-700" : "text-zinc-700"
+                                                active ? "text-cream" : "text-cream-muted"
                                             }`}
                                         >
                                             {tab.label}
                                         </span>
-                                        <span className="text-[11px] text-zinc-400">
+                                        <span className="text-[11px] text-cream-faint">
                                             {tab.subtitle}
                                         </span>
                                     </Link>
@@ -122,7 +120,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 </>
             )}
 
-            <div className={open ? "md:pl-56" : ""}>{children}</div>
+            <div className={`min-h-screen ${open ? "md:pl-56" : ""}`}>
+                {children}
+            </div>
         </>
     );
 }

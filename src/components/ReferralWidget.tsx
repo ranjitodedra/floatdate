@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ReferralSharePanel, type ReferralStatusData } from "@/components/ReferralSharePanel";
+import { glassInputClass } from "@/lib/ui-classes";
 
 export default function ReferralWidget() {
     const [status, setStatus] = useState<ReferralStatusData | null>(null);
@@ -33,8 +34,8 @@ export default function ReferralWidget() {
 
     if (loading) {
         return (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                <p className="text-sm text-zinc-400">Loading referral status…</p>
+            <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                <p className="text-sm text-cream-faint">Loading referral status…</p>
             </div>
         );
     }
@@ -44,18 +45,18 @@ export default function ReferralWidget() {
     if (status.unlocked) {
         return (
             <div className="pt-2">
-                <p className="text-sm text-zinc-500 mb-2">Share FloatLive with friends</p>
+                <p className="text-sm text-cream-muted mb-2">Share FloatLive with friends</p>
                 <div className="flex gap-2">
                     <input
                         type="text"
                         readOnly
                         value={status.link}
-                        className="flex-1 min-w-0 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm text-zinc-600 truncate"
+                        className={`${glassInputClass} flex-1 min-w-0 px-3 py-2 text-sm truncate`}
                     />
                     <button
                         type="button"
                         onClick={() => copyLink(status.link)}
-                        className="shrink-0 px-3 py-2 bg-zinc-100 text-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-200 transition"
+                        className="shrink-0 px-3 py-2 bg-cream text-mahogany-deep text-sm font-medium rounded-lg hover:bg-[#ffffff] transition"
                     >
                         {copyFeedback || "Copy link"}
                     </button>
@@ -65,15 +66,15 @@ export default function ReferralWidget() {
     }
 
     return (
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-900 mb-1">Invite Friends</h2>
-            <p className="text-sm text-zinc-500 mb-4">
+        <div className="glass-panel rounded-2xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-cream mb-1">Invite Friends</h2>
+            <p className="text-sm text-cream-muted mb-4">
                 Invite one friend to unlock FloatLive and Float Pop or Match.
             </p>
 
             <ReferralSharePanel link={status.link} count={status.count} compact />
 
-            <p className="text-sm font-medium text-zinc-700 mt-4">
+            <p className="text-sm font-medium text-cream/90 mt-4">
                 <span>{status.count} / 1 referrals needed</span>
             </p>
         </div>

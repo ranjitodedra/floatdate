@@ -4,14 +4,12 @@ import { useState, useEffect } from "react";
 
 interface RevealEmailButtonProps {
     chatRoomId: string;
-    intention: string;
     partnerEmail?: string | null;
     partnerHasRevealed?: boolean;
 }
 
 export default function RevealEmailButton({
     chatRoomId,
-    intention,
     partnerEmail: initialPartnerEmail,
     partnerHasRevealed = false,
 }: RevealEmailButtonProps) {
@@ -50,11 +48,6 @@ export default function RevealEmailButton({
 
         return () => clearInterval(interval);
     }, [waitingForPartner, revealed, chatRoomId]);
-
-    // In friendship mode, emails are visible from the start
-    if (intention === "friendship") {
-        return null; // Email shown elsewhere in friendship mode
-    }
 
     async function handleReveal() {
         setLoading(true);

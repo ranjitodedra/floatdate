@@ -2,7 +2,13 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import AuthSplitLayout from "@/components/AuthSplitLayout";
+import {
+    btnPrimaryClass,
+    glassInputClass,
+    glassPanelClass,
+    labelClass,
+} from "@/lib/ui-classes";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -31,8 +37,7 @@ export default function LoginPage() {
             if (!res.ok) {
                 const errorMessage = data.error || "Login failed";
                 setError(errorMessage);
-                
-                // Check if this is an email verification error (403)
+
                 if (res.status === 403 && errorMessage.includes("verify your email")) {
                     setShowResendLink(true);
                 } else {
@@ -41,7 +46,6 @@ export default function LoginPage() {
                 return;
             }
 
-            // Questionnaire is optional; everyone lands on the dashboard.
             router.push("/dashboard");
         } catch {
             setError("Something went wrong. Please try again.");
@@ -83,113 +87,92 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
-            <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <Image
-                        src="/images/icon.png"
-                        alt="FloatDate"
-                        width={120}
-                        height={40}
-                        className="mx-auto mb-3"
+        <AuthSplitLayout
+            imageSrc="/assets/auth_images/login.png"
+            imageAlt="FloatDate login"
+            subtitle="Welcome back"
+        >
+            <form onSubmit={handleSubmit} className={glassPanelClass}>
+                {error && (
+                    <div className="bg-red-950/40 text-red-300 text-sm rounded-lg px-4 py-3">
+                        {error}
+                        {showResendLink && (
+                            <div className="mt-3 pt-3 border-t border-red-900/50">
+                                <button
+                                    type="button"
+                                    onClick={handleResendVerification}
+                                    disabled={resendLoading}
+                                    className="text-sm text-red-200 hover:text-red-100 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {resendLoading ? "Sending..." : "Resend verification email"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {resendMessage && !error && (
+                    <div
+                        className={`text-sm rounded-lg px-4 py-3 ${
+                            resendMessage.includes("sent")
+                                ? "bg-green-950/40 text-green-300"
+                                : "bg-red-950/40 text-red-300"
+                        }`}
+                    >
+                        {resendMessage}
+                    </div>
+                )}
+
+                <div>
+                    <label className={labelClass}>Email</label>
+                    <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            setError("");
+                        }}
+                        className={glassInputClass}
+                        placeholder="you@mylaurier.ca"
                     />
-                    <p className="text-zinc-500 mt-2">Welcome back</p>
                 </div>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-5 shadow-sm"
-                >
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-                            {error}
-                            {showResendLink && (
-                                <div className="mt-3 pt-3 border-t border-red-200">
-                                    <button
-                                        type="button"
-                                        onClick={handleResendVerification}
-                                        disabled={resendLoading}
-                                        className="text-sm text-red-700 hover:text-red-800 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {resendLoading ? "Sending..." : "Resend verification email"}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                <div>
+                    <label className={labelClass}>Password</label>
+                    <input
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => {
+                            setPassword(e.target.value);
+                            setError("");
+                        }}
+                        className={glassInputClass}
+                        placeholder="Your password"
+                    />
+                </div>
 
-                    {resendMessage && !error && (
-                        <div className={`text-sm rounded-lg px-4 py-3 ${
-                            resendMessage.includes("sent") 
-                                ? "bg-green-50 border border-green-200 text-green-600"
-                                : "bg-red-50 border border-red-200 text-red-600"
-                        }`}>
-                            {resendMessage}
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => {
-                                setEmail(e.target.value);
-                                setError("");
-                            }}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
-                            placeholder="you@mylaurier.ca"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => {
-                                setPassword(e.target.value);
-                                setError("");
-                            }}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
-                            placeholder="Your password"
-                        />
-                    </div>
-
-                    <div className="text-right">
-                        <a
-                            href="/forgot-password"
-                            className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline transition"
-                        >
-                            Forgot password?
-                        </a>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                <div className="text-right">
+                    <a
+                        href="/forgot-password"
+                        className="text-sm text-cream-muted hover:text-cream hover:underline transition"
                     >
-                        {loading ? "Logging in..." : "Log In"}
-                    </button>
+                        Forgot password?
+                    </a>
+                </div>
 
-                    <p className="text-center text-sm text-zinc-500">
-                        Don&apos;t have an account?{" "}
-                        <a
-                            href="/signup"
-                            className="text-zinc-900 font-medium hover:underline transition"
-                        >
-                            Sign up
-                        </a>
-                    </p>
-                </form>
-            </div>
-        </div>
+                <button type="submit" disabled={loading} className={btnPrimaryClass}>
+                    {loading ? "Logging in..." : "Log In"}
+                </button>
+
+                <p className="text-center text-sm text-cream-muted">
+                    Don&apos;t have an account?{" "}
+                    <a href="/signup" className="text-cream font-medium hover:underline transition">
+                        Sign up
+                    </a>
+                </p>
+            </form>
+        </AuthSplitLayout>
     );
 }

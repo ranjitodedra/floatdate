@@ -32,14 +32,25 @@ export async function GET(req: NextRequest) {
                 university: {
                     select: { id: true, name: true },
                 },
+                referralReceived: {
+                    select: {
+                        referrer: {
+                            select: { name: true, email: true, referralCode: true },
+                        },
+                    },
+                },
             },
         });
 
         const requests = await Promise.all(
-            users.map(async (user) => ({
-                ...user,
-                documentUrl: await createSignedDocUrl(user.verificationDocPath),
-            }))
+            users.map(async (user) => {
+                const { referralReceived, ...rest } = user;
+                return {
+                    ...rest,
+                    referredBy: referralReceived?.referrer ?? null,
+                    documentUrl: await createSignedDocUrl(user.verificationDocPath),
+                };
+            })
         );
 
         return NextResponse.json({ requests });

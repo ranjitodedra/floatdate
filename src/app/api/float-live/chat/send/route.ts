@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive } from "@/lib/float-live-time";
 import { isRoomActive } from "@/lib/float-live-presence";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeStoredContent } from "@/lib/sanitize-content";
 
 const MAX_MESSAGE_LENGTH = 500;
-
-// Simple in-memory rate limiter (per-process; sufficient for MVP)
-const lastMessageTime = new Map<string, number>();
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,13 +14,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available 5-6 PM ET" },
-                { status: 403 }
-            );
-        }
+        const rateLimited = await checkRateLimit("chat_message", authSession.userId);
+        if (rateLimited) return rateLimited;
 
         const body = await req.json();
         const { chatRoomId, content } = body;
@@ -31,24 +24,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "chatRoomId and content required" }, { status: 400 });
         }
 
-        // Sanitize content
-        const sanitizedContent = content
-            .toString()
-            .slice(0, MAX_MESSAGE_LENGTH)
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+        const sanitizedContent = sanitizeStoredContent(content, MAX_MESSAGE_LENGTH);
 
-        if (sanitizedContent.trim().length === 0) {
+        if (sanitizedContent.length === 0) {
             return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
         }
-
-        // Rate limit: max 1 message per second
-        const now = Date.now();
-        const lastTime = lastMessageTime.get(authSession.userId) || 0;
-        if (now - lastTime < 1000) {
-            return NextResponse.json({ error: "Sending too fast" }, { status: 429 });
-        }
-        lastMessageTime.set(authSession.userId, now);
 
         // Verify user is a participant in this chat room
         const chatRoom = await prisma.floatLiveChatRoom.findUnique({
@@ -71,7 +51,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Not a participant" }, { status: 403 });
         }
 
-        // Insert message
         const message = await prisma.floatLiveChatMessage.create({
             data: {
                 chatRoomId,

@@ -41,7 +41,7 @@ export function VoiceCallTrigger({
                     flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium
                     transition-all duration-200
                     ${disabled
-                        ? "bg-zinc-700 text-zinc-500 cursor-not-allowed"
+                        ? "bg-zinc-700 text-muted cursor-not-allowed"
                         : callState === "failed" || callState === "mic_denied"
                             ? "bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30"
                             : "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30"
@@ -113,7 +113,7 @@ export function VoiceCallControlBar({
     return (
         <div className="flex items-center gap-1.5">
             {/* Connection state indicator */}
-            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-600">
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-surface-elevated border border-mahogany">
                 <span
                     className={`
                         w-2 h-2 rounded-full flex-shrink-0
@@ -127,7 +127,7 @@ export function VoiceCallControlBar({
                         }
                     `}
                 />
-                <span className="text-[10px] text-zinc-400 font-medium hidden sm:block">
+                <span className="text-[10px] text-muted font-medium hidden sm:block">
                     {callState === "connected"
                         ? "Call"
                         : callState === "connecting"
@@ -146,7 +146,7 @@ export function VoiceCallControlBar({
                     p-1.5 rounded-lg transition-all duration-200 text-sm
                     ${isMuted
                         ? "bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30"
-                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600 border border-zinc-600"
+                        : "bg-zinc-700 text-cream/90 hover:bg-zinc-600 border border-mahogany"
                     }
                 `}
                 title={isMuted ? "Unmute" : "Mute"}

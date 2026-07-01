@@ -28,7 +28,7 @@ export default function TimeWarning({ minutesLeft }: TimeWarningProps) {
 
     if (timeLeft <= 0) {
         return (
-            <div className="bg-red-500 text-white text-center py-2 px-4 rounded-xl text-sm font-bold animate-pulse">
+            <div className="bg-red-500 text-cream text-center py-2 px-4 rounded-xl text-sm font-bold animate-pulse">
                 🕐 Float Live has ended for today. See you tomorrow at 5 PM!
             </div>
         );

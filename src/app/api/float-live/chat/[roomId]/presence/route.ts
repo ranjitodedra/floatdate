@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive } from "@/lib/float-live-time";
 import {
     derivePresence,
     isRoomActive,
@@ -128,14 +127,11 @@ export async function POST(
         let partnerPresence = computePartnerPresence(partnerRow, now);
         let partnerStatus: PresenceStatus = partnerPresence.status;
 
-        const { active: sessionActive } = await isFloatLiveActive();
-
         const shouldEndForTimeout =
             isRoomActive(chatRoom) && partnerPresence.status === "timeout";
-        const shouldEndForSession = isRoomActive(chatRoom) && !sessionActive;
 
-        if (shouldEndForTimeout || shouldEndForSession) {
-            const reason = shouldEndForSession ? "session_end" : "timeout";
+        if (shouldEndForTimeout) {
+            const reason = "timeout";
             await prisma.$transaction(async (tx) => {
                 await endChatRoom(tx, roomId, reason);
             });

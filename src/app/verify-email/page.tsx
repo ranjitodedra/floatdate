@@ -3,6 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
+import {
+    glassPanelClass,
+    btnPrimaryClass,
+} from "@/lib/ui-classes";
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
@@ -68,7 +72,7 @@ function VerifyEmailContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+        <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md text-center">
                 <div className="mb-8">
                     <Image
@@ -80,21 +84,21 @@ function VerifyEmailContent() {
                     />
                 </div>
 
-                <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-6 shadow-sm">
+                <div className={`${glassPanelClass} shadow-sm`}>
                     {error ? (
                         <>
                             <div className="text-5xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-semibold text-zinc-900">
+                            <h2 className="text-xl font-semibold text-cream">
                                 Verification Failed
                             </h2>
-                            <p className="text-zinc-500">
+                            <p className="text-cream-muted">
                                 {errorMessages[error] || "An unknown error occurred."}
                             </p>
                             {(error === "expired-token" || error === "invalid-token") && (
                                 <button
                                     onClick={handleResend}
                                     disabled={resending}
-                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                    className={btnPrimaryClass}
                                 >
                                     {resending ? "Sending..." : "Resend Verification Email"}
                                 </button>
@@ -103,18 +107,18 @@ function VerifyEmailContent() {
                     ) : (
                         <>
                             <div className="text-5xl mb-4">{emailFailed ? "⚠️" : "✉️"}</div>
-                            <h2 className="text-xl font-semibold text-zinc-900">
+                            <h2 className="text-xl font-semibold text-cream">
                                 {emailFailed ? "Verification email failed" : "Check your inbox"}
                             </h2>
                             {emailFailed ? (
                                 <>
-                                    <p className="text-zinc-500">
+                                    <p className="text-cream-muted">
                                         Your account was created, but we couldn't send the verification email. Please click below to resend it.
                                     </p>
                                     <button
                                         onClick={handleResend}
                                         disabled={resending}
-                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                        className={btnPrimaryClass}
                                     >
                                         {resending ? "Sending..." : "Send Verification Email"}
                                     </button>
@@ -122,21 +126,21 @@ function VerifyEmailContent() {
                             ) : (
                                 <>
                                     {countdown > 0 ? (
-                                        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 my-4">
-                                            <p className="text-sm text-zinc-700 leading-relaxed">
+                                        <div className="glass-panel rounded-xl p-5 my-4">
+                                            <p className="text-sm text-cream/90 leading-relaxed">
                                                 You should receive your email within{" "}
-                                                <span className="font-semibold text-zinc-900 text-base">
+                                                <span className="font-semibold text-cream text-base">
                                                     {formatTime(countdown)}
                                                 </span>
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 my-4">
-                                            <p className="text-sm text-zinc-700 leading-relaxed">
+                                        <div className="glass-panel rounded-xl p-5 my-4">
+                                            <p className="text-sm text-cream/90 leading-relaxed">
                                                 Didn&apos;t get it? Try resending or check your spam folder. If you still don&apos;t receive anything, feel free to reach out:{" "}
                                                 <a
                                                     href="mailto:team.floatdate@gmail.com"
-                                                    className="text-zinc-900 underline hover:text-zinc-800 font-medium"
+                                                    className="text-cream underline hover:text-cream/90 font-medium"
                                                 >
                                                     team.floatdate@gmail.com
                                                 </a>
@@ -146,7 +150,7 @@ function VerifyEmailContent() {
                                     <button
                                         onClick={handleResend}
                                         disabled={resending || countdown > 0}
-                                        className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className={`${btnPrimaryClass} disabled:cursor-not-allowed`}
                                     >
                                         {resending ? "Sending..." : "Resend Verification Email"}
                                     </button>
@@ -156,13 +160,13 @@ function VerifyEmailContent() {
                     )}
 
                     {resendMsg && (
-                        <p className="text-sm text-green-600">{resendMsg}</p>
+                        <p className="text-sm text-green-300">{resendMsg}</p>
                     )}
 
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-cream-muted">
                         <a
                             href="/login"
-                            className="text-zinc-900 font-medium hover:underline transition"
+                            className="text-cream font-medium hover:underline transition"
                         >
                             Back to login
                         </a>
@@ -177,8 +181,8 @@ export default function VerifyEmailPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                    <p className="text-zinc-500">Loading...</p>
+                <div className="min-h-screen flex items-center justify-center">
+                    <p className="text-cream-muted">Loading...</p>
                 </div>
             }
         >

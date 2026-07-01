@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getTodaySessionTimes } from "@/lib/float-live-time";
@@ -7,11 +8,28 @@ import {
     ensureRoomParticipants,
     markParticipantsMatched,
 } from "@/lib/float-live-room";
+import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_CHARACTERS,
     isWithinJoinWindow,
     userGenderPrefToFloatLivePref,
 } from "@/lib/float-live-scheduled";
+
+function buildRoomResponse(
+    room: {
+        id: string;
+        participantA: { userId: string; character: string };
+        participantB: { userId: string; character: string };
+    },
+    userId: string
+) {
+    const isUserA = room.participantA.userId === userId;
+    return {
+        chatRoomId: room.id,
+        userCharacter: isUserA ? room.participantA.character : room.participantB.character,
+        partnerCharacter: isUserA ? room.participantB.character : room.participantA.character,
+    };
+}
 
 export async function POST(
     req: NextRequest,
@@ -22,6 +40,12 @@ export async function POST(
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
+
+        const verificationDenied = await requireApprovedUser(authSession.userId);
+        if (verificationDenied) return verificationDenied;
 
         const { id } = await params;
         const body = await req.json();
@@ -57,12 +81,9 @@ export async function POST(
             });
 
             if (room && room.isActive) {
-                const isUserA = room.participantA.userId === authSession.userId;
-                return NextResponse.json({
-                    chatRoomId: room.id,
-                    userCharacter: isUserA ? room.participantA.character : room.participantB.character,
-                    partnerCharacter: isUserA ? room.participantB.character : room.participantA.character,
-                });
+                return NextResponse.json(
+                    buildRoomResponse(room, authSession.userId)
+                );
             }
         }
 
@@ -107,29 +128,38 @@ export async function POST(
             ? selectedCharacter
             : date.joinerCharacter || "A";
 
+        const sessionId = liveSession.id;
+
         const result = await prisma.$transaction(async (tx) => {
-            const fresh = await tx.floatLiveScheduledDate.findUnique({ where: { id } });
-            if (!fresh || fresh.status === "in_progress") {
-                if (fresh?.chatRoomId) {
-                    const room = await tx.floatLiveChatRoom.findUnique({
-                        where: { id: fresh.chatRoomId },
-                        include: {
-                            participantA: { select: { userId: true, character: true } },
-                            participantB: { select: { userId: true, character: true } },
-                        },
-                    });
-                    if (room) {
-                        const isUserA = room.participantA.userId === authSession.userId;
-                        return {
-                            chatRoomId: room.id,
-                            userCharacter: isUserA ? room.participantA.character : room.participantB.character,
-                            partnerCharacter: isUserA ? room.participantB.character : room.participantA.character,
-                        };
-                    }
+            const locked = await tx.$queryRaw<
+                { id: string; status: string; chatRoomId: string | null }[]
+            >`
+                SELECT id, status, "chatRoomId"
+                FROM "FloatLiveScheduledDate"
+                WHERE id = ${id}
+                FOR UPDATE NOWAIT
+            `;
+
+            if (locked.length === 0) {
+                throw new Error("NOT_FOUND");
+            }
+
+            const fresh = locked[0]!;
+
+            if (fresh.status === "in_progress" && fresh.chatRoomId) {
+                const room = await tx.floatLiveChatRoom.findUnique({
+                    where: { id: fresh.chatRoomId },
+                    include: {
+                        participantA: { select: { userId: true, character: true } },
+                        participantB: { select: { userId: true, character: true } },
+                    },
+                });
+                if (room) {
+                    return buildRoomResponse(room, authSession.userId);
                 }
             }
 
-            if (fresh?.status !== "claimed") {
+            if (fresh.status !== "claimed") {
                 throw new Error("NOT_CLAIMED");
             }
 
@@ -155,7 +185,7 @@ export async function POST(
                     where: {
                         userId_sessionId: {
                             userId,
-                            sessionId: liveSession!.id,
+                            sessionId,
                         },
                     },
                     update: {
@@ -172,7 +202,7 @@ export async function POST(
                     },
                     create: {
                         userId,
-                        sessionId: liveSession!.id,
+                        sessionId,
                         gender,
                         preference: userGenderPrefToFloatLivePref(genderPref),
                         intention: date.intention,
@@ -206,15 +236,14 @@ export async function POST(
                 participantJoiner.id
             );
 
-            const isFriendship = date.intention === "friendship";
             const chatRoom = await tx.floatLiveChatRoom.create({
                 data: {
-                    sessionId: liveSession!.id,
+                    sessionId,
                     participantAId,
                     participantBId,
                     intention: date.intention,
-                    emailRevealedByA: isFriendship,
-                    emailRevealedByB: isFriendship,
+                    emailRevealedByA: false,
+                    emailRevealedByB: false,
                     isActive: true,
                     status: "active",
                 },
@@ -231,7 +260,7 @@ export async function POST(
             );
 
             await tx.floatLiveScheduledDate.update({
-                where: { id: id },
+                where: { id },
                 data: {
                     status: "in_progress",
                     chatRoomId: chatRoom.id,
@@ -250,12 +279,62 @@ export async function POST(
 
         return NextResponse.json(result);
     } catch (error) {
-        if (error instanceof Error && error.message === "NOT_CLAIMED") {
+        if (error instanceof Error) {
+            if (error.message === "NOT_CLAIMED") {
+                return NextResponse.json(
+                    { error: "This date is not ready to join yet" },
+                    { status: 400 }
+                );
+            }
+            if (error.message === "NOT_FOUND") {
+                return NextResponse.json(
+                    { error: "Scheduled date not found" },
+                    { status: 404 }
+                );
+            }
+        }
+
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            (error.code === "P2002" ||
+                error.code === "P2034" ||
+                error.message.includes("could not obtain lock"))
+        ) {
+            const { id } = await params;
+            const existing = await prisma.floatLiveScheduledDate.findUnique({
+                where: { id },
+                include: {
+                    chatRoom: {
+                        include: {
+                            participantA: { select: { userId: true, character: true } },
+                            participantB: { select: { userId: true, character: true } },
+                        },
+                    },
+                },
+            });
+
+            if (existing?.chatRoom) {
+                const authSession = await requireAuth();
+                if (authSession) {
+                    return NextResponse.json(
+                        buildRoomResponse(existing.chatRoom, authSession.userId)
+                    );
+                }
+            }
+
             return NextResponse.json(
-                { error: "This date is not ready to join yet" },
-                { status: 400 }
+                { error: "Another user is joining this date. Please retry." },
+                { status: 409 }
             );
         }
+
+        if (error instanceof Error && error.message.includes("55P03")) {
+            return NextResponse.json(
+                { error: "Another user is joining this date. Please retry." },
+                { status: 409 }
+            );
+        }
+
         console.error("Float Live scheduled-dates join error:", error);
         return NextResponse.json({ error: "Failed to join scheduled date" }, { status: 500 });
     }

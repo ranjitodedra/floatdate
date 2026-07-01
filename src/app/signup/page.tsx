@@ -2,9 +2,18 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { readStoredRef } from "@/lib/referral-client";
+
+import AuthSplitLayout from "@/components/AuthSplitLayout";
+import {
+    glassPanelClass,
+    glassPanelStrongClass,
+    glassInputClass,
+    glassSelectClass,
+    btnPrimaryClass,
+    labelClass,
+} from "@/lib/ui-classes";
 
 interface University {
     id: string;
@@ -209,31 +218,23 @@ export default function SignupPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4 py-10">
-            <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <Image
-                        src="/images/icon.png"
-                        alt="FloatDate"
-                        width={120}
-                        height={40}
-                        className="mx-auto mb-3"
-                    />
-                    <p className="text-zinc-500 mt-2">Create your account</p>
-                </div>
-
-                <form
+        <AuthSplitLayout
+            imageSrc="/assets/auth_images/signup.png"
+            imageAlt="FloatDate signup"
+            subtitle="Create your account"
+        >
+            <form
                     onSubmit={handleSubmit}
-                    className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-5 shadow-sm"
+                    className={`${glassPanelClass} shadow-sm`}
                 >
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+                        <div className="bg-red-950/50 border border-red-800 text-red-300 text-sm rounded-lg px-4 py-3">
                             {error}
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                        <label className={labelClass}>
                             Full Name
                         </label>
                         <input
@@ -241,13 +242,13 @@ export default function SignupPage() {
                             required
                             value={form.name}
                             onChange={(e) => updateField("name", e.target.value)}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                            className={glassInputClass}
                             placeholder="Your name"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                        <label className={labelClass}>
                             University Email
                         </label>
                         <input
@@ -255,32 +256,32 @@ export default function SignupPage() {
                             required
                             value={form.email}
                             onChange={(e) => updateField("email", e.target.value)}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                            className={glassInputClass}
                             placeholder="you@university.ca"
                         />
-                        <p className="text-xs text-zinc-400 mt-1">
+                        <p className="text-xs text-cream-muted mt-1">
                             <Link
                                 href="/universities"
-                                className="text-zinc-700 font-medium underline hover:text-zinc-900"
+                                className="text-cream/90 font-medium underline hover:text-cream"
                             >
                                 See which universities are supported
                             </Link>
                             .
                         </p>
-                        <p className="text-sm font-medium text-zinc-700 mt-2">
+                        <p className="text-sm font-medium text-cream/90 mt-2">
                             Having trouble with your university email? Gmail is
                             also supported with document verification.
                         </p>
                     </div>
 
                     {showGmailVerification && (
-                        <div className="space-y-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                            <p className="text-sm font-medium text-amber-800">
+                        <div className="space-y-4 rounded-xl border border-amber-800 bg-amber-950/30 p-4">
+                            <p className="text-sm font-medium text-amber-300">
                                 ⚠ Gmail detected
                             </p>
 
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                <label className={labelClass}>
                                     Select your university
                                 </label>
                                 <select
@@ -289,7 +290,7 @@ export default function SignupPage() {
                                     onChange={(e) =>
                                         handleUniversityChange(e.target.value)
                                     }
-                                    className="w-full px-4 py-3 bg-white border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition appearance-none"
+                                    className={glassSelectClass}
                                 >
                                     <option value="">Choose a university</option>
                                     {universities.map((uni) => (
@@ -303,17 +304,17 @@ export default function SignupPage() {
                                 </select>
                             </div>
 
-                            <p className="text-xs text-zinc-600">
+                            <p className="text-xs text-cream-muted">
                                 Your document is used only for verification and
                                 is permanently deleted after approval.
                             </p>
 
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                <label className={labelClass}>
                                     Upload Transcript or Student ID (Image
                                     format)
                                 </label>
-                                <p className="text-xs text-zinc-600 mb-2">
+                                <p className="text-xs text-cream-muted mb-2">
                                     Choose an image now. It will be uploaded
                                     securely when you click Create Account
                                     below.
@@ -327,10 +328,10 @@ export default function SignupPage() {
                                         setDocumentFile(file);
                                         setError("");
                                     }}
-                                    className="w-full text-sm text-zinc-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-zinc-900 file:text-white hover:file:bg-zinc-800"
+                                    className="w-full text-sm text-cream-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-cream file:text-mahogany-deep hover:file:bg-[#ffffff]"
                                 />
                                 {documentFile && (
-                                    <p className="text-xs text-zinc-500 mt-1">
+                                    <p className="text-xs text-cream-faint mt-1">
                                         Selected: {documentFile.name} — will
                                         upload when you create your account.
                                     </p>
@@ -340,7 +341,7 @@ export default function SignupPage() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                        <label className={labelClass}>
                             Password
                         </label>
                         <input
@@ -348,14 +349,14 @@ export default function SignupPage() {
                             required
                             value={form.password}
                             onChange={(e) => updateField("password", e.target.value)}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                            className={glassInputClass}
                             placeholder="Min 8 characters"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                            <label className={labelClass}>
                                 Age
                             </label>
                             <input
@@ -365,12 +366,12 @@ export default function SignupPage() {
                                 max={100}
                                 value={form.age}
                                 onChange={(e) => updateField("age", e.target.value)}
-                                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                                className={glassInputClass}
                                 placeholder="18"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                            <label className={labelClass}>
                                 City
                             </label>
                             <input
@@ -378,7 +379,7 @@ export default function SignupPage() {
                                 required
                                 value={form.city}
                                 onChange={(e) => updateField("city", e.target.value)}
-                                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                                className={glassInputClass}
                                 placeholder="Waterloo"
                             />
                         </div>
@@ -386,13 +387,13 @@ export default function SignupPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                            <label className={labelClass}>
                                 I am
                             </label>
                             <select
                                 value={form.gender}
                                 onChange={(e) => updateField("gender", e.target.value)}
-                                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition appearance-none"
+                                className={glassSelectClass}
                             >
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
@@ -400,7 +401,7 @@ export default function SignupPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                            <label className={labelClass}>
                                 Interested in
                             </label>
                             <select
@@ -408,7 +409,7 @@ export default function SignupPage() {
                                 onChange={(e) =>
                                     updateField("genderPref", e.target.value)
                                 }
-                                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition appearance-none"
+                                className={glassSelectClass}
                             >
                                 <option value="any">Everyone</option>
                                 <option value="male">Men</option>
@@ -418,15 +419,15 @@ export default function SignupPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                            Bio <span className="text-zinc-400">(optional)</span>
+                        <label className={labelClass}>
+                            Bio <span className="text-cream-muted">(optional)</span>
                         </label>
                         <textarea
                             value={form.bio}
                             onChange={(e) => updateField("bio", e.target.value)}
                             maxLength={500}
                             rows={3}
-                            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition resize-none"
+                            className={`${glassInputClass} resize-none`}
                             placeholder="Tell your future match something about you..."
                         />
                     </div>
@@ -434,53 +435,52 @@ export default function SignupPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={btnPrimaryClass}
                     >
                         {loading ? "Creating account..." : "Create Account"}
                     </button>
 
-                    <p className="text-center text-sm text-zinc-500">
+                    <p className="text-center text-sm text-cream-muted">
                         Already have an account?{" "}
                         <a
                             href="/login"
-                            className="text-zinc-900 font-medium hover:underline transition"
+                            className="text-cream font-medium hover:underline transition"
                         >
                             Log in
                         </a>
                     </p>
                 </form>
-            </div>
 
             {showRequestModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+                    <div className={`${glassPanelStrongClass} w-full max-w-md shadow-modal p-6 space-y-4`}>
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-zinc-900">
+                            <h2 className="text-lg font-semibold text-cream">
                                 Request for your university
                             </h2>
                             <button
                                 type="button"
                                 onClick={() => setShowRequestModal(false)}
-                                className="text-zinc-400 hover:text-zinc-700 text-xl leading-none"
+                                className="text-cream-faint hover:text-cream/90 text-xl leading-none"
                             >
                                 ×
                             </button>
                         </div>
 
                         {requestSuccess ? (
-                            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                            <p className="text-sm text-green-300 bg-green-950/50 border border-green-800 rounded-lg px-4 py-3">
                                 {requestSuccess}
                             </p>
                         ) : (
                             <form onSubmit={handleRequestSubmit} className="space-y-4">
                                 {requestError && (
-                                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+                                    <div className="bg-red-950/50 border border-red-800 text-red-300 text-sm rounded-lg px-4 py-3">
                                         {requestError}
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                    <label className={labelClass}>
                                         Your email
                                     </label>
                                     <input
@@ -493,12 +493,12 @@ export default function SignupPage() {
                                                 requesterEmail: e.target.value,
                                             }))
                                         }
-                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                        className={glassInputClass}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                    <label className={labelClass}>
                                         Your name
                                     </label>
                                     <input
@@ -511,12 +511,12 @@ export default function SignupPage() {
                                                 requesterName: e.target.value,
                                             }))
                                         }
-                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                        className={glassInputClass}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                    <label className={labelClass}>
                                         Name of your university
                                     </label>
                                     <input
@@ -529,7 +529,7 @@ export default function SignupPage() {
                                                 universityName: e.target.value,
                                             }))
                                         }
-                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                        className={glassInputClass}
                                         placeholder="e.g. University of Example"
                                     />
                                 </div>
@@ -537,7 +537,7 @@ export default function SignupPage() {
                                 <button
                                     type="submit"
                                     disabled={requestSubmitting}
-                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition disabled:opacity-50"
+                                    className={`${btnPrimaryClass} py-3`}
                                 >
                                     {requestSubmitting
                                         ? "Submitting..."
@@ -548,6 +548,6 @@ export default function SignupPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </AuthSplitLayout>
     );
 }

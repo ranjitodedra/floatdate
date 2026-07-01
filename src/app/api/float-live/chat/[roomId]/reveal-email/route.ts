@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logImpersonatedAction } from "@/lib/admin-audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(
     req: NextRequest,
@@ -70,6 +72,9 @@ export async function POST(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const rateLimited = await checkRateLimit("reveal_email", authSession.userId);
+        if (rateLimited) return rateLimited;
+
         const { roomId } = await params;
 
         // Get chat room with participants
@@ -122,6 +127,8 @@ export async function POST(
             });
             partnerEmail = partner?.email || null;
         }
+
+        await logImpersonatedAction(authSession, "email_reveal", { roomId });
 
         return NextResponse.json({
             emailRevealedByA: updated.emailRevealedByA,

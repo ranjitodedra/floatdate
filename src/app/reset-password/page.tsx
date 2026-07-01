@@ -3,7 +3,12 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-
+import {
+    glassPanelClass,
+    glassInputClass,
+    btnPrimaryClass,
+    labelClass,
+} from "@/lib/ui-classes";
 function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -68,7 +73,7 @@ function ResetPasswordContent() {
 
     if (!token) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+            <div className="min-h-screen flex items-center justify-center px-4">
                 <div className="w-full max-w-md text-center">
                     <div className="mb-8">
                         <Image
@@ -79,18 +84,18 @@ function ResetPasswordContent() {
                             className="mx-auto"
                         />
                     </div>
-                    <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-6 shadow-sm">
+                    <div className={`${glassPanelClass} shadow-sm`}>
                         <div className="text-5xl">⚠️</div>
-                        <h2 className="text-xl font-semibold text-zinc-900">
+                        <h2 className="text-xl font-semibold text-cream">
                             Invalid Link
                         </h2>
-                        <p className="text-zinc-500">
+                        <p className="text-cream-muted">
                             No reset token found. Please request a new password
                             reset.
                         </p>
                         <a
                             href="/forgot-password"
-                            className="inline-block w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 text-center"
+                            className={`inline-block text-center ${btnPrimaryClass} py-3`}
                         >
                             Request New Reset
                         </a>
@@ -101,7 +106,7 @@ function ResetPasswordContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+        <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8">
                     <Image
@@ -111,23 +116,21 @@ function ResetPasswordContent() {
                         height={40}
                         className="mx-auto mb-3"
                     />
-                    <p className="text-zinc-500 mt-2">Choose a new password</p>
+                    <p className="text-cream-muted mt-2">Choose a new password</p>
                 </div>
 
-                <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-5 shadow-sm">
-                    {success ? (
+                <div className={`${glassPanelClass} shadow-sm`}>                    {success ? (
                         <div className="text-center space-y-4">
                             <div className="text-5xl">✅</div>
-                            <h2 className="text-xl font-semibold text-zinc-900">
+                            <h2 className="text-xl font-semibold text-cream">
                                 Password Reset!
                             </h2>
-                            <p className="text-zinc-500 text-sm">
-                                Your password has been updated. Redirecting to
+                            <p className="text-cream-muted text-sm">                                Your password has been updated. Redirecting to
                                 login...
                             </p>
                             <a
                                 href="/login"
-                                className="inline-block text-sm text-zinc-900 font-medium hover:underline transition"
+                                className="inline-block text-sm text-cream font-medium hover:underline transition"
                             >
                                 Go to login now
                             </a>
@@ -135,14 +138,14 @@ function ResetPasswordContent() {
                     ) : (
                         <>
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+                                <div className="bg-red-950/50 border border-red-800 text-red-300 text-sm rounded-lg px-4 py-3">
                                     {error}
                                     {(error.includes("expired") ||
                                         error.includes("invalid")) && (
-                                        <div className="mt-3 pt-3 border-t border-red-200">
+                                        <div className="mt-3 pt-3 border-t border-red-800">
                                             <a
                                                 href="/forgot-password"
-                                                className="text-sm text-red-700 hover:text-red-800 font-medium underline"
+                                                className="text-sm text-red-200 hover:text-red-100 font-medium underline"
                                             >
                                                 Request a new reset link
                                             </a>
@@ -156,7 +159,7 @@ function ResetPasswordContent() {
                                 className="space-y-5"
                             >
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                    <label className={labelClass}>
                                         New Password
                                     </label>
                                     <input
@@ -167,13 +170,13 @@ function ResetPasswordContent() {
                                             setPassword(e.target.value);
                                             setError("");
                                         }}
-                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                                        className={glassInputClass}
                                         placeholder="At least 8 characters"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                                    <label className={labelClass}>
                                         Confirm Password
                                     </label>
                                     <input
@@ -184,7 +187,7 @@ function ResetPasswordContent() {
                                             setConfirmPassword(e.target.value);
                                             setError("");
                                         }}
-                                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition"
+                                        className={glassInputClass}
                                         placeholder="Re-enter your password"
                                     />
                                 </div>
@@ -192,9 +195,8 @@ function ResetPasswordContent() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading
+                                    className={btnPrimaryClass}
+                                >                                    {loading
                                         ? "Resetting..."
                                         : "Reset Password"}
                                 </button>
@@ -211,9 +213,8 @@ export default function ResetPasswordPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                    <p className="text-zinc-500">Loading...</p>
-                </div>
+                <div className="min-h-screen flex items-center justify-center">
+                    <p className="text-cream-muted">Loading...</p>                </div>
             }
         >
             <ResetPasswordContent />

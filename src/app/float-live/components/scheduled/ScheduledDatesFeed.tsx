@@ -55,7 +55,7 @@ export default function ScheduledDatesFeed({
 
     if (dates.length === 0) {
         return (
-            <p className="text-zinc-400 text-sm text-center py-6">
+            <p className="text-muted text-sm text-center py-6">
                 No scheduled dates available right now. Create one below!
             </p>
         );

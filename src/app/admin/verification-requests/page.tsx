@@ -12,6 +12,7 @@ interface VerificationRequest {
     verificationNotes: string | null;
     documentUrl: string | null;
     university: { id: string; name: string };
+    referredBy: { name: string; email: string; referralCode: string } | null;
 }
 
 interface UniversityRequest {
@@ -223,6 +224,9 @@ export default function AdminVerificationRequestsPage() {
                                             University
                                         </th>
                                         <th className="text-left py-2 pr-4 text-zinc-400 font-medium">
+                                            Referred by
+                                        </th>
+                                        <th className="text-left py-2 pr-4 text-zinc-400 font-medium">
                                             Submitted
                                         </th>
                                         <th className="text-left py-2 text-zinc-400 font-medium">
@@ -244,6 +248,21 @@ export default function AdminVerificationRequestsPage() {
                                             </td>
                                             <td className="py-3 pr-4 text-zinc-600">
                                                 {req.university.name}
+                                            </td>
+                                            <td className="py-3 pr-4 text-zinc-600">
+                                                {req.referredBy ? (
+                                                    <span>
+                                                        {req.referredBy.name}
+                                                        <br />
+                                                        <span className="text-zinc-500 text-xs">
+                                                            {req.referredBy.email}
+                                                        </span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-400">
+                                                        Direct / no referrer
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="py-3 pr-4 text-zinc-500">
                                                 {new Date(
@@ -419,6 +438,17 @@ export default function AdminVerificationRequestsPage() {
                             <p>
                                 <span className="text-zinc-500">University:</span>{" "}
                                 {selectedRequest.university.name}
+                            </p>
+                            <p>
+                                <span className="text-zinc-500">Referred by:</span>{" "}
+                                {selectedRequest.referredBy ? (
+                                    <>
+                                        {selectedRequest.referredBy.name} (
+                                        {selectedRequest.referredBy.email})
+                                    </>
+                                ) : (
+                                    "Direct / no referrer"
+                                )}
                             </p>
                         </div>
 

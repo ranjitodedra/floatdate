@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive } from "@/lib/float-live-time";
 import { QUEUE_STALE_S } from "@/lib/float-live-presence";
 
 export async function POST(req: NextRequest) {
@@ -9,14 +8,6 @@ export async function POST(req: NextRequest) {
         const authSession = await requireAuth();
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available during the active window" },
-                { status: 403 }
-            );
         }
 
         const body = await req.json();

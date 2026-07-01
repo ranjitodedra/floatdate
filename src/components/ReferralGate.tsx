@@ -46,16 +46,16 @@ export default function ReferralGate({ featureName, children }: ReferralGateProp
     return (
         <div className="relative">
             <div className="blur-sm pointer-events-none select-none">{children}</div>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-mahogany-deep/60 backdrop-blur-sm p-4">
+                <div className="glass-panel-strong shadow-modal rounded-2xl max-w-md w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
                     <div className="text-center">
                         <p className="text-3xl mb-3" aria-hidden="true">
                             🔒
                         </p>
-                        <h2 className="text-xl font-bold text-zinc-900">
+                        <h2 className="text-xl font-bold text-cream">
                             Unlock {featureName}
                         </h2>
-                        <p className="text-sm text-zinc-500 mt-2">
+                        <p className="text-sm text-cream-muted mt-2">
                             Invite one friend to FloatLive. Once they sign up, this
                             unlocks for both of you instantly.
                         </p>
@@ -63,7 +63,7 @@ export default function ReferralGate({ featureName, children }: ReferralGateProp
 
                     <ReferralSharePanel link={status.link} count={status.count} />
 
-                    <p className="text-xs text-zinc-400 text-center">
+                    <p className="text-xs text-cream-faint text-center">
                         Your friend just needs to create a free account. That&apos;s it.
                     </p>
                 </div>

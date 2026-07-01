@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Delius } from "next/font/google";
+import { Geist, Geist_Mono, Delius, Libre_Baskerville } from "next/font/google";
 import { Suspense } from "react";
 import ReferralCapture from "@/components/ReferralCapture";
 import "./globals.css";
@@ -18,6 +18,13 @@ const delius = Delius({
   variable: "--font-delius",
   subsets: ["latin"],
   weight: ["400"],
+});
+
+const libreBaskerville = Libre_Baskerville({
+  variable: "--font-libre-baskerville",
+  subsets: ["latin"],
+  weight: ["700"],
+  style: ["italic"],
 });
 
 export const metadata: Metadata = {
@@ -43,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${delius.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${delius.variable} ${libreBaskerville.variable} antialiased`}
       >
         <Suspense fallback={null}>
           <ReferralCapture />

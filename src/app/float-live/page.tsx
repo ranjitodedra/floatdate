@@ -355,6 +355,7 @@ export default function FloatLivePage() {
                     preference,
                     intention,
                     character: selectedCharacter || "A",
+                    acceptedTerms: true,
                 }),
             });
             setSearching(true);
@@ -365,7 +366,7 @@ export default function FloatLivePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-900">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -375,16 +376,16 @@ export default function FloatLivePage() {
     return (
         <AppShell>
             <ReferralGate featureName="FloatLive">
-            <div className="min-h-screen bg-zinc-900 px-4 py-6">
+            <div className="min-h-screen px-4 py-6">
             <div className="max-w-lg mx-auto space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-bold text-white">Float Live</h1>
+                        <h1 className="text-xl font-bold text-cream">Float Live</h1>
                     </div>
                     <button
                         onClick={() => router.push("/dashboard")}
-                        className="text-sm text-zinc-500 hover:text-zinc-300 transition"
+                        className="text-sm text-muted hover:text-cream/90 transition"
                     >
                         ← Dashboard
                     </button>
@@ -394,13 +395,13 @@ export default function FloatLivePage() {
                 <TimeWarning minutesLeft={minutesLeft} />
 
                 {/* Tab switcher */}
-                <div className="flex rounded-xl bg-zinc-800 p-1 border border-zinc-700">
+                <div className="flex rounded-xl bg-surface-elevated p-1 border border-mahogany">
                     <button
                         onClick={() => setActiveTab("live")}
                         className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${
                             activeTab === "live"
-                                ? "bg-indigo-500 text-white"
-                                : "text-zinc-400 hover:text-zinc-200"
+                                ? "bg-indigo-500 text-cream"
+                                : "text-muted hover:text-cream/90"
                         }`}
                     >
                         Live Date Now
@@ -409,8 +410,8 @@ export default function FloatLivePage() {
                         onClick={() => setActiveTab("scheduled")}
                         className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${
                             activeTab === "scheduled"
-                                ? "bg-indigo-500 text-white"
-                                : "text-zinc-400 hover:text-zinc-200"
+                                ? "bg-indigo-500 text-cream"
+                                : "text-muted hover:text-cream/90"
                         }`}
                     >
                         Schedule a Date
@@ -420,7 +421,7 @@ export default function FloatLivePage() {
                 {activeTab === "live" ? (
                     <>
                 {/* Pixel scene preview */}
-                <div className="relative rounded-2xl overflow-hidden border border-zinc-700" style={{ aspectRatio: "16/9" }}>
+                <div className="relative rounded-2xl overflow-hidden border border-mahogany" style={{ aspectRatio: "16/9" }}>
                     <Image
                         src="/assets/Characters/Background.jpg"
                         alt="Scene background"
@@ -432,13 +433,13 @@ export default function FloatLivePage() {
                         {searching ? (
                             <div className="text-center space-y-3">
                                 <div className="w-10 h-10 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                                <p className="text-white font-medium text-sm">Looking for someone...</p>
+                                <p className="text-cream font-medium text-sm">Looking for someone...</p>
                                 <p className="text-indigo-300 text-xs font-mono">
                                     {Math.floor(waitSecondsLeft / 60)}:{String(waitSecondsLeft % 60).padStart(2, "0")}
                                 </p>
                                 <button
                                     onClick={cancelSearch}
-                                    className="text-xs text-zinc-400 hover:text-zinc-200 transition"
+                                    className="text-xs text-muted hover:text-cream/90 transition"
                                 >
                                     Cancel
                                 </button>
@@ -446,17 +447,17 @@ export default function FloatLivePage() {
                         ) : timedOut ? (
                             <div className="text-center space-y-3 px-4">
                                 <div className="text-3xl">⏰</div>
-                                <p className="text-white font-medium text-sm">No one available right now</p>
-                                <p className="text-zinc-400 text-xs">Try again later!</p>
+                                <p className="text-cream font-medium text-sm">No one available right now</p>
+                                <p className="text-muted text-xs">Try again later!</p>
                                 <button
                                     onClick={() => setTimedOut(false)}
-                                    className="mt-2 px-4 py-2 bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-600 transition"
+                                    className="mt-2 px-4 py-2 bg-indigo-500 text-cream text-sm rounded-lg hover:bg-indigo-600 transition"
                                 >
                                     Try Again
                                 </button>
                             </div>
                         ) : (
-                            <p className="text-white/60 text-sm font-medium">
+                            <p className="text-cream-muted text-sm font-medium">
                                 Set your filters & start chatting!
                             </p>
                         )}
@@ -477,14 +478,14 @@ export default function FloatLivePage() {
                 {/* Online count */}
                 <div className="flex items-center justify-between">
                     <OnlineCounter count={onlineCount} />
-                    <span className="text-xs text-zinc-500">Available 24/7</span>
+                    <span className="text-xs text-muted">Available 24/7</span>
                 </div>
 
                 {/* Start button */}
                 {!searching && !timedOut && (
                     <button
                         onClick={handleStartChat}
-                        className="w-full py-4 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 transition-all text-lg shadow-lg shadow-indigo-500/25"
+                        className="w-full py-4 bg-indigo-500 text-cream font-bold rounded-xl hover:bg-indigo-600 transition-all text-lg shadow-lg shadow-indigo-500/25"
                     >
                         🚀 Start Chat
                     </button>
@@ -508,9 +509,9 @@ export default function FloatLivePage() {
             {/* Character selection modal */}
             {showCharacterSelect && (
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-zinc-800 border border-zinc-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
-                        <h2 className="text-xl font-bold text-white text-center mb-2">Choose Your Character</h2>
-                        <p className="text-zinc-400 text-sm text-center mb-6">Pick an avatar for your chat session</p>
+                    <div className="glass-panel-strong rounded-2xl p-6 max-w-lg w-full shadow-modal">
+                        <h2 className="text-xl font-bold text-cream text-center mb-2">Choose Your Character</h2>
+                        <p className="text-muted text-sm text-center mb-6">Pick an avatar for your chat session</p>
 
                         <div className="grid grid-cols-3 gap-4 mb-6">
                             {CHARACTERS.map((char) => (
@@ -519,7 +520,7 @@ export default function FloatLivePage() {
                                     onClick={() => handleCharacterSelected(char)}
                                     className={`relative rounded-xl overflow-hidden border-2 transition-all duration-200 hover:scale-105 hover:border-indigo-400 ${selectedCharacter === char
                                             ? "border-indigo-500 shadow-lg shadow-indigo-500/25"
-                                            : "border-zinc-600 hover:border-zinc-400"
+                                            : "border-mahogany hover:border-zinc-400"
                                         }`}
                                 >
                                     <div className="aspect-square relative bg-zinc-700/50">
@@ -539,7 +540,7 @@ export default function FloatLivePage() {
                                 setShowCharacterSelect(false);
                                 setPendingAction(null);
                             }}
-                            className="w-full py-2 text-sm text-zinc-400 hover:text-zinc-200 transition"
+                            className="w-full py-2 text-sm text-muted hover:text-cream/90 transition"
                         >
                             Cancel
                         </button>

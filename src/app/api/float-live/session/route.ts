@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive, getTodaySessionTimes } from "@/lib/float-live-time";
+import { getTodaySessionTimes } from "@/lib/float-live-time";
+import { requireReferralUnlock } from "@/lib/guards";
 
 export async function GET() {
     try {
@@ -10,13 +11,8 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available 5-6 PM ET" },
-                { status: 403 }
-            );
-        }
+        const referralDenied = await requireReferralUnlock(session.userId);
+        if (referralDenied) return referralDenied;
 
         const { date, startTime, endTime } = await getTodaySessionTimes();
 

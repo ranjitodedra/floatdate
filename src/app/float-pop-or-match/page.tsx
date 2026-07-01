@@ -3,13 +3,16 @@
 import { useEffect, useState, FormEvent } from "react";
 import AppShell from "@/components/AppShell";
 import ReferralGate from "@/components/ReferralGate";
+import PopWaitingListCarousel from "@/components/PopWaitingListCarousel";
+import {
+    glassInputClass,
+    glassSelectClass,
+    btnPrimaryClass,
+    labelClass,
+} from "@/lib/ui-classes";
 
-const inputClass =
-    "w-full px-4 py-3 bg-zinc-50 border border-zinc-300 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition";
-const labelClass = "block text-sm font-medium text-zinc-700 mb-1.5";
-const sectionClass =
-    "rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8 mb-6";
-const errorClass = "text-sm text-red-600 mt-1";
+const sectionClass = "glass-panel rounded-2xl p-6 sm:p-8 mb-6";
+const errorClass = "text-sm text-red-400 mt-1";
 
 type Role = "" | "spotlight" | "panel" | "either";
 type LookingFor = "" | "casual" | "serious" | "either";
@@ -131,7 +134,7 @@ const AVAILABILITY_OPTIONS = [
 
 function CharCount({ current, max }: { current: number; max: number }) {
     return (
-        <p className="text-xs text-zinc-400 mt-1 text-right">
+        <p className="text-xs text-muted mt-1 text-right">
             {current}/{max}
         </p>
     );
@@ -157,8 +160,8 @@ function CardSelect<T extends string>({
                         key={opt.value}
                         className={`flex flex-col rounded-xl border px-4 py-3 cursor-pointer transition-all ${
                             selected
-                                ? "bg-indigo-50 border-indigo-200"
-                                : "border-zinc-200 hover:bg-zinc-50"
+                                ? "bg-indigo-950/50 border-indigo-700"
+                                : "border-mahogany hover:bg-surface-deep"
                         }`}
                     >
                         <div className="flex items-start gap-3">
@@ -173,13 +176,13 @@ function CardSelect<T extends string>({
                             <div>
                                 <span
                                     className={`text-sm font-semibold ${
-                                        selected ? "text-indigo-700" : "text-zinc-800"
+                                        selected ? "text-indigo-300" : "text-cream/90"
                                     }`}
                                 >
                                     {opt.label}
                                 </span>
                                 {opt.description && (
-                                    <p className="text-sm text-zinc-500 mt-0.5">
+                                    <p className="text-sm text-muted mt-0.5">
                                         {opt.description}
                                     </p>
                                 )}
@@ -215,7 +218,7 @@ function RadioGroup({
                         onChange={() => onChange(opt.value)}
                         className="accent-indigo-600"
                     />
-                    <span className="text-sm text-zinc-700">{opt.label}</span>
+                    <span className="text-sm text-cream/90">{opt.label}</span>
                 </label>
             ))}
         </div>
@@ -249,7 +252,7 @@ function CheckboxGroup({
                         onChange={() => toggle(opt.value)}
                         className="mt-0.5 accent-indigo-600"
                     />
-                    <span className="text-sm text-zinc-700">{opt.label}</span>
+                    <span className="text-sm text-cream/90">{opt.label}</span>
                 </label>
             ))}
         </div>
@@ -273,11 +276,11 @@ function AgeRangeSlider({
 
     return (
         <div>
-            <p className="text-sm text-zinc-600 mb-4">
-                Age range: <span className="font-semibold text-zinc-900">{min} – {max}</span>
+            <p className="text-sm text-muted mb-4">
+                Age range: <span className="font-semibold text-cream">{min} – {max}</span>
             </p>
             <div className="relative h-8 mx-1">
-                <div className="absolute top-1/2 -translate-y-1/2 w-full h-1.5 bg-zinc-200 rounded-full" />
+                <div className="absolute top-1/2 -translate-y-1/2 w-full h-1.5 bg-surface-elevated rounded-full" />
                 <div
                     className="absolute top-1/2 -translate-y-1/2 h-1.5 bg-indigo-400 rounded-full"
                     style={{ left: `${leftPct}%`, right: `${100 - rightPct}%` }}
@@ -307,7 +310,7 @@ function AgeRangeSlider({
                     style={{ zIndex: 4 }}
                 />
             </div>
-            <div className="flex justify-between text-xs text-zinc-400 mt-1">
+            <div className="flex justify-between text-xs text-muted mt-1">
                 <span>18</span>
                 <span>40</span>
             </div>
@@ -326,14 +329,29 @@ export default function FloatPopOrMatchPage() {
     const [submitError, setSubmitError] = useState("");
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [applicationOpen, setApplicationOpen] = useState(true);
     const [prefillLoading, setPrefillLoading] = useState(true);
 
     useEffect(() => {
         async function prefill() {
             try {
-                const res = await fetch("/api/auth/me");
-                if (res.ok) {
-                    const data = await res.json();
+                const [meRes, appRes] = await Promise.all([
+                    fetch("/api/auth/me"),
+                    fetch("/api/float-pop-or-match"),
+                ]);
+
+                if (appRes.ok) {
+                    const appData = await appRes.json();
+                    if (appData.submitted) {
+                        setSubmitted(true);
+                    }
+                    if (appData.applicationOpen === false) {
+                        setApplicationOpen(false);
+                    }
+                }
+
+                if (meRes.ok) {
+                    const data = await meRes.json();
                     setForm((prev) => ({
                         ...prev,
                         fullName: data.user?.name || prev.fullName,
@@ -470,6 +488,10 @@ export default function FloatPopOrMatchPage() {
 
             const data = await res.json();
             if (!res.ok) {
+                if (res.status === 409 && data.submitted) {
+                    setSubmitted(true);
+                    return;
+                }
                 setSubmitError(data.error || "Something went wrong. Please try again.");
                 return;
             }
@@ -482,20 +504,41 @@ export default function FloatPopOrMatchPage() {
         }
     }
 
+    if (!applicationOpen) {
+        return (
+            <AppShell>
+                <ReferralGate featureName="Float Pop or Match">
+                <div className="min-h-screen px-4 py-10 sm:py-16">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center">
+                            <h1 className="text-2xl font-semibold text-cream mb-3">
+                                Applications are closed
+                            </h1>
+                            <p className="text-muted">
+                                The application window for this event has ended.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                </ReferralGate>
+            </AppShell>
+        );
+    }
+
     if (submitted) {
         return (
             <AppShell>
                 <ReferralGate featureName="Float Pop or Match">
-                <div className="min-h-screen bg-zinc-50 px-4 py-10 sm:py-16">
+                <div className="min-h-screen px-4 py-10 sm:py-16">
                     <div className="max-w-2xl mx-auto">
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-8 sm:p-12 text-center">
-                            <div className="w-14 h-14 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center mx-auto mb-6">
+                        <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center">
+                            <div className="w-14 h-14 rounded-full bg-indigo-950/50 border border-indigo-700 flex items-center justify-center mx-auto mb-6">
                                 <span className="text-2xl">✓</span>
                             </div>
-                            <h1 className="text-2xl font-semibold text-zinc-900 mb-3">
+                            <h1 className="text-2xl font-semibold text-cream mb-3">
                                 You&apos;re in the pool!
                             </h1>
-                            <p className="text-zinc-600">
+                            <p className="text-muted">
                                 We&apos;ll be in touch before the event.
                             </p>
                         </div>
@@ -509,30 +552,30 @@ export default function FloatPopOrMatchPage() {
     return (
         <AppShell>
             <ReferralGate featureName="Float Pop or Match">
-            <div className="min-h-screen bg-zinc-50 px-4 py-8 sm:py-12">
+            <div className="min-h-screen px-4 py-8 sm:py-12">
                 <div className="max-w-2xl mx-auto">
                     <div className="mb-8">
-                        <h1 className="text-2xl sm:text-3xl font-semibold text-zinc-900 mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-semibold text-cream mb-2">
                             Float Pop or Match Application
                         </h1>
-                        <p className="text-zinc-600 text-sm sm:text-base">
+                        <p className="text-muted text-sm sm:text-base">
                             Apply to join our live campus dating show. Fill out every section
                             below — we&apos;ll review applications and reach out before casting.
                         </p>
                     </div>
 
                     {prefillLoading ? (
-                        <div className="text-center py-12 text-zinc-400 text-sm">
+                        <div className="text-center py-12 text-muted text-sm">
                             Loading…
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} noValidate>
                             {/* Section 1 — Role Selection */}
                             <section className={sectionClass} id="field-role">
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-1">
+                                <h2 className="text-lg font-semibold text-cream mb-1">
                                     Role Selection
                                 </h2>
-                                <p className="text-sm text-zinc-500 mb-5">
+                                <p className="text-sm text-muted mb-5">
                                     Which role are you applying for?{" "}
                                     <span className="text-red-500">*</span>
                                 </p>
@@ -547,7 +590,7 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 2 — Basic Profile */}
                             <section className={sectionClass}>
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-5">
+                                <h2 className="text-lg font-semibold text-cream mb-5">
                                     Basic Profile
                                 </h2>
                                 <div className="flex flex-col gap-5">
@@ -559,7 +602,7 @@ export default function FloatPopOrMatchPage() {
                                             type="text"
                                             value={form.fullName}
                                             onChange={(e) => setField("fullName", e.target.value)}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="Your full name"
                                         />
                                         <FieldError message={errors.fullName} />
@@ -575,7 +618,7 @@ export default function FloatPopOrMatchPage() {
                                             max={99}
                                             value={form.age}
                                             onChange={(e) => setField("age", e.target.value)}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="18"
                                         />
                                         {form.age && Number(form.age) < 18 && (
@@ -589,7 +632,7 @@ export default function FloatPopOrMatchPage() {
                                     <div>
                                         <label className={labelClass}>
                                             Pronouns{" "}
-                                            <span className="text-zinc-400 font-normal">
+                                            <span className="text-muted font-normal">
                                                 (optional)
                                             </span>
                                         </label>
@@ -597,7 +640,7 @@ export default function FloatPopOrMatchPage() {
                                             type="text"
                                             value={form.pronouns}
                                             onChange={(e) => setField("pronouns", e.target.value)}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="e.g. he/him, she/her, they/them"
                                         />
                                     </div>
@@ -611,7 +654,7 @@ export default function FloatPopOrMatchPage() {
                                             onChange={(e) =>
                                                 setField("yearOfStudy", e.target.value)
                                             }
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         >
                                             <option value="">Select year</option>
                                             <option value="1st year">1st year</option>
@@ -632,7 +675,7 @@ export default function FloatPopOrMatchPage() {
                                             type="text"
                                             value={form.program}
                                             onChange={(e) => setField("program", e.target.value)}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="e.g. Psychology, Computer Science"
                                         />
                                         <FieldError message={errors.program} />
@@ -645,10 +688,13 @@ export default function FloatPopOrMatchPage() {
                                         <input
                                             type="email"
                                             value={form.email}
-                                            onChange={(e) => setField("email", e.target.value)}
-                                            className={inputClass}
+                                            readOnly
+                                            className={`${glassInputClass} opacity-80 cursor-not-allowed`}
                                             placeholder="you@university.edu"
                                         />
+                                        <p className="text-xs text-cream-faint mt-1">
+                                            Uses your account email
+                                        </p>
                                         <FieldError message={errors.email} />
                                     </div>
 
@@ -663,10 +709,10 @@ export default function FloatPopOrMatchPage() {
                                             onChange={(e) =>
                                                 setField("socialHandle", e.target.value)
                                             }
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="@yourhandle"
                                         />
-                                        <p className="text-xs text-zinc-400 mt-1">
+                                        <p className="text-xs text-muted mt-1">
                                             This is for casting purposes and may appear in
                                             promotional content.
                                         </p>
@@ -677,7 +723,7 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 3 — Dating Preferences */}
                             <section className={sectionClass}>
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-5">
+                                <h2 className="text-lg font-semibold text-cream mb-5">
                                     Dating Preferences
                                 </h2>
                                 <div className="flex flex-col gap-6">
@@ -730,10 +776,10 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 4 — Personality and Content Questions */}
                             <section className={sectionClass}>
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-1">
+                                <h2 className="text-lg font-semibold text-cream mb-1">
                                     Personality and Content Questions
                                 </h2>
-                                <p className="text-sm text-zinc-500 mb-5">
+                                <p className="text-sm text-muted mb-5">
                                     These answers may be used in promotional content.
                                 </p>
                                 <div className="flex flex-col gap-5">
@@ -749,10 +795,10 @@ export default function FloatPopOrMatchPage() {
                                                 setField("threeWords", e.target.value)
                                             }
                                             maxLength={30}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="Bold, curious, loyal"
                                         />
-                                        <p className="text-xs text-zinc-400 mt-1">
+                                        <p className="text-xs text-muted mt-1">
                                             Hint: separate with commas
                                         </p>
                                         <CharCount current={form.threeWords.length} max={30} />
@@ -772,7 +818,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={300}
                                             rows={3}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount current={form.unexpected.length} max={300} />
                                         <FieldError message={errors.unexpected} />
@@ -790,7 +836,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={300}
                                             rows={3}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount
                                             current={form.bringToRelationship.length}
@@ -812,7 +858,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={400}
                                             rows={4}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount current={form.dealbreaker.length} max={400} />
                                         <FieldError message={errors.dealbreaker} />
@@ -831,7 +877,7 @@ export default function FloatPopOrMatchPage() {
                                                 setField("questionToAsk", e.target.value)
                                             }
                                             maxLength={200}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount
                                             current={form.questionToAsk.length}
@@ -852,7 +898,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={300}
                                             rows={3}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount
                                             current={form.controversialOpinion.length}
@@ -875,7 +921,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={400}
                                             rows={4}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount
                                             current={form.balloonPoppedFeeling.length}
@@ -888,10 +934,10 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 5 — Conflict of Interest */}
                             <section className={sectionClass}>
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-1">
+                                <h2 className="text-lg font-semibold text-cream mb-1">
                                     Conflict of Interest
                                 </h2>
-                                <p className="text-sm text-zinc-500 mb-5">
+                                <p className="text-sm text-muted mb-5">
                                     We ask these to make sure everyone has a comfortable experience.
                                 </p>
                                 <div className="flex flex-col gap-6">
@@ -961,7 +1007,7 @@ export default function FloatPopOrMatchPage() {
                                         <label className={labelClass}>
                                             Is there anyone on campus you would be uncomfortable
                                             being matched with or evaluated by?{" "}
-                                            <span className="text-zinc-400 font-normal">
+                                            <span className="text-muted font-normal">
                                                 (optional)
                                             </span>
                                         </label>
@@ -972,7 +1018,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={200}
                                             rows={2}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder="You don't need to name them, just describe the situation"
                                         />
                                         <CharCount
@@ -985,12 +1031,12 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 6 — Availability and Logistics */}
                             <section className={sectionClass}>
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-5">
+                                <h2 className="text-lg font-semibold text-cream mb-5">
                                     Availability and Logistics
                                 </h2>
                                 <div className="flex flex-col gap-6">
                                     <div id="field-availability">
-                                        <p className="text-sm text-zinc-500 mb-3">
+                                        <p className="text-sm text-muted mb-3">
                                             The event is tentatively planned for late August or
                                             September — exact date will be confirmed based on
                                             everyone&apos;s availability (it&apos;s a one day
@@ -1012,7 +1058,7 @@ export default function FloatPopOrMatchPage() {
                                         <label className={labelClass}>
                                             Are there any specific dates in that window you
                                             absolutely cannot attend?{" "}
-                                            <span className="text-zinc-400 font-normal">
+                                            <span className="text-muted font-normal">
                                                 (optional)
                                             </span>
                                         </label>
@@ -1022,7 +1068,7 @@ export default function FloatPopOrMatchPage() {
                                             onChange={(e) =>
                                                 setField("cannotAttendDates", e.target.value)
                                             }
-                                            className={inputClass}
+                                            className={glassInputClass}
                                             placeholder={'e.g. "Sep 5–7, I\'m away"'}
                                         />
                                     </div>
@@ -1051,7 +1097,7 @@ export default function FloatPopOrMatchPage() {
                                         <label className={labelClass}>
                                             Is there anything else the organizer should know before
                                             casting you?{" "}
-                                            <span className="text-zinc-400 font-normal">
+                                            <span className="text-muted font-normal">
                                                 (optional)
                                             </span>
                                         </label>
@@ -1062,7 +1108,7 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             maxLength={400}
                                             rows={3}
-                                            className={inputClass}
+                                            className={glassInputClass}
                                         />
                                         <CharCount current={form.anythingElse.length} max={400} />
                                     </div>
@@ -1071,7 +1117,7 @@ export default function FloatPopOrMatchPage() {
 
                             {/* Section 7 — Consent and Conduct */}
                             <section className={sectionClass} id="field-consent">
-                                <h2 className="text-lg font-semibold text-zinc-900 mb-5">
+                                <h2 className="text-lg font-semibold text-cream mb-5">
                                     Consent and Conduct
                                 </h2>
                                 <div className="flex flex-col gap-4">
@@ -1107,7 +1153,7 @@ export default function FloatPopOrMatchPage() {
                                                 onChange={(e) => setField(key, e.target.checked)}
                                                 className="mt-0.5 accent-indigo-600 shrink-0"
                                             />
-                                            <span className="text-sm text-zinc-700">
+                                            <span className="text-sm text-cream/90">
                                                 {label}{" "}
                                                 <span className="text-red-500">*</span>
                                             </span>
@@ -1116,8 +1162,8 @@ export default function FloatPopOrMatchPage() {
                                     <FieldError message={errors.consent} />
                                 </div>
 
-                                <div className="mt-8 pt-6 border-t border-zinc-100">
-                                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-3">
+                                <div className="mt-8 pt-6 border-t border-mahogany">
+                                    <p className="text-xs font-medium text-muted uppercase tracking-wide mb-3">
                                         Bonus: join the early access list
                                     </p>
                                     <label className="flex items-start gap-3 cursor-pointer">
@@ -1129,24 +1175,25 @@ export default function FloatPopOrMatchPage() {
                                             }
                                             className="mt-0.5 accent-zinc-400 shrink-0"
                                         />
-                                        <span className="text-sm text-zinc-500">
+                                        <span className="text-sm text-muted">
                                             Would you like to be notified when the digital version
                                             of this experience launches as an online platform?
                                         </span>
                                     </label>
+                                    <PopWaitingListCarousel />
                                 </div>
                             </section>
 
                             {submitError && (
-                                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-6">
-                                    <p className="text-sm text-red-700">{submitError}</p>
+                                <div className="rounded-xl border border-red-800 bg-red-950/50 px-4 py-3 mb-6">
+                                    <p className="text-sm text-red-400">{submitError}</p>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-12"
+                                className={`${btnPrimaryClass} mb-12`}
                             >
                                 {loading ? "Submitting…" : "Submit Application"}
                             </button>

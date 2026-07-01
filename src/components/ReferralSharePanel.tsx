@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { glassInputClass } from "@/lib/ui-classes";
 
 export interface ReferralStatusData {
     code: string;
@@ -33,6 +34,9 @@ export function ReferralSharePanel({ link, count, compact = false }: ReferralSha
         setTimeout(() => setInstagramFeedback(""), 3000);
     }
 
+    const secondaryBtnClass =
+        "flex items-center justify-center px-4 py-2.5 rounded-xl glass-input text-sm font-medium text-cream/90 hover:bg-gold-soft/10 transition";
+
     return (
         <div className={compact ? "space-y-3" : "space-y-4"}>
             <div className="flex gap-2">
@@ -40,12 +44,12 @@ export function ReferralSharePanel({ link, count, compact = false }: ReferralSha
                     type="text"
                     readOnly
                     value={link}
-                    className="flex-1 min-w-0 px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-700 truncate"
+                    className={`${glassInputClass} flex-1 min-w-0 px-3 py-2.5 text-sm truncate`}
                 />
                 <button
                     type="button"
                     onClick={copyLink}
-                    className="shrink-0 px-4 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 transition"
+                    className="shrink-0 px-4 py-2.5 bg-cream text-mahogany-deep text-sm font-medium rounded-xl hover:bg-[#ffffff] transition"
                 >
                     {copyFeedback || "Copy link"}
                 </button>
@@ -56,30 +60,30 @@ export function ReferralSharePanel({ link, count, compact = false }: ReferralSha
                     href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
+                    className={secondaryBtnClass}
                 >
                     WhatsApp
                 </a>
                 <a
                     href={`sms:?body=${encodeURIComponent(shareText)}`}
-                    className="flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
+                    className={secondaryBtnClass}
                 >
                     SMS
                 </a>
                 <button
                     type="button"
                     onClick={copyForInstagram}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
+                    className={secondaryBtnClass}
                 >
                     Copy for Instagram
                 </button>
             </div>
 
             {instagramFeedback && (
-                <p className="text-xs text-zinc-500">{instagramFeedback}</p>
+                <p className="text-xs text-cream-muted">{instagramFeedback}</p>
             )}
 
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-cream-muted">
                 {count} friend{count === 1 ? "" : "s"} joined so far
             </p>
         </div>

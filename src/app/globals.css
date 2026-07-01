@@ -1,29 +1,89 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  --bg-mahogany: #000000;
+  --mahogany-deep: #000000;
+  --cream: #f2f2f0;
+  --cream-muted: #a3a3a3;
+  --cream-faint: #737373;
+  --gold: #d4d4d8;
+  --gold-soft: rgba(255, 255, 255, 0.08);
+  --glass-panel: #262626;
+  --glass-panel-strong: #2e2e2e;
+  --glass-input: #1a1a1a;
+  --glass-input-focus: #202020;
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 16px 44px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.7);
+  --background: var(--bg-mahogany);
+  --foreground: var(--cream);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-cream: var(--cream);
+  --color-cream-muted: var(--cream-muted);
+  --color-cream-faint: var(--cream-faint);
+  --color-gold: var(--gold);
+  --color-mahogany-deep: var(--mahogany-deep);
+  --color-mahogany: transparent;
+  --color-surface-deep: #1a1a1a;
+  --color-surface-elevated: #333333;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-mahogany);
+  color: var(--cream);
   font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+.glass-panel {
+  background: var(--glass-panel);
+  box-shadow: var(--shadow-card);
+}
+
+.glass-panel-strong {
+  background: var(--glass-panel-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.glass-panel:hover,
+.glass-panel-strong:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.glass-input {
+  background: var(--glass-input);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.glass-input:focus {
+  background: var(--glass-input-focus);
+  outline: 2px solid var(--gold-soft);
+  outline-offset: 0;
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-modal {
+  box-shadow: var(--shadow-modal);
+}
+
+.text-muted {
+  color: var(--cream-muted);
+}
+
 /* Selection */
 ::selection {
-  background: rgba(63, 63, 70, 0.2);
-  color: #18181b;
+  background: var(--gold-soft);
+  color: var(--cream);
 }
 
 /* Scrollbar */
@@ -36,17 +96,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid rgba(113, 113, 122, 0.5);
+  outline: 2px solid var(--gold-soft);
   outline-offset: 2px;
 }
 
@@ -75,5 +135,75 @@ body {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.how-it-works-section .scroll-reveal-heading,
+.how-it-works-section .scroll-reveal-card {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.how-it-works-section.is-visible .scroll-reveal-heading {
+  animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.how-it-works-section.is-visible .scroll-reveal-card-1 {
+  animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s forwards;
+}
+
+.how-it-works-section.is-visible .scroll-reveal-card-2 {
+  animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards;
+}
+
+.how-it-works-section.is-visible .scroll-reveal-card-3 {
+  animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.44s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .how-it-works-section .scroll-reveal-heading,
+  .how-it-works-section .scroll-reveal-card {
+    opacity: 1;
+    transform: none;
+  }
+
+  .how-it-works-section.is-visible .scroll-reveal-heading,
+  .how-it-works-section.is-visible .scroll-reveal-card {
+    animation: none;
+  }
+}
+
+@keyframes logo-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.logo-marquee-track {
+  animation: logo-marquee var(--marquee-duration, 30s) linear infinite;
+  will-change: transform;
+}
+
+.university-logo-marquee:hover .logo-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee-track {
+    animation: none;
   }
 }

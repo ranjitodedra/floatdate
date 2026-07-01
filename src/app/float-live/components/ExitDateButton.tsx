@@ -38,7 +38,7 @@ export default function ExitDateButton({ chatRoomId, sessionId, onExit }: ExitDa
     return (
         <button
             onClick={handleExit}
-            className="text-xs text-zinc-400 hover:text-zinc-600 transition font-medium"
+            className="text-xs text-muted hover:text-muted transition font-medium"
         >
             Exit Date →
         </button>

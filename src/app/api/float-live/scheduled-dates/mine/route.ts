@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { expirePastScheduledDates } from "@/lib/float-live-scheduled-expiry";
+import { requireReferralUnlock } from "@/lib/guards";
 import {
     buildCreatorMatchBanner,
     buildJoinerMatchBanner,
@@ -15,6 +16,9 @@ export async function GET() {
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
 
         await expirePastScheduledDates();
 

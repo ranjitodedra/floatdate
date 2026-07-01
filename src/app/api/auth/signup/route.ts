@@ -16,6 +16,7 @@ import {
 } from "@/lib/supabase-admin";
 import { VERIFICATION_METHOD } from "@/lib/verification";
 import { normalizeReferralCode } from "@/lib/referral";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const signupSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -145,6 +146,9 @@ async function handleJsonSignup(body: unknown) {
     const fields = result.data;
     const normalizedEmail = fields.email.toLowerCase();
 
+    const rateLimited = await checkRateLimit("signup", normalizedEmail);
+    if (rateLimited) return rateLimited;
+
     if (isGmailAddress(normalizedEmail) && normalizedEmail !== ADMIN_GMAIL) {
         return NextResponse.json(
             {
@@ -240,6 +244,9 @@ async function handleMultipartSignup(formData: FormData) {
 
     const fields = parsed.data;
     const normalizedEmail = fields.email.toLowerCase();
+
+    const rateLimited = await checkRateLimit("signup", normalizedEmail);
+    if (rateLimited) return rateLimited;
 
     if (!isGmailAddress(normalizedEmail) && normalizedEmail !== ADMIN_GMAIL) {
         return NextResponse.json(

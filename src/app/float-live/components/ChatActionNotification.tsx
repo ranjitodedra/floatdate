@@ -15,8 +15,8 @@ export default function ChatActionNotification({
 }: ChatActionNotificationProps) {
     return (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in max-w-sm w-[calc(100%-2rem)]">
-            <div className="bg-zinc-800/95 border border-zinc-600 rounded-xl px-4 py-3 shadow-lg backdrop-blur-sm flex items-start gap-3">
-                <p className="text-zinc-100 text-sm font-medium flex-1 leading-snug">
+            <div className="bg-surface-elevated/95 border border-mahogany rounded-xl px-4 py-3 shadow-lg backdrop-blur-sm flex items-start gap-3">
+                <p className="text-cream/90 text-sm font-medium flex-1 leading-snug">
                     {message}
                 </p>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -32,7 +32,7 @@ export default function ChatActionNotification({
                     <button
                         type="button"
                         onClick={onDismiss}
-                        className="text-zinc-400 hover:text-zinc-200 text-xs"
+                        className="text-muted hover:text-cream/90 text-xs"
                         aria-label="Dismiss"
                     >
                         ✕

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive } from "@/lib/float-live-time";
+import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
     canonicalParticipantPair,
     QUEUE_STALE_S,
@@ -81,15 +82,14 @@ async function tryClaimMatch(
                 return involvesMe ? stillFree.id : null;
             }
 
-            const isFriendship = myParticipant.intention === "friendship";
             const chatRoom = await tx.floatLiveChatRoom.create({
                 data: {
                     sessionId,
                     participantAId,
                     participantBId,
                     intention: myParticipant.intention,
-                    emailRevealedByA: isFriendship,
-                    emailRevealedByB: isFriendship,
+                    emailRevealedByA: false,
+                    emailRevealedByB: false,
                     isActive: true,
                     status: "active",
                 },
@@ -137,13 +137,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available 5-6 PM ET" },
-                { status: 403 }
-            );
-        }
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
+
+        const verificationDenied = await requireApprovedUser(authSession.userId);
+        if (verificationDenied) return verificationDenied;
+
+        const rateLimited = await checkRateLimit("find_match", authSession.userId);
+        if (rateLimited) return rateLimited;
 
         const body = await req.json();
         const { sessionId } = body;
@@ -240,7 +241,6 @@ export async function POST(req: NextRequest) {
                     myParticipant.id,
                     match.id
                 );
-                const isFriendship = myParticipant.intention === "friendship";
 
                 const roomId = await prisma.$transaction(async (tx) => {
                     const locked = await tx.$queryRaw<{ id: string }[]>`
@@ -263,8 +263,8 @@ export async function POST(req: NextRequest) {
                             endedAt: null,
                             endedReason: null,
                             intention: myParticipant.intention,
-                            emailRevealedByA: isFriendship,
-                            emailRevealedByB: isFriendship,
+                            emailRevealedByA: false,
+                            emailRevealedByB: false,
                             participantAId,
                             participantBId,
                         },

@@ -56,7 +56,7 @@ export default function AudioStatusBadge({ callState, isMuted }: AudioStatusBadg
         return (
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors duration-300 ${
                 isMuted 
-                    ? "bg-zinc-700 border border-zinc-600 text-zinc-300"
+                    ? "bg-zinc-700 border border-mahogany text-cream/90"
                     : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300"
             }`}>
                 {isMuted ? (

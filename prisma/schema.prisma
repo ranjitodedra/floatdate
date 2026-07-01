@@ -406,7 +406,7 @@ model FloatLiveScheduledDate {
 
 model CampusShowApplication {
   id                      String   @id @default(uuid())
-  userId                  String?
+  userId                  String?  @unique
   createdAt               DateTime @default(now())
 
   role                    String   // spotlight | panel | either
@@ -452,4 +452,17 @@ model CampusShowApplication {
   status                  String?    // null = pending | approved | rejected | waitlisted
   adminNotes              String?
   statusUpdatedAt         DateTime?
+}
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  actorUserId   String
+  targetUserId  String?
+  action        String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action, createdAt])
 }

@@ -45,7 +45,7 @@ export default function TypingBar({ onSend, disabled = false, voiceTrigger }: Ty
     }
 
     return (
-        <div className="flex items-center gap-2 bg-zinc-800 border-t border-zinc-700 px-3 py-3">
+        <div className="flex items-center gap-2 bg-surface-elevated border-t border-mahogany px-3 py-3">
             <textarea
                 ref={inputRef}
                 value={text}
@@ -54,18 +54,18 @@ export default function TypingBar({ onSend, disabled = false, voiceTrigger }: Ty
                 placeholder={disabled ? "Chat ended" : "Type a message..."}
                 disabled={disabled}
                 rows={1}
-                className="flex-1 resize-none border border-zinc-600 bg-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-zinc-800 disabled:text-zinc-500"
+                className="flex-1 resize-none border border-mahogany bg-zinc-700 rounded-xl px-4 py-2.5 text-sm text-cream placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-surface-elevated disabled:text-muted"
                 style={{ maxHeight: "100px" }}
             />
             <div className="flex items-center gap-2 flex-shrink-0">
                 {voiceTrigger}
-                <span className="text-xs text-zinc-500 select-none tabular-nums">
+                <span className="text-xs text-muted select-none tabular-nums">
                     {text.length}/500
                 </span>
                 <button
                     onClick={handleSend}
                     disabled={disabled || text.trim().length === 0}
-                    className="px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-semibold text-sm hover:bg-indigo-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="px-4 py-2.5 bg-indigo-500 text-cream rounded-xl font-semibold text-sm hover:bg-indigo-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     Send ➤
                 </button>

@@ -538,7 +538,7 @@ export default function ChatRoomPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-900">
+            <div className="min-h-screen flex items-center justify-center bg-surface-deep">
                 <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -555,7 +555,7 @@ export default function ChatRoomPage() {
     }
 
     return (
-        <div className="h-screen bg-zinc-900 flex flex-col overflow-hidden">
+        <div className="h-screen bg-surface-deep flex flex-col overflow-hidden">
             <PartnerPresence
                 partnerStatus={chatEnded ? null : partnerStatus}
                 graceSecondsLeft={graceSecondsLeft}
@@ -573,17 +573,17 @@ export default function ChatRoomPage() {
                 />
             )}
 
-            {emailRevealNotice && !chatEnded && intention === "blind_date" && (
+            {emailRevealNotice && !chatEnded && (
                 <ChatActionNotification
                     message={`${partnerLabel} has revealed their email address. Click 'Reveal Email' to view it as well.`}
                     onDismiss={() => setEmailRevealNotice(false)}
                 />
             )}
 
-            <div className="flex items-center justify-between px-4 py-3 bg-zinc-800 border-b border-zinc-700 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 bg-surface-elevated border-b border-mahogany flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <span className="text-white font-semibold text-sm">Float Live</span>
-                    {intention === "friendship" && partnerEmail && (
+                    <span className="text-cream font-semibold text-sm">Float Live</span>
+                    {partnerEmail && emailRevealedByMe && emailRevealedByPartner && (
                         <span className="text-xs text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full">
                             📧 {partnerEmail}
                         </span>
@@ -591,17 +591,14 @@ export default function ChatRoomPage() {
                     <AudioStatusBadge callState={callState} isMuted={isMuted} />
                 </div>
                 <div className="flex items-center gap-3">
-                    {intention === "blind_date" && (
-                        <RevealEmailButton
-                            chatRoomId={roomId}
-                            intention={intention}
-                            partnerEmail={partnerEmail}
-                            partnerHasRevealed={emailRevealedByPartner && !emailRevealedByMe}
-                        />
-                    )}
+                    <RevealEmailButton
+                        chatRoomId={roomId}
+                        partnerEmail={partnerEmail}
+                        partnerHasRevealed={emailRevealedByPartner && !emailRevealedByMe}
+                    />
                     <button
                         onClick={() => setShowTranscript(true)}
-                        className="text-xs text-zinc-400 hover:text-zinc-200 transition font-medium"
+                        className="text-xs text-muted hover:text-cream/90 transition font-medium"
                     >
                         View Transcript
                     </button>
@@ -632,14 +629,14 @@ export default function ChatRoomPage() {
                     <div
                         className={`rounded-xl p-4 text-center ${
                             endedReason === "session_end"
-                                ? "bg-zinc-800 border border-zinc-700"
+                                ? "bg-surface-elevated border border-mahogany"
                                 : "bg-red-900/30 border border-red-500/40 animate-pulse"
                         }`}
                     >
                         <p
                             className={`text-sm font-medium ${
                                 endedReason === "session_end"
-                                    ? "text-zinc-400"
+                                    ? "text-muted"
                                     : "text-red-300"
                             }`}
                         >
@@ -655,7 +652,7 @@ export default function ChatRoomPage() {
                     callState === "connected" ||
                     callState === "disconnected" ||
                     callState === "reconnecting") && (
-                    <div className="absolute left-3 right-3 bottom-full mb-2 z-10 flex items-center justify-center gap-3 bg-zinc-800/95 border border-zinc-600 rounded-xl shadow-lg px-4 py-2 backdrop-blur-sm">
+                    <div className="absolute left-3 right-3 bottom-full mb-2 z-10 flex items-center justify-center gap-3 bg-surface-elevated/95 border border-mahogany rounded-xl shadow-lg px-4 py-2 backdrop-blur-sm">
                         <VoiceCallControlBar
                             callState={callState}
                             isMuted={isMuted}

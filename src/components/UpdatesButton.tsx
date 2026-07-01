@@ -81,7 +81,7 @@ export default function UpdatesButton() {
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-violet-500 to-pink-500 px-5 py-3">
-            <p className="text-white text-sm font-semibold">
+            <p className="text-cream text-sm font-semibold">
               What&apos;s New
             </p>
           </div>
@@ -93,7 +93,7 @@ export default function UpdatesButton() {
                 <p className="text-sm font-semibold text-zinc-900">
                   Float Live is here!
                 </p>
-                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
                   Jump into real-time anonymous chats with other students
                   anytime. Choose Blind Date or Friendship mode and start
                   connecting instantly.
@@ -109,7 +109,7 @@ export default function UpdatesButton() {
               >
                 Read more
               </Link>
-              <span className="text-zinc-300">·</span>
+              <span className="text-cream/90">·</span>
               <Link
                 href="/float-live"
                 onClick={() => setOpen(false)}
@@ -129,7 +129,7 @@ export default function UpdatesButton() {
       <button
         ref={buttonRef}
         onClick={handleClick}
-        className="relative px-5 py-2 text-sm text-white hover:text-white/80 transition"
+        className="relative px-5 py-2 text-sm text-cream hover:text-white/80 transition"
         style={{ textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}
       >
         Updates

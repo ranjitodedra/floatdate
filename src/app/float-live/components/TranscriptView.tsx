@@ -15,13 +15,12 @@ interface TranscriptViewProps {
 
 export default function TranscriptView({ messages, userId, onClose }: TranscriptViewProps) {
     return (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
-                <h2 className="font-semibold text-zinc-900">Chat Transcript</h2>
+        <div className="fixed inset-0 z-50 flex flex-col glass-panel-strong">
+            <div className="flex items-center justify-between px-4 py-3 glass-panel">
+                <h2 className="font-semibold text-cream">Chat Transcript</h2>
                 <button
                     onClick={onClose}
-                    className="text-sm text-indigo-500 hover:text-indigo-700 font-medium transition"
+                    className="text-sm text-cream/90 hover:text-cream font-medium transition"
                 >
                     ← Back to Scene
                 </button>
@@ -30,7 +29,7 @@ export default function TranscriptView({ messages, userId, onClose }: Transcript
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 && (
-                    <p className="text-center text-zinc-400 py-12">No messages yet</p>
+                    <p className="text-center text-cream-muted py-12">No messages yet</p>
                 )}
                 {messages.map((msg) => {
                     const isMe = msg.senderId === userId;
@@ -45,13 +44,13 @@ export default function TranscriptView({ messages, userId, onClose }: Transcript
                         >
                             <div
                                 className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${isMe
-                                        ? "bg-indigo-500 text-white rounded-br-sm"
-                                        : "bg-zinc-100 text-zinc-800 rounded-bl-sm"
+                                        ? "bg-cream text-mahogany-deep rounded-br-sm"
+                                        : "glass-panel text-cream rounded-bl-sm"
                                     }`}
                             >
                                 {msg.content}
                             </div>
-                            <span className="text-xs text-zinc-400 mt-1 px-1">{time}</span>
+                            <span className="text-xs text-cream-muted mt-1 px-1">{time}</span>
                         </div>
                     );
                 })}

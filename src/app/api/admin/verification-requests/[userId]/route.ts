@@ -32,6 +32,13 @@ export async function GET(
                 university: {
                     select: { id: true, name: true },
                 },
+                referralReceived: {
+                    select: {
+                        referrer: {
+                            select: { name: true, email: true, referralCode: true },
+                        },
+                    },
+                },
             },
         });
 
@@ -39,9 +46,16 @@ export async function GET(
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        const { referralReceived, ...rest } = user;
         const documentUrl = await createSignedDocUrl(user.verificationDocPath);
 
-        return NextResponse.json({ request: { ...user, documentUrl } });
+        return NextResponse.json({
+            request: {
+                ...rest,
+                referredBy: referralReceived?.referrer ?? null,
+                documentUrl,
+            },
+        });
     } catch (error) {
         console.error("Admin verification request detail error:", error);
         return NextResponse.json(

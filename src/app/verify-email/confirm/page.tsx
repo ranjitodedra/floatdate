@@ -4,6 +4,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import Image from "next/image";
 import { clearStoredRef } from "@/lib/referral-client";
+import {
+    glassPanelClass,
+    btnPrimaryClass,
+} from "@/lib/ui-classes";
 
 function VerifyEmailConfirmContent() {
     const searchParams = useSearchParams();
@@ -76,7 +80,7 @@ function VerifyEmailConfirmContent() {
 
     if (!token) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+            <div className="min-h-screen flex items-center justify-center px-4">
                 <div className="w-full max-w-md text-center">
                     <div className="mb-8">
                         <Image
@@ -87,17 +91,17 @@ function VerifyEmailConfirmContent() {
                             className="mx-auto"
                         />
                     </div>
-                    <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-6 shadow-sm">
+                    <div className={`${glassPanelClass} shadow-sm`}>
                         <div className="text-5xl mb-4">⚠️</div>
-                        <h2 className="text-xl font-semibold text-zinc-900">
+                        <h2 className="text-xl font-semibold text-cream">
                             Verification Failed
                         </h2>
-                        <p className="text-zinc-500">
+                        <p className="text-cream-muted">
                             {errorMessages["missing-token"]}
                         </p>
                         <button
                             onClick={() => router.push("/verify-email")}
-                            className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200"
+                            className={btnPrimaryClass}
                         >
                             Go to Verification Page
                         </button>
@@ -108,7 +112,7 @@ function VerifyEmailConfirmContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+        <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md text-center">
                 <div className="mb-8">
                     <Image
@@ -120,21 +124,21 @@ function VerifyEmailConfirmContent() {
                     />
                 </div>
 
-                <div className="bg-white border border-zinc-200 rounded-2xl p-8 space-y-6 shadow-sm">
+                <div className={`${glassPanelClass} shadow-sm`}>
                     {error ? (
                         <>
                             <div className="text-5xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-semibold text-zinc-900">
+                            <h2 className="text-xl font-semibold text-cream">
                                 Verification Failed
                             </h2>
-                            <p className="text-zinc-500">
+                            <p className="text-cream-muted">
                                 {errorMessages[error] || "An unknown error occurred."}
                             </p>
                             {(error === "expired-token" || error === "invalid-token") && (
                                 <button
                                     onClick={handleResend}
                                     disabled={resending}
-                                    className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                    className={`${btnPrimaryClass} disabled:opacity-50`}
                                 >
                                     {resending ? "Redirecting..." : "Request New Verification Email"}
                                 </button>
@@ -143,16 +147,16 @@ function VerifyEmailConfirmContent() {
                     ) : (
                         <>
                             <div className="text-5xl mb-4">✉️</div>
-                            <h2 className="text-xl font-semibold text-zinc-900">
+                            <h2 className="text-xl font-semibold text-cream">
                                 Verify Your Email
                             </h2>
-                            <p className="text-zinc-500">
+                            <p className="text-cream-muted">
                                 Click the button below to verify your email address and activate your account.
                             </p>
                             <button
                                 onClick={handleVerify}
                                 disabled={verifying}
-                                className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                className={`${btnPrimaryClass} disabled:opacity-50`}
                             >
                                 {verifying ? "Verifying..." : "Verify My Email"}
                             </button>
@@ -160,13 +164,13 @@ function VerifyEmailConfirmContent() {
                     )}
 
                     {resendMsg && (
-                        <p className="text-sm text-green-600">{resendMsg}</p>
+                        <p className="text-sm text-green-300">{resendMsg}</p>
                     )}
 
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-cream-muted">
                         <a
                             href="/login"
-                            className="text-zinc-900 font-medium hover:underline transition"
+                            className="text-cream font-medium hover:underline transition"
                         >
                             Back to login
                         </a>
@@ -181,8 +185,8 @@ export default function VerifyEmailConfirmPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                    <p className="text-zinc-500">Loading...</p>
+                <div className="min-h-screen flex items-center justify-center">
+                    <p className="text-cream-muted">Loading...</p>
                 </div>
             }
         >

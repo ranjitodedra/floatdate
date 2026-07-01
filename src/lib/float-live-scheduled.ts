@@ -6,6 +6,7 @@ export const TIMEZONE = "America/Toronto";
 export const SCHEDULED_DURATIONS = [15, 30, 60] as const;
 export const GHOST_FILL_WINDOW_MINUTES = 30;
 export const MAX_EXPECTATIONS_LENGTH = 500;
+export const MAX_CONCURRENT_SCHEDULED_DATES = 5;
 
 export const VALID_PREFERENCES = ["male", "female", "nonbinary", "any"] as const;
 export const VALID_INTENTIONS = ["blind_date", "friendship"] as const;

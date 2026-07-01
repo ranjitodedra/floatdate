@@ -59,22 +59,22 @@ export default function MyScheduledDates({
 
     return (
         <div className="space-y-3">
-            <h3 className="text-white font-semibold text-sm">Your scheduled dates</h3>
+            <h3 className="text-cream font-semibold text-sm">Your scheduled dates</h3>
             {upcoming.map((date) => (
                 <div
                     key={date.id}
-                    className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-3"
+                    className="bg-surface-elevated border border-mahogany rounded-xl p-4 space-y-3"
                 >
                     <div className="flex items-start justify-between gap-2">
                         <div>
-                            <p className="text-white text-sm font-medium">{date.scheduledAtLabel}</p>
-                            <p className="text-zinc-400 text-xs">
+                            <p className="text-cream text-sm font-medium">{date.scheduledAtLabel}</p>
+                            <p className="text-muted text-xs">
                                 {date.durationMinutes} min ·{" "}
                                 {date.intention === "blind_date" ? "Blind Date" : "Friendship"} ·{" "}
                                 {date.role === "creator" ? "You created" : "You joined"}
                             </p>
                         </div>
-                        <span className="text-xs px-2 py-1 rounded bg-zinc-700 text-zinc-300 capitalize">
+                        <span className="text-xs px-2 py-1 rounded bg-zinc-700 text-cream/90 capitalize">
                             {date.status.replace("_", " ")}
                         </span>
                     </div>
@@ -86,14 +86,14 @@ export default function MyScheduledDates({
                     )}
 
                     {date.expectations && date.role === "creator" && (
-                        <p className="text-zinc-400 text-xs italic">{date.expectations}</p>
+                        <p className="text-muted text-xs italic">{date.expectations}</p>
                     )}
 
                     <div className="flex gap-2">
                         {(date.canJoin || date.status === "in_progress") && (
                             <button
                                 onClick={() => onJoinDate(date.id)}
-                                className="flex-1 py-2.5 bg-indigo-500 text-white text-sm font-semibold rounded-lg hover:bg-indigo-600 transition"
+                                className="flex-1 py-2.5 bg-indigo-500 text-cream text-sm font-semibold rounded-lg hover:bg-indigo-600 transition"
                             >
                                 Join Date
                             </button>
@@ -101,7 +101,7 @@ export default function MyScheduledDates({
                         {date.status === "open" && date.role === "creator" && onCancel && (
                             <button
                                 onClick={() => onCancel(date.id)}
-                                className="px-4 py-2.5 border border-zinc-600 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition"
+                                className="px-4 py-2.5 border border-mahogany text-cream/90 text-sm rounded-lg hover:bg-surface-elevated transition"
                             >
                                 Cancel
                             </button>

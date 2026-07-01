@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive, getTodaySessionTimes } from "@/lib/float-live-time";
+import { getTodaySessionTimes } from "@/lib/float-live-time";
+import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
 
 const VALID_PREFERENCES = ["male", "female", "nonbinary", "any"];
 const VALID_INTENTIONS = ["blind_date", "friendship"];
@@ -14,16 +15,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available 5-6 PM ET" },
-                { status: 403 }
-            );
-        }
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
+
+        const verificationDenied = await requireApprovedUser(authSession.userId);
+        if (verificationDenied) return verificationDenied;
 
         const body = await req.json();
-        const { preference, intention, character } = body;
+        const { preference, intention, character, acceptedTerms } = body;
+
+        if (acceptedTerms !== true) {
+            return NextResponse.json(
+                { error: "You must accept the terms to join Float Live" },
+                { status: 400 }
+            );
+        }
 
         // Validate filters
         if (!VALID_PREFERENCES.includes(preference)) {
@@ -73,6 +79,7 @@ export async function POST(req: NextRequest) {
                 },
             },
             update: {
+                gender: user.gender,
                 preference,
                 intention,
                 universityId: user.universityId,

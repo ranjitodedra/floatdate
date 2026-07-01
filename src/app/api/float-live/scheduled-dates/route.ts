@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { expirePastScheduledDates } from "@/lib/float-live-scheduled-expiry";
+import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_INTENTIONS,
     VALID_PREFERENCES,
+    MAX_CONCURRENT_SCHEDULED_DATES,
     canJoinScheduledDate,
     isValidDuration,
     sanitizeExpectations,
@@ -17,6 +19,9 @@ export async function GET() {
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
 
         await expirePastScheduledDates();
 
@@ -74,6 +79,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
+
+        const verificationDenied = await requireApprovedUser(authSession.userId);
+        if (verificationDenied) return verificationDenied;
+
         const body = await req.json();
         const { scheduledAt, durationMinutes, preference, intention, expectations } = body;
 
@@ -111,6 +122,22 @@ export async function POST(req: NextRequest) {
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const activeCount = await prisma.floatLiveScheduledDate.count({
+            where: {
+                creatorId: authSession.userId,
+                status: { in: ["open", "claimed"] },
+            },
+        });
+
+        if (activeCount >= MAX_CONCURRENT_SCHEDULED_DATES) {
+            return NextResponse.json(
+                {
+                    error: `You can have at most ${MAX_CONCURRENT_SCHEDULED_DATES} open or claimed dates at a time`,
+                },
+                { status: 409 }
+            );
         }
 
         const duplicate = await prisma.floatLiveScheduledDate.findFirst({

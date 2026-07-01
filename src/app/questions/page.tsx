@@ -152,10 +152,10 @@ function QuestionsContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-zinc-500">Loading questions...</p>
+                    <p className="text-muted">Loading questions...</p>
                 </div>
             </div>
         );
@@ -163,8 +163,8 @@ function QuestionsContent() {
 
     if (questions.length === 0) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                <p className="text-zinc-500">No questions available. Please seed the database first.</p>
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-muted">No questions available. Please seed the database first.</p>
             </div>
         );
     }
@@ -177,10 +177,10 @@ function QuestionsContent() {
             setCurrentIndex(0);
         }
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-zinc-500">Loading question...</p>
+                    <p className="text-muted">Loading question...</p>
                 </div>
             </div>
         );
@@ -190,9 +190,9 @@ function QuestionsContent() {
     const hasAnswer = answers[current.id] !== undefined && answers[current.id] !== null;
 
     return (
-        <div className="min-h-screen bg-zinc-50 flex flex-col">
+        <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-zinc-200 px-4 py-4">
+            <div className="sticky top-0 z-10 glass-panel-strong backdrop-blur-xl px-4 py-4">
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -205,21 +205,21 @@ function QuestionsContent() {
                             {isEditMode && (
                                 <button
                                     onClick={() => router.push("/dashboard")}
-                                    className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                                    className="text-sm text-muted hover:text-cream/90 transition"
                                 >
                                     ← Back to Dashboard
                                 </button>
                             )}
                         </div>
-                        <span className="text-sm text-zinc-500 font-medium">
+                        <span className="text-sm text-muted font-medium">
                             {currentIndex + 1}{" "}
-                            <span className="text-zinc-300">/ {questions.length}</span>
+                            <span className="text-cream/90">/ {questions.length}</span>
                         </span>
                     </div>
                     {/* Progress bar */}
-                    <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-surface-elevated rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-zinc-800 rounded-full transition-all duration-500 ease-out"
+                            className="h-full bg-surface-elevated rounded-full transition-all duration-500 ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
@@ -245,7 +245,7 @@ function QuestionsContent() {
                     </div>
 
                     {error && (
-                        <div className="mt-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
+                        <div className="mt-4 bg-red-950/50 border border-red-800 text-red-400 text-sm rounded-lg px-4 py-3">
                             {error}
                         </div>
                     )}
@@ -253,19 +253,19 @@ function QuestionsContent() {
             </div>
 
             {/* Navigation */}
-            <div className="sticky bottom-0 bg-white/80 backdrop-blur-xl border-t border-zinc-200 px-4 py-4">
+            <div className="sticky bottom-0 glass-panel-strong backdrop-blur-xl px-4 py-4">
                 <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
                     <button
                         onClick={goBack}
                         disabled={currentIndex === 0}
-                        className="px-6 py-3 rounded-xl border border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                        className="px-6 py-3 rounded-xl border border-mahogany text-muted hover:text-cream hover:border-mahogany transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                         ← Back
                     </button>
 
                     <div className="flex items-center gap-2">
                         {saving && (
-                            <span className="text-xs text-zinc-400 flex items-center gap-1.5">
+                            <span className="text-xs text-muted flex items-center gap-1.5">
                                 <span className="w-3 h-3 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
                                 Saving...
                             </span>
@@ -273,7 +273,7 @@ function QuestionsContent() {
                         {isEditMode && !saving && (
                             <button
                                 onClick={() => router.push("/dashboard")}
-                                className="px-5 py-3 rounded-xl border border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400 transition-all"
+                                className="px-5 py-3 rounded-xl border border-mahogany text-muted hover:text-cream hover:border-mahogany transition-all"
                             >
                                 Dashboard
                             </button>
@@ -284,8 +284,8 @@ function QuestionsContent() {
                         onClick={goNext}
                         disabled={!hasAnswer || saving}
                         className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 ${hasAnswer
-                            ? "bg-zinc-900 text-white hover:bg-zinc-800"
-                            : "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                            ? "bg-cream text-mahogany-deep hover:bg-[#ffffff]"
+                            : "glass-panel text-cream-muted cursor-not-allowed"
                             }`}
                     >
                         {currentIndex === questions.length - 1
@@ -301,7 +301,7 @@ function QuestionsContent() {
 export default function QuestionsPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
             </div>
         }>

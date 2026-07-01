@@ -81,15 +81,15 @@ export default function CreateScheduledDateForm({
     }
 
     const selectClass =
-        "w-full bg-zinc-800 text-white text-sm px-3 py-2 rounded-lg border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50";
+        "w-full bg-surface-elevated text-cream text-sm px-3 py-2 rounded-lg border border-mahogany focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50";
 
     return (
-        <form onSubmit={handleSubmit} className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 space-y-4">
-            <h3 className="text-white font-semibold text-sm">Create a scheduled date</h3>
+        <form onSubmit={handleSubmit} className="bg-surface-elevated border border-mahogany rounded-xl p-4 space-y-4">
+            <h3 className="text-cream font-semibold text-sm">Create a scheduled date</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label className="text-zinc-400 text-xs block mb-1">Date</label>
+                    <label className="text-muted text-xs block mb-1">Date</label>
                     <input
                         type="date"
                         value={dateValue}
@@ -100,7 +100,7 @@ export default function CreateScheduledDateForm({
                     />
                 </div>
                 <div>
-                    <label className="text-zinc-400 text-xs block mb-1">Time</label>
+                    <label className="text-muted text-xs block mb-1">Time</label>
                     <input
                         type="time"
                         value={timeValue}
@@ -114,7 +114,7 @@ export default function CreateScheduledDateForm({
             </div>
 
             <div>
-                <label className="text-zinc-400 text-xs block mb-1">Duration</label>
+                <label className="text-muted text-xs block mb-1">Duration</label>
                 <select
                     value={durationMinutes}
                     onChange={(e) => setDurationMinutes(Number(e.target.value))}
@@ -129,7 +129,7 @@ export default function CreateScheduledDateForm({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label className="text-zinc-400 text-xs block mb-1">Prefer (partner gender)</label>
+                    <label className="text-muted text-xs block mb-1">Prefer (partner gender)</label>
                     <select
                         value={preference}
                         onChange={(e) => onPreferenceChange(e.target.value)}
@@ -143,7 +143,7 @@ export default function CreateScheduledDateForm({
                     </select>
                 </div>
                 <div>
-                    <label className="text-zinc-400 text-xs block mb-1">Mode</label>
+                    <label className="text-muted text-xs block mb-1">Mode</label>
                     <select
                         value={intention}
                         onChange={(e) => onIntentionChange(e.target.value)}
@@ -157,7 +157,7 @@ export default function CreateScheduledDateForm({
             </div>
 
             <div>
-                <label className="text-zinc-400 text-xs block mb-1">
+                <label className="text-muted text-xs block mb-1">
                     Other preferences or expectations (optional)
                 </label>
                 <textarea
@@ -169,7 +169,7 @@ export default function CreateScheduledDateForm({
                     placeholder='e.g. "Looking for someone who enjoys hiking."'
                     className={`${selectClass} resize-none`}
                 />
-                <p className="text-zinc-500 text-xs mt-1">For expectations only — not guaranteed matching rules.</p>
+                <p className="text-muted text-xs mt-1">For expectations only — not guaranteed matching rules.</p>
             </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -177,7 +177,7 @@ export default function CreateScheduledDateForm({
             <button
                 type="submit"
                 disabled={disabled || submitting}
-                className="w-full py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition disabled:opacity-50"
+                className="w-full py-3 bg-indigo-500 text-cream font-semibold rounded-lg hover:bg-indigo-600 transition disabled:opacity-50"
             >
                 {submitting ? "Creating..." : "Schedule Date"}
             </button>

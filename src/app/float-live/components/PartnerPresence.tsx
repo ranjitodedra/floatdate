@@ -21,10 +21,10 @@ export default function PartnerPresence({
         <>
             {reconnecting && (
                 <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-                    <div className="bg-zinc-800 border border-zinc-600 rounded-xl px-6 py-4 text-center shadow-xl">
+                    <div className="glass-panel-strong rounded-xl px-6 py-4 text-center shadow-modal">
                         <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                        <p className="text-white text-sm font-medium">Reconnecting…</p>
-                        <p className="text-zinc-400 text-xs mt-1">Your chat is still open</p>
+                        <p className="text-cream text-sm font-medium">Reconnecting…</p>
+                        <p className="text-muted text-xs mt-1">Your chat is still open</p>
                     </div>
                 </div>
             )}

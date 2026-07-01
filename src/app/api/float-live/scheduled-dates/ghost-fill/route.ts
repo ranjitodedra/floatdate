@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { expirePastScheduledDates } from "@/lib/float-live-scheduled-expiry";
+import { requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_INTENTIONS,
     VALID_PREFERENCES,
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest) {
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
 
         const { searchParams } = new URL(req.url);
         const scheduledAtParam = searchParams.get("scheduledAt");

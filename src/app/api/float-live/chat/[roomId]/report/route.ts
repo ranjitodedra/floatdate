@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logImpersonatedAction } from "@/lib/admin-audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const VALID_REASONS = ["harassment", "spam", "inappropriate", "other"];
 
@@ -13,6 +15,9 @@ export async function POST(
         if (!authSession) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const rateLimited = await checkRateLimit("report", authSession.userId);
+        if (rateLimited) return rateLimited;
 
         const { roomId } = await params;
         const body = await req.json();
@@ -54,6 +59,12 @@ export async function POST(
                 reason,
                 details: details?.toString().slice(0, 1000) || null,
             },
+        });
+
+        await logImpersonatedAction(authSession, "report_submit", {
+            roomId,
+            reportId: report.id,
+            reason,
         });
 
         return NextResponse.json({ report: { id: report.id } });

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logImpersonatedAction } from "@/lib/admin-audit";
+import {
+    isShowApplicationOpen,
+    requireReferralUnlock,
+    showApplicationClosedResponse,
+} from "@/lib/guards";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const applicationSchema = z
     .object({
@@ -88,11 +96,55 @@ const applicationSchema = z
         }
     });
 
+export async function GET() {
+    try {
+        const auth = await requireAuth();
+        if (!auth) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const existing = await prisma.campusShowApplication.findFirst({
+            where: { userId: auth.userId },
+            select: { id: true },
+        });
+
+        return NextResponse.json({
+            submitted: !!existing,
+            applicationOpen: isShowApplicationOpen(),
+        });
+    } catch (error) {
+        console.error("Campus show application status error:", error);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        );
+    }
+}
+
 export async function POST(req: NextRequest) {
     try {
         const auth = await requireAuth();
         if (!auth) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const referralDenied = await requireReferralUnlock(auth.userId);
+        if (referralDenied) return referralDenied;
+
+        if (!isShowApplicationOpen()) {
+            return showApplicationClosedResponse();
+        }
+
+        const rateLimited = await checkRateLimit("application_submit", auth.userId);
+        if (rateLimited) return rateLimited;
+
+        const account = await prisma.user.findUnique({
+            where: { id: auth.userId },
+            select: { email: true },
+        });
+
+        if (!account) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         const body = await req.json();
@@ -107,17 +159,33 @@ export async function POST(req: NextRequest) {
 
         const data = result.data;
 
-        const application = await prisma.campusShowApplication.create({
-            data: {
-                userId: auth.userId,
-                role: data.role,
-                fullName: data.fullName.trim(),
-                age: data.age,
-                pronouns: data.pronouns?.trim() || null,
-                yearOfStudy: data.yearOfStudy,
-                program: data.program.trim(),
-                email: data.email.toLowerCase().trim(),
-                socialHandle: data.socialHandle.trim(),
+        const existing = await prisma.campusShowApplication.findFirst({
+            where: { userId: auth.userId },
+            select: { id: true },
+        });
+
+        if (existing) {
+            return NextResponse.json(
+                {
+                    error: "You have already submitted an application.",
+                    submitted: true,
+                },
+                { status: 409 }
+            );
+        }
+
+        try {
+            const application = await prisma.campusShowApplication.create({
+                data: {
+                    userId: auth.userId,
+                    role: data.role,
+                    fullName: data.fullName.trim(),
+                    age: data.age,
+                    pronouns: data.pronouns?.trim() || null,
+                    yearOfStudy: data.yearOfStudy,
+                    program: data.program.trim(),
+                    email: account.email.toLowerCase().trim(),
+                    socialHandle: data.socialHandle.trim(),
                 datingGenders: data.datingGenders,
                 ageRangeMin: data.ageRangeMin,
                 ageRangeMax: data.ageRangeMax,
@@ -146,16 +214,33 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        // TODO: send confirmation email via @/lib/email when ready
+            await logImpersonatedAction(auth, "application_submit", {
+                applicationId: application.id,
+            });
 
-        return NextResponse.json(
-            {
-                success: true,
-                message: "You're in the pool! We'll be in touch before the event.",
-                application: { id: application.id },
-            },
-            { status: 201 }
-        );
+            return NextResponse.json(
+                {
+                    success: true,
+                    message: "You're in the pool! We'll be in touch before the event.",
+                    application: { id: application.id },
+                },
+                { status: 201 }
+            );
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002"
+            ) {
+                return NextResponse.json(
+                    {
+                        error: "You have already submitted an application.",
+                        submitted: true,
+                    },
+                    { status: 409 }
+                );
+            }
+            throw error;
+        }
     } catch (error) {
         console.error("Campus show application error:", error);
         return NextResponse.json(

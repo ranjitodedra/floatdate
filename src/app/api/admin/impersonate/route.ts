@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
 import { createImpersonationSession, clearImpersonationSession } from "@/lib/auth";
+import { logAdminAudit } from "@/lib/admin-audit";
 
 const impersonateSchema = z.object({
     email: z.string().email(),
@@ -44,6 +45,13 @@ export async function POST(req: NextRequest) {
         }
 
         await createImpersonationSession(admin.id, user.id);
+
+        await logAdminAudit({
+            actorUserId: admin.id,
+            targetUserId: user.id,
+            action: "impersonation_start",
+            metadata: { targetEmail: user.email },
+        });
 
         return NextResponse.json({
             success: true,

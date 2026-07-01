@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AppShell from "@/components/AppShell";
 import ReferralWidget from "@/components/ReferralWidget";
+import { glassInputClass } from "@/lib/ui-classes";
 
 interface MatchData {
     id: string;
@@ -347,7 +348,7 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -355,7 +356,7 @@ export default function DashboardPage() {
 
     return (
         <AppShell>
-            <div className="min-h-screen bg-zinc-50 px-4 py-8">
+            <div className="min-h-screen px-4 py-8">
             <div className="max-w-lg mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -366,7 +367,7 @@ export default function DashboardPage() {
                             width={100}
                             height={34}
                         />
-                        <p className="text-sm text-zinc-500">
+                        <p className="text-sm text-muted">
                             Hey, {user?.name || "there"} 👋
                         </p>
                     </div>
@@ -374,14 +375,14 @@ export default function DashboardPage() {
                         {user?.email === "ranjitodedra.dev@gmail.com" && (
                             <a
                                 href="/admin"
-                                className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                                className="text-sm text-muted hover:text-cream/90 transition"
                             >
                                 Admin
                             </a>
                         )}
                         <button
                             onClick={handleLogout}
-                            className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                            className="text-sm text-muted hover:text-cream/90 transition"
                         >
                             Log out
                         </button>
@@ -389,13 +390,13 @@ export default function DashboardPage() {
                 </div>
 
                 {impersonationActor && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
-                        <p className="text-amber-800 text-sm">
+                    <div className="bg-amber-950/50 border border-amber-800 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
+                        <p className="text-amber-200 text-sm">
                             Admin View Mode: you are currently viewing this dashboard as a user.
                         </p>
                         <button
                             onClick={handleStopViewAsUser}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 transition"
+                            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-amber-900/50 text-amber-200 hover:bg-amber-900 transition"
                         >
                             Exit to Admin
                         </button>
@@ -403,11 +404,11 @@ export default function DashboardPage() {
                 )}
 
                 {user?.verificationStatus === "pending" && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm">
-                        <p className="text-amber-800 text-sm font-medium">
+                    <div className="bg-amber-950/50 border border-amber-800 rounded-2xl p-4 shadow-sm">
+                        <p className="text-amber-200 text-sm font-medium">
                             Your university verification is pending review.
                         </p>
-                        <p className="text-amber-700 text-xs mt-1">
+                        <p className="text-amber-300/80 text-xs mt-1">
                             You can continue using FloatDate while we review your
                             submitted document. We&apos;ll notify you once a
                             decision is made.
@@ -416,15 +417,15 @@ export default function DashboardPage() {
                 )}
 
                 {user?.verificationStatus === "rejected" && (
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm">
-                        <p className="text-red-800 text-sm font-medium">
+                    <div className="bg-red-950/50 border border-red-800 rounded-2xl p-4 shadow-sm">
+                        <p className="text-red-300 text-sm font-medium">
                             We couldn&apos;t verify your account.
                         </p>
-                        <p className="text-red-700 text-xs mt-1">
+                        <p className="text-red-400 text-xs mt-1">
                             If you believe this was a mistake, please contact{" "}
                             <a
                                 href="mailto:support@floatdate.com"
-                                className="underline font-medium hover:text-red-900"
+                                className="underline font-medium hover:text-red-200"
                             >
                                 support@floatdate.com
                             </a>{" "}
@@ -434,35 +435,35 @@ export default function DashboardPage() {
                 )}
 
                 {/* Countdown Card */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <p className="text-xs text-zinc-400 uppercase tracking-wider mb-2">
+                <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                    <p className="text-xs text-muted uppercase tracking-wider mb-2">
                         Next matching round
                     </p>
-                    <p className="text-3xl font-bold text-zinc-900 font-mono">{countdown}</p>
-                    <p className="text-xs text-zinc-400 mt-1">Wednesday 9:00 PM ET</p>
+                    <p className="text-3xl font-bold text-cream font-mono">{countdown}</p>
+                    <p className="text-xs text-muted mt-1">Wednesday 9:00 PM ET</p>
                 </div>
 
                 {/* Opt-in Card */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-900 mb-2">
+                <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-cream mb-2">
                         Weekly Opt-in
                     </h2>
                     {optedIn ? (
                         <div className="flex items-center gap-3">
                             <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                            <p className="text-green-600 font-medium">
+                            <p className="text-green-400 font-medium">
                                 You&apos;re opted in for this week
                             </p>
                         </div>
                     ) : (
                         <div>
-                            <p className="text-zinc-500 text-sm mb-4">
+                            <p className="text-muted text-sm mb-4">
                                 Opt in to be included in this week&apos;s matching round.
                             </p>
                             <button
                                 onClick={handleOptInClick}
                                 disabled={optingIn}
-                                className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                className="w-full py-3 bg-surface-deep text-cream font-semibold rounded-xl hover:bg-surface-elevated transition-all duration-200 disabled:opacity-50"
                             >
                                 {optingIn ? "Opting in..." : "Opt In This Week"}
                             </button>
@@ -472,13 +473,13 @@ export default function DashboardPage() {
 
                 {/* Pending Feedback Card (If they didn't opt in but still have a previous match) */}
                 {needsFeedback && !optedIn && (
-                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-6 shadow-sm">
+                    <div className="bg-gradient-to-br from-indigo-950/80 to-purple-950/80 border border-indigo-800 rounded-2xl p-6 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-lg font-semibold text-indigo-900 mb-1">
+                                <h3 className="text-lg font-semibold text-indigo-200 mb-1">
                                     How did your match with {previousMatch.partnerName} go?
                                 </h3>
-                                <p className="text-sm text-indigo-700/80">
+                                <p className="text-sm text-indigo-300/80">
                                     We&apos;d love to hear how it went!
                                 </p>
                             </div>
@@ -489,7 +490,7 @@ export default function DashboardPage() {
                                 setShowFeedbackModal(true);
                                 setFeedbackStep(1);
                             }}
-                            className="mt-4 w-full py-2.5 bg-white border border-indigo-200 text-indigo-700 font-medium rounded-xl hover:bg-indigo-50 transition-all text-sm"
+                            className="mt-4 w-full py-2.5 bg-surface-deep border border-indigo-700 text-indigo-300 font-medium rounded-xl hover:bg-indigo-950 transition-all text-sm"
                         >
                             Share Feedback
                         </button>
@@ -497,26 +498,26 @@ export default function DashboardPage() {
                 )}
 
                 {/* Match Card */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-900 mb-4">
+                <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-cream mb-4">
                         Your Latest Match
                     </h2>
 
                     {match ? (
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xl font-bold">
+                                <div className="w-14 h-14 rounded-full bg-surface-elevated flex items-center justify-center text-cream text-xl font-bold">
                                     {match.matchedUser.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="text-zinc-900 font-semibold text-lg">
+                                    <p className="text-cream font-semibold text-lg">
                                         {match.matchedUser.name}
                                     </p>
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-muted text-sm">
                                         {match.matchedUser.city}
                                     </p>
                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                        <p className="text-zinc-500 text-sm">
+                                        <p className="text-muted text-sm">
                                             {match.matchedUser.email}
                                         </p>
                                         <button
@@ -529,7 +530,7 @@ export default function DashboardPage() {
                                                 }
                                             }}
                                             id="copy-email-btn"
-                                            className="text-xs text-zinc-400 hover:text-zinc-700 transition px-1.5 py-0.5 rounded-md hover:bg-zinc-100"
+                                            className="text-xs text-muted hover:text-cream/90 transition px-1.5 py-0.5 rounded-md hover:bg-surface-deep"
                                         >
                                             Copy
                                         </button>
@@ -538,22 +539,22 @@ export default function DashboardPage() {
                             </div>
 
                             {match.matchedUser.bio && (
-                                <p className="text-zinc-600 text-sm">
-                                    <span className="font-semibold text-zinc-700">Bio: </span>{match.matchedUser.bio}
+                                <p className="text-cream/90 text-sm">
+                                    <span className="font-semibold text-cream/90">Bio: </span>{match.matchedUser.bio}
                                 </p>
                             )}
 
                             {/* Compatibility score */}
-                            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4">
+                            <div className="glass-panel rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-zinc-500">Compatibility</span>
-                                    <span className="text-zinc-900 font-bold">
+                                    <span className="text-sm text-muted">Compatibility</span>
+                                    <span className="text-cream font-bold">
                                         {Math.round(match.similarityScore * 100)}%
                                     </span>
                                 </div>
-                                <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-zinc-800 rounded-full transition-all duration-1000"
+                                        className="h-full bg-surface-elevated rounded-full transition-all duration-1000"
                                         style={{
                                             width: `${Math.round(match.similarityScore * 100)}%`,
                                         }}
@@ -562,7 +563,7 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="mt-4">
-                                <p className="text-sm font-semibold text-zinc-700 mb-2">
+                                <p className="text-sm font-semibold text-cream/90 mb-2">
                                     Here&apos;s why:
                                 </p>
                                 {(() => {
@@ -570,7 +571,7 @@ export default function DashboardPage() {
                                     let reasons: string[] = match.reasons ?? [];
                                     if (reasons.length > 0) {
                                         return (
-                                            <ul className="list-disc list-inside space-y-1 text-sm text-zinc-600">
+                                            <ul className="list-disc list-inside space-y-1 text-sm text-cream/90">
                                                 {reasons.map((reason, idx) => (
                                                     <li key={idx}>{reason}</li>
                                                 ))}
@@ -586,7 +587,7 @@ export default function DashboardPage() {
                                         reasons = [match.explanation];
                                     }
                                     return (
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-zinc-600">
+                                        <ul className="list-disc list-inside space-y-1 text-sm text-cream/90">
                                             {reasons.map((reason, idx) => (
                                                 <li key={idx}>{reason}</li>
                                             ))}
@@ -595,21 +596,21 @@ export default function DashboardPage() {
                                 })()}
                             </div>
 
-                            <p className="text-xs text-zinc-400">
+                            <p className="text-xs text-muted">
                                 Check your email for their contact info 💜
                             </p>
                         </div>
                     ) : latestAttempt?.status === "no_match" ? (
                         <div className="text-center py-8">
-                            <p className="text-zinc-300 text-4xl mb-3">💜</p>
-                            <p className="text-zinc-700 font-medium">
+                            <p className="text-cream/90 text-4xl mb-3">💜</p>
+                            <p className="text-cream/90 font-medium">
                                 We were not able to find match for you in this cycle.
                             </p>
                         </div>
                     ) : (
                         <div className="text-center py-8">
-                            <p className="text-zinc-300 text-4xl mb-3">💜</p>
-                            <p className="text-zinc-700 font-medium">
+                            <p className="text-cream/90 text-4xl mb-3">💜</p>
+                            <p className="text-cream/90 font-medium">
                                 We were not able to find match for you this week.
                             </p>
                         </div>
@@ -617,15 +618,15 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Edit Profile Card */}
-                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-900 mb-4">
+                <div className="glass-panel rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-cream mb-4">
                         Edit Profile
                     </h2>
 
                     {/* Bio Section */}
                     <div className="mb-5">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-medium text-zinc-700">Your Bio</p>
+                            <p className="text-sm font-medium text-cream/90">Your Bio</p>
                             {!editingBio && (
                                 <button
                                     onClick={() => {
@@ -633,7 +634,7 @@ export default function DashboardPage() {
                                         setEditingBio(true);
                                         setBioMessage(null);
                                     }}
-                                    className="text-sm text-zinc-400 hover:text-zinc-700 transition"
+                                    className="text-sm text-muted hover:text-cream/90 transition"
                                 >
                                     Edit
                                 </button>
@@ -648,10 +649,10 @@ export default function DashboardPage() {
                                     maxLength={300}
                                     rows={3}
                                     placeholder="Tell your match a bit about yourself..."
-                                    className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+                                    className={`${glassInputClass} text-sm resize-none`}
                                 />
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs text-zinc-400">
+                                    <span className="text-xs text-muted">
                                         {bioInput.length}/300
                                     </span>
                                     <div className="flex items-center gap-2">
@@ -660,14 +661,14 @@ export default function DashboardPage() {
                                                 setBioInput(bio);
                                                 setEditingBio(false);
                                             }}
-                                            className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-700 transition"
+                                            className="px-4 py-2 text-sm text-muted hover:text-cream/90 transition"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleSaveBio}
                                             disabled={savingBio}
-                                            className="px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                            className="px-5 py-2 bg-surface-deep text-cream text-sm font-semibold rounded-xl hover:bg-surface-elevated transition-all duration-200 disabled:opacity-50"
                                         >
                                             {savingBio ? "Saving..." : "Save"}
                                         </button>
@@ -675,30 +676,30 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-sm text-zinc-500">
+                            <p className="text-sm text-muted">
                                 {bio || "No bio set yet."}
                             </p>
                         )}
 
                         {bioMessage && (
-                            <p className={`text-sm mt-2 ${bioMessage.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                            <p className={`text-sm mt-2 ${bioMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
                                 {bioMessage.text}
                             </p>
                         )}
                     </div>
 
                     {/* Edit Answers */}
-                    <div className="border-t border-zinc-100 pt-4">
+                    <div className="border-t border-mahogany pt-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-zinc-700">Your Answers</p>
-                                <p className="text-xs text-zinc-400 mt-0.5">
+                                <p className="text-sm font-medium text-cream/90">Your Answers</p>
+                                <p className="text-xs text-muted mt-0.5">
                                     Update your question answers to improve matching
                                 </p>
                             </div>
                             <button
                                 onClick={() => router.push("/questions?edit=true")}
-                                className="px-5 py-2 bg-zinc-100 text-zinc-700 text-sm font-semibold rounded-xl hover:bg-zinc-200 transition-all duration-200"
+                                className="px-5 py-2 bg-surface-elevated text-cream/90 text-sm font-semibold rounded-xl hover:bg-surface-elevated transition-all duration-200"
                             >
                                 Edit Answers
                             </button>
@@ -711,16 +712,16 @@ export default function DashboardPage() {
 
             {/* Feedback Modal Overlay */}
             {showFeedbackModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="glass-panel-strong rounded-3xl shadow-modal w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-5 border-b border-zinc-100">
-                            <h2 className="text-lg font-bold text-zinc-900">
+                        <div className="flex items-center justify-between p-5">
+                            <h2 className="text-lg font-bold text-cream">
                                 Match Feedback
                             </h2>
                             <button
                                 onClick={() => setShowFeedbackModal(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition"
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-elevated text-muted hover:bg-surface-elevated transition"
                             >
                                 ✕
                             </button>
@@ -729,7 +730,7 @@ export default function DashboardPage() {
                         <div className="p-6">
                             {feedbackStep === 1 ? (
                                 <div className="space-y-4">
-                                    <h3 className="text-xl font-bold text-zinc-900 text-center mb-6">
+                                    <h3 className="text-xl font-bold text-cream text-center mb-6">
                                         How did your match with {previousMatch?.partnerName} go?
                                     </h3>
                                     <div className="grid grid-cols-1 gap-2.5">
@@ -740,10 +741,10 @@ export default function DashboardPage() {
                                                     setHowItWent(opt.value);
                                                     setFeedbackStep(2);
                                                 }}
-                                                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-zinc-200 bg-white hover:border-zinc-900 hover:bg-zinc-50 transition-all text-left group"
+                                                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl glass-panel hover:bg-gold-soft/10 transition-all text-left group"
                                             >
                                                 <span className="text-xl group-hover:scale-110 transition-transform">{opt.emoji}</span>
-                                                <span className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">
+                                                <span className="text-sm font-medium text-cream/90 group-hover:text-cream">
                                                     {opt.label}
                                                 </span>
                                             </button>
@@ -754,14 +755,14 @@ export default function DashboardPage() {
                                 <div className="space-y-4">
                                     <button
                                         onClick={() => setFeedbackStep(1)}
-                                        className="text-sm text-zinc-500 hover:text-zinc-900 transition flex items-center gap-1 mb-2"
+                                        className="text-sm text-muted hover:text-cream transition flex items-center gap-1 mb-2"
                                     >
                                         ← Back
                                     </button>
-                                    <h3 className="text-xl font-bold text-zinc-900">
+                                    <h3 className="text-xl font-bold text-cream">
                                         Any feedback about this match?
                                     </h3>
-                                    <p className="text-sm text-zinc-500">
+                                    <p className="text-sm text-muted">
                                         Tell us what worked, what didn&apos;t, or anything else you&apos;d like to share. This helps us improve your future matches.
                                     </p>
                                     
@@ -769,12 +770,12 @@ export default function DashboardPage() {
                                         value={feedbackText}
                                         onChange={(e) => setFeedbackText(e.target.value)}
                                         rows={4}
-                                        className="w-full px-4 py-3 border border-zinc-300 rounded-xl text-zinc-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all mt-4"
+                                        className={`${glassInputClass} text-sm resize-none mt-4`}
                                         placeholder="Optional feedback..."
                                     />
 
                                     {feedbackMessage && (
-                                        <p className={`text-sm mt-2 ${feedbackMessage.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                                        <p className={`text-sm mt-2 ${feedbackMessage.type === "success" ? "text-green-400" : "text-red-400"}`}>
                                             {feedbackMessage.text}
                                         </p>
                                     )}
@@ -782,7 +783,7 @@ export default function DashboardPage() {
                                     <button
                                         onClick={submitFeedbackAndOptIn}
                                         disabled={feedbackSubmitting}
-                                        className="w-full mt-6 py-3.5 bg-zinc-900 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 disabled:opacity-50"
+                                        className="w-full mt-6 py-3.5 bg-surface-deep text-cream font-semibold rounded-xl hover:bg-surface-elevated transition-all duration-200 disabled:opacity-50"
                                     >
                                         {feedbackSubmitting ? "Submitting..." : (optedIn ? "Submit Feedback" : "Submit & Opt In")}
                                     </button>

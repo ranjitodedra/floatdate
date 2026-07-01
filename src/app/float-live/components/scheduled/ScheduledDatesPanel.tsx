@@ -114,7 +114,7 @@ export default function ScheduledDatesPanel({
             )}
 
             <div>
-                <h3 className="text-white font-semibold text-sm mb-2">Available scheduled dates</h3>
+                <h3 className="text-cream font-semibold text-sm mb-2">Available scheduled dates</h3>
                 <ScheduledDatesFeed
                     onJoin={onClaimDate}
                     joinDisabled={actionDisabled}

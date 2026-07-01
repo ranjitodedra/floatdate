@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isFloatLiveActive } from "@/lib/float-live-time";
 import { isRoomActive } from "@/lib/float-live-presence";
-
-// Simple in-memory rate limiter per user
-const lastTranscriptTime = new Map<string, number>();
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeStoredContent } from "@/lib/sanitize-content";
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,13 +12,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { active } = await isFloatLiveActive();
-        if (!active) {
-            return NextResponse.json(
-                { error: "Float Live is only available 5-6 PM ET" },
-                { status: 403 }
-            );
-        }
+        const rateLimited = await checkRateLimit("voice_transcript", authSession.userId);
+        if (rateLimited) return rateLimited;
 
         const body = await req.json();
         const { chatRoomId, lines } = body as {
@@ -32,15 +25,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "chatRoomId and lines required" }, { status: 400 });
         }
 
-        // Rate limit: max 1 request per 3 seconds per user
-        const now = Date.now();
-        const lastTime = lastTranscriptTime.get(authSession.userId) || 0;
-        if (now - lastTime < 3000) {
-            return NextResponse.json({ error: "Sending too fast" }, { status: 429 });
-        }
-        lastTranscriptTime.set(authSession.userId, now);
-
-        // Verify user is a participant in this chat room
         const chatRoom = await prisma.floatLiveChatRoom.findUnique({
             where: { id: chatRoomId },
             include: {
@@ -61,16 +45,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Not a participant" }, { status: 403 });
         }
 
-        // Filter and sanitize lines
         const validLines = lines
-            .map((line) => line.content?.trim().substring(0, 1000))
-            .filter((c) => c && c.length > 0);
+            .map((line) => sanitizeStoredContent(line.content ?? ""))
+            .filter((c) => c.length > 0);
 
         if (validLines.length === 0) {
-            return NextResponse.json({ success: true, count: 0 }); // Nothing to save
+            return NextResponse.json({ success: true, count: 0 });
         }
 
-        // Insert transcripts
         await prisma.floatLiveVoiceTranscript.createMany({
             data: validLines.map((content) => ({
                 chatRoomId,

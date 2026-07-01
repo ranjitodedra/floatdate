@@ -5,10 +5,29 @@ import { prisma } from "./db";
 
 const SESSION_COOKIE = "floatdate_session";
 const IMPERSONATION_COOKIE = "floatdate_impersonation";
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || "dev-secret-change-in-production"
-);
 const IMPERSONATION_TTL_SECONDS = 60 * 30; // 30 minutes
+const MIN_JWT_SECRET_LENGTH = 32;
+
+function getJwtSecret(): Uint8Array {
+    const secret = process.env.JWT_SECRET;
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (!secret) {
+        if (isProduction) {
+            throw new Error("JWT_SECRET environment variable is required in production");
+        }
+        // Dev-only fallback — never used in production
+        return new TextEncoder().encode("dev-secret-local-only-not-for-production");
+    }
+
+    if (isProduction && secret.length < MIN_JWT_SECRET_LENGTH) {
+        throw new Error(
+            `JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters in production`
+        );
+    }
+
+    return new TextEncoder().encode(secret);
+}
 
 interface ImpersonationPayload {
     actorUserId: string;
@@ -37,7 +56,7 @@ export async function createSession(userId: string): Promise<void> {
         .setProtectedHeader({ alg: "HS256" })
         .setExpirationTime("7d")
         .setIssuedAt()
-        .sign(JWT_SECRET);
+        .sign(getJwtSecret());
 
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE, token, {
@@ -55,7 +74,7 @@ export async function getBaseSession(): Promise<{ userId: string } | null> {
     if (!token) return null;
 
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         return { userId: payload.userId as string };
     } catch {
         return null;
@@ -68,7 +87,7 @@ async function getImpersonationPayload(): Promise<ImpersonationPayload | null> {
     if (!token) return null;
 
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, getJwtSecret());
         const actorUserId = payload.actorUserId as string | undefined;
         const targetUserId = payload.targetUserId as string | undefined;
         if (!actorUserId || !targetUserId) return null;
@@ -122,7 +141,7 @@ export async function createImpersonationSession(
         .setProtectedHeader({ alg: "HS256" })
         .setExpirationTime(`${IMPERSONATION_TTL_SECONDS}s`)
         .setIssuedAt()
-        .sign(JWT_SECRET);
+        .sign(getJwtSecret());
 
     const cookieStore = await cookies();
     cookieStore.set(IMPERSONATION_COOKIE, token, {

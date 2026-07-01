@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_CHARACTERS,
+    MAX_CONCURRENT_SCHEDULED_DATES,
     canJoinScheduledDate,
     formatScheduledAtLabel,
 } from "@/lib/float-live-scheduled";
@@ -22,6 +24,12 @@ export async function POST(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const referralDenied = await requireReferralUnlock(authSession.userId);
+        if (referralDenied) return referralDenied;
+
+        const verificationDenied = await requireApprovedUser(authSession.userId);
+        if (verificationDenied) return verificationDenied;
+
         const { id } = await params;
         const body = await req.json();
         const { character } = body;
@@ -35,6 +43,22 @@ export async function POST(
 
         if (!joiner) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const activeClaimCount = await prisma.floatLiveScheduledDate.count({
+            where: {
+                joinerId: authSession.userId,
+                status: { in: ["claimed", "in_progress"] },
+            },
+        });
+
+        if (activeClaimCount >= MAX_CONCURRENT_SCHEDULED_DATES) {
+            return NextResponse.json(
+                {
+                    error: `You can have at most ${MAX_CONCURRENT_SCHEDULED_DATES} claimed dates at a time`,
+                },
+                { status: 409 }
+            );
         }
 
         const preference = "any";
