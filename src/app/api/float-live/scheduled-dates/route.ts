@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { expirePastScheduledDates } from "@/lib/float-live-scheduled-expiry";
-import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
+import { requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_INTENTIONS,
     VALID_PREFERENCES,
@@ -81,9 +81,6 @@ export async function POST(req: NextRequest) {
 
         const referralDenied = await requireReferralUnlock(authSession.userId);
         if (referralDenied) return referralDenied;
-
-        const verificationDenied = await requireApprovedUser(authSession.userId);
-        if (verificationDenied) return verificationDenied;
 
         const body = await req.json();
         const { scheduledAt, durationMinutes, preference, intention, expectations } = body;

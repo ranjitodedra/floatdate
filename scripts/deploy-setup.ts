@@ -63,7 +63,8 @@ async function main() {
         console.log("\nNext steps:");
         console.log("1. Add DATABASE_URL and other environment variables to Vercel");
         console.log("   Required: JWT_SECRET (32+ chars), UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN");
-        console.log("   Optional: SHOW_APPLICATION_DEADLINE (ISO datetime)");
+        console.log("   Upstash: use REST URL (https://xxx.upstash.io), NOT redis:// connection string");
+        console.log("   Optional: SHOW_APPLICATION_DEADLINE (ISO datetime), REFERRAL_GATE_ENABLED (set true to enforce referrals)");
         console.log("2. Run: npx prisma migrate deploy (applies security_hardening migration)");
         console.log("3. In Supabase: ensure verification-docs bucket is Private");
         console.log("4. Deploy your app on Vercel");

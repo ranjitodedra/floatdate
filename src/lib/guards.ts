@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { isAdminUserId } from "@/lib/admin-auth";
 import { isReferralUnlocked } from "@/lib/referral";
-import { VERIFICATION_STATUS } from "@/lib/verification";
+
+export function isReferralGateEnabled(): boolean {
+    return process.env.REFERRAL_GATE_ENABLED === "true";
+}
 
 export async function requireReferralUnlock(
     userId: string
 ): Promise<NextResponse | null> {
+    if (!isReferralGateEnabled()) return null;
+
+    const isAdmin = await isAdminUserId(userId);
+    if (isAdmin) return null;
+
     const unlocked = await isReferralUnlocked(userId);
     if (!unlocked) {
         return NextResponse.json(
@@ -16,32 +24,6 @@ export async function requireReferralUnlock(
             { status: 403 }
         );
     }
-    return null;
-}
-
-export async function requireApprovedUser(
-    userId: string
-): Promise<NextResponse | null> {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { verificationStatus: true },
-    });
-
-    if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    if (user.verificationStatus !== VERIFICATION_STATUS.APPROVED) {
-        return NextResponse.json(
-            {
-                error: "Your account must be verified before using Float Live",
-                code: "verification_required",
-                verificationStatus: user.verificationStatus,
-            },
-            { status: 403 }
-        );
-    }
-
     return null;
 }
 

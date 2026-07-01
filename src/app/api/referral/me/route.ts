@@ -6,6 +6,8 @@ import {
     getReferralCount,
     isReferralUnlocked,
 } from "@/lib/referral";
+import { isAdminUserId } from "@/lib/admin-auth";
+import { isReferralGateEnabled } from "@/lib/guards";
 
 export async function GET() {
     try {
@@ -16,7 +18,9 @@ export async function GET() {
 
         const code = await ensureReferralCode(auth.userId);
         const count = await getReferralCount(auth.userId);
-        const unlocked = await isReferralUnlocked(auth.userId);
+        const gateOff =
+            !isReferralGateEnabled() || (await isAdminUserId(auth.userId));
+        const unlocked = gateOff ? true : await isReferralUnlocked(auth.userId);
 
         return NextResponse.json({
             code,

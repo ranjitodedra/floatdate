@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getTodaySessionTimes } from "@/lib/float-live-time";
-import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
+import { requireReferralUnlock } from "@/lib/guards";
 
 const VALID_PREFERENCES = ["male", "female", "nonbinary", "any"];
 const VALID_INTENTIONS = ["blind_date", "friendship"];
@@ -17,9 +17,6 @@ export async function POST(req: NextRequest) {
 
         const referralDenied = await requireReferralUnlock(authSession.userId);
         if (referralDenied) return referralDenied;
-
-        const verificationDenied = await requireApprovedUser(authSession.userId);
-        if (verificationDenied) return verificationDenied;
 
         const body = await req.json();
         const { preference, intention, character, acceptedTerms } = body;

@@ -348,7 +348,7 @@ export default function FloatLivePage() {
         if (!sessionId) return;
 
         try {
-            await fetch("/api/float-live/join", {
+            const res = await fetch("/api/float-live/join", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -358,6 +358,14 @@ export default function FloatLivePage() {
                     acceptedTerms: true,
                 }),
             });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || "Failed to join Float Live");
+                return;
+            }
+            if (data.sessionId) {
+                setSessionId(data.sessionId);
+            }
             setSearching(true);
         } catch (err) {
             console.error("Join error:", err);

@@ -8,7 +8,7 @@ import {
     ensureRoomParticipants,
     markParticipantsMatched,
 } from "@/lib/float-live-room";
-import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
+import { requireReferralUnlock } from "@/lib/guards";
 import {
     VALID_CHARACTERS,
     isWithinJoinWindow,
@@ -43,9 +43,6 @@ export async function POST(
 
         const referralDenied = await requireReferralUnlock(authSession.userId);
         if (referralDenied) return referralDenied;
-
-        const verificationDenied = await requireApprovedUser(authSession.userId);
-        if (verificationDenied) return verificationDenied;
 
         const { id } = await params;
         const body = await req.json();

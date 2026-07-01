@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { requireApprovedUser, requireReferralUnlock } from "@/lib/guards";
+import { requireReferralUnlock } from "@/lib/guards";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
     canonicalParticipantPair,
@@ -139,9 +139,6 @@ export async function POST(req: NextRequest) {
 
         const referralDenied = await requireReferralUnlock(authSession.userId);
         if (referralDenied) return referralDenied;
-
-        const verificationDenied = await requireApprovedUser(authSession.userId);
-        if (verificationDenied) return verificationDenied;
 
         const rateLimited = await checkRateLimit("find_match", authSession.userId);
         if (rateLimited) return rateLimited;

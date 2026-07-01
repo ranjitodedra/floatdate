@@ -27,19 +27,37 @@ const BUCKET_CONFIG: Record<RateLimitBucket, BucketConfig> = {
 };
 
 let redis: Redis | null = null;
+let redisResolved = false;
 const limiters = new Map<RateLimitBucket, Ratelimit>();
 
 function getRedis(): Redis | null {
-    if (redis) return redis;
+    if (redisResolved) return redis;
+    redisResolved = true;
 
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
 
     if (!url || !token) {
         return null;
     }
 
-    redis = new Redis({ url, token });
+    if (!/^https?:\/\//.test(url)) {
+        console.warn(
+            "[rate-limit] UPSTASH_REDIS_REST_URL must start with https:// - rate limiting disabled."
+        );
+        return null;
+    }
+
+    try {
+        redis = new Redis({ url, token });
+    } catch (err) {
+        console.warn(
+            "[rate-limit] Failed to init Upstash Redis - rate limiting disabled.",
+            err
+        );
+        redis = null;
+    }
+
     return redis;
 }
 
@@ -67,21 +85,26 @@ export async function checkRateLimit(
 ): Promise<NextResponse | null> {
     const limiter = getLimiter(bucket);
     if (!limiter) {
-        // Graceful degradation when Upstash is not configured (e.g. local dev)
+        // Graceful degradation when Upstash is not configured or misconfigured
         return null;
     }
 
-    const { success, reset } = await limiter.limit(identifier);
+    try {
+        const { success, reset } = await limiter.limit(identifier);
 
-    if (!success) {
-        const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-        return NextResponse.json(
-            { error: "Too many requests. Please try again later." },
-            {
-                status: 429,
-                headers: { "Retry-After": String(retryAfter) },
-            }
-        );
+        if (!success) {
+            const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                {
+                    status: 429,
+                    headers: { "Retry-After": String(retryAfter) },
+                }
+            );
+        }
+    } catch (err) {
+        console.warn("[rate-limit] Upstash request failed - allowing request.", err);
+        return null;
     }
 
     return null;

@@ -5,6 +5,15 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "ranjitodedra.dev@gmail.com")
     .split(",")
     .map((e) => e.trim().toLowerCase());
 
+export async function isAdminUserId(userId: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+    });
+
+    return !!user && ADMIN_EMAILS.includes(user.email.toLowerCase());
+}
+
 export async function requireAdmin() {
     const session = await getBaseSession();
     if (!session) return null;
