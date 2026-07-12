@@ -1,9 +1,8 @@
 import { getBaseSession } from "./auth";
+import { isAdminEmail } from "./admin-emails";
 import { prisma } from "./db";
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "ranjitodedra.dev@gmail.com")
-    .split(",")
-    .map((e) => e.trim().toLowerCase());
+export { getAdminEmails, getClientAdminEmails, isAdminEmail, isAdminEmailClient } from "./admin-emails";
 
 export async function isAdminUserId(userId: string): Promise<boolean> {
     const user = await prisma.user.findUnique({
@@ -11,7 +10,7 @@ export async function isAdminUserId(userId: string): Promise<boolean> {
         select: { email: true },
     });
 
-    return !!user && ADMIN_EMAILS.includes(user.email.toLowerCase());
+    return !!user && isAdminEmail(user.email);
 }
 
 export async function requireAdmin() {
@@ -23,7 +22,7 @@ export async function requireAdmin() {
         select: { id: true, email: true, name: true },
     });
 
-    if (!user || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+    if (!user || !isAdminEmail(user.email)) {
         return null;
     }
 

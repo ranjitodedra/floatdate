@@ -11,7 +11,8 @@
     "delete-user": "tsx scripts/delete-user.ts",
     "trigger-matching": "npx tsx scripts/trigger-matching.ts",
     "db:dump": "npx tsx scripts/pg-dump.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync-public": "powershell -ExecutionPolicy Bypass -File scripts/sync-public.ps1"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.0",

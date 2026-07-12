@@ -89,6 +89,11 @@ export default function AdminPage() {
     const [viewAsError, setViewAsError] = useState("");
     const [viewAsSuccess, setViewAsSuccess] = useState("");
 
+    const [verifyEmail, setVerifyEmail] = useState("");
+    const [verifyLoading, setVerifyLoading] = useState(false);
+    const [verifyError, setVerifyError] = useState("");
+    const [verifySuccess, setVerifySuccess] = useState("");
+
     const [universities, setUniversities] = useState<University[]>([]);
     const [observationUniversityId, setObservationUniversityId] = useState("");
     const [weekChoices, setWeekChoices] = useState<WeekChoice[]>([]);
@@ -188,6 +193,32 @@ export default function AdminPage() {
             setViewAsError("Failed to start impersonation");
         } finally {
             setViewAsLoading(false);
+        }
+    }
+
+    async function handleManualVerify(e: React.FormEvent) {
+        e.preventDefault();
+        if (!verifyEmail.trim()) return;
+        setVerifyLoading(true);
+        setVerifyError("");
+        setVerifySuccess("");
+        try {
+            const res = await fetch("/api/admin/verify-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: verifyEmail.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setVerifyError(data.error || "Failed to verify email");
+                return;
+            }
+            setVerifySuccess(data.message || "Account verified. User can now log in.");
+            setVerifyEmail("");
+        } catch {
+            setVerifyError("Failed to verify email");
+        } finally {
+            setVerifyLoading(false);
         }
     }
 
@@ -459,6 +490,53 @@ export default function AdminPage() {
                     {viewAsSuccess && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm mb-4">
                             {viewAsSuccess}
+                        </div>
+                    )}
+                </div>
+
+                {/* Manually Verify Email Card */}
+                <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-zinc-900">Manually Verify Email</h2>
+                        <p className="text-zinc-400 text-sm mt-1">
+                            Enter an email stuck on signup verification to create their account so they can log in
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleManualVerify} className="flex gap-3 mb-4">
+                        <input
+                            type="email"
+                            value={verifyEmail}
+                            onChange={(e) => setVerifyEmail(e.target.value)}
+                            placeholder="user@mylaurier.ca"
+                            className="flex-1 px-4 py-2.5 border border-zinc-300 rounded-xl text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            disabled={verifyLoading}
+                            className="px-5 py-2.5 bg-green-700 text-white font-semibold rounded-xl hover:bg-green-800 transition-all duration-200 disabled:opacity-50 text-sm flex-shrink-0"
+                        >
+                            {verifyLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Verifying...
+                                </span>
+                            ) : (
+                                "Verify & Enable Login"
+                            )}
+                        </button>
+                    </form>
+
+                    {verifyError && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm mb-4">
+                            {verifyError}
+                        </div>
+                    )}
+
+                    {verifySuccess && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm mb-4">
+                            {verifySuccess}
                         </div>
                     )}
                 </div>

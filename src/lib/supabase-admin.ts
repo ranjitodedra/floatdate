@@ -119,5 +119,3 @@ export function isGmailAddress(email: string): boolean {
     const domain = email.toLowerCase().split("@")[1];
     return domain === "gmail.com";
 }
-
-export const ADMIN_GMAIL = "ranjitodedra.dev@gmail.com";

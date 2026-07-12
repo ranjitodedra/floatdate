@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
         // DST guard: two cron entries fire at 01:00 and 02:00 UTC Thursday.
         // Only proceed if it's actually Wednesday 9 PM in America/Toronto.
         if (!isMatchingTime()) {
-            console.log("Cron fired but it's not 9 PM Wednesday in Toronto. Skipping.");
             return NextResponse.json({
                 skipped: true,
                 reason: "Not Wednesday 9 PM in America/Toronto (DST guard)",

@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.dump
+*backup*.sql
+*backup*.dump
+exports/
 
 *.pem
 
@@ -34,6 +37,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# editor / agent tooling
+.cursor/
 
 # vercel
 .vercel
@@ -43,3 +50,5 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+commands..md

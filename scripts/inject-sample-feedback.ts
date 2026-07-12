@@ -1,8 +1,16 @@
+import "dotenv/config";
 import { prisma } from "../src/lib/db";
+import { getAdminEmails } from "../src/lib/admin-emails";
 import { getPreviousWeekStart } from "../src/lib/week-cycle";
 
 async function main() {
-    const adminEmail = "ranjitodedra.dev@gmail.com";
+    const adminEmails = getAdminEmails();
+    const adminEmail = adminEmails[0];
+    if (!adminEmail) {
+        console.error("ADMIN_EMAILS not set. Set at least one admin email in .env");
+        return;
+    }
+
     const admin = await prisma.user.findUnique({
         where: { email: adminEmail },
     });
@@ -13,7 +21,7 @@ async function main() {
     }
 
     // Try to find another user to match with
-    let otherUser = await prisma.user.findFirst({
+    const otherUser = await prisma.user.findFirst({
         where: {
             email: { not: adminEmail }
         }

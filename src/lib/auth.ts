@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { isAdminEmail } from "./admin-emails";
 import { prisma } from "./db";
 
 const SESSION_COOKIE = "floatdate_session";
@@ -201,13 +202,12 @@ export async function getCurrentUser() {
 /**
  * Look up the University record for an email address based on its domain.
  * Returns null if the email domain is not recognized.
- * Admin email (ranjitodedra.dev@gmail.com) falls back to Laurier.
+ * Admin emails (ADMIN_EMAILS) fall back to Laurier.
  */
 export async function getUniversityByEmail(email: string): Promise<{ id: string; slug: string; name: string; campuses: unknown } | null> {
     const normalizedEmail = email.toLowerCase();
 
-    // Admin exception — map to Laurier
-    if (normalizedEmail === "ranjitodedra.dev@gmail.com") {
+    if (isAdminEmail(normalizedEmail)) {
         return prisma.university.findUnique({
             where: { slug: "laurier" },
             select: { id: true, slug: true, name: true, campuses: true },
@@ -235,7 +235,7 @@ export async function isValidUniversityEmail(email: string): Promise<boolean> {
 // Keep backward compat — deprecated, use isValidUniversityEmail instead
 export function isValidLaurierEmail(email: string): boolean {
     const normalizedEmail = email.toLowerCase();
-    if (normalizedEmail === "ranjitodedra.dev@gmail.com") {
+    if (isAdminEmail(normalizedEmail)) {
         return true;
     }
     return normalizedEmail.endsWith("@mylaurier.ca");

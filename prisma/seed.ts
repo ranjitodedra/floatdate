@@ -59,7 +59,7 @@ interface QuestionJSON {
 }
 
 async function main() {
-    const questionsPath = path.join(__dirname, "..", "questions.json");
+    const questionsPath = path.join(__dirname, "seed-data", "questions.json");
     const raw = fs.readFileSync(questionsPath, "utf-8");
     const questions: QuestionJSON[] = JSON.parse(raw);
 

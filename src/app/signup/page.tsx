@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { readStoredRef } from "@/lib/referral-client";
+import { isAdminEmailClient } from "@/lib/admin-emails";
 
 import AuthSplitLayout from "@/components/AuthSplitLayout";
 import {
@@ -66,7 +67,7 @@ export default function SignupPage() {
 
     const normalizedEmail = form.email.toLowerCase().trim();
     const isGmail = isGmailEmail(normalizedEmail);
-    const isAdmin = normalizedEmail === "ranjitodedra.dev@gmail.com";
+    const isAdmin = isAdminEmailClient(normalizedEmail);
     const showGmailVerification = isGmail && !isAdmin;
 
     useEffect(() => {

@@ -67,6 +67,7 @@ export default function DashboardPage() {
 
     const [countdown, setCountdown] = useState("");
     const [user, setUser] = useState<{ name: string; email: string; completedSetup: boolean; verificationStatus?: string } | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [impersonationActor, setImpersonationActor] = useState<{ id: string; name: string; email: string } | null>(null);
 
     // Edit profile state
@@ -88,6 +89,7 @@ export default function DashboardPage() {
             }
 
             setUser(userData.user);
+            setIsAdmin(userData.isAdmin === true);
             setImpersonationActor(userData.session?.isImpersonating ? userData.session?.actor ?? null : null);
 
             // Note: the questionnaire is optional. Users land on the dashboard
@@ -372,7 +374,7 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {user?.email === "ranjitodedra.dev@gmail.com" && (
+                        {isAdmin && (
                             <a
                                 href="/admin"
                                 className="text-sm text-muted hover:text-cream/90 transition"

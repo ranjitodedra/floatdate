@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || "dev-secret-change-in-production"
+    process.env.JWT_SECRET || "dev-secret-local-only-not-for-production"
 );
 
 const protectedPaths = ["/dashboard", "/questions", "/admin", "/float-live", "/float-pop-or-match"];

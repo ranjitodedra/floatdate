@@ -6,7 +6,8 @@ export type AdminAuditAction =
     | "impersonation_stop"
     | "email_reveal"
     | "report_submit"
-    | "application_submit";
+    | "application_submit"
+    | "manual_verify";
 
 export async function logAdminAudit(params: {
     actorUserId: string;

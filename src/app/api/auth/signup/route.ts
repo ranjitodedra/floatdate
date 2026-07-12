@@ -12,8 +12,8 @@ import {
     deleteVerificationDoc,
     validateVerificationImage,
     isGmailAddress,
-    ADMIN_GMAIL,
 } from "@/lib/supabase-admin";
+import { isAdminEmail } from "@/lib/admin-auth";
 import { VERIFICATION_METHOD } from "@/lib/verification";
 import { normalizeReferralCode } from "@/lib/referral";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -45,7 +45,7 @@ async function resolveUniversity(
     normalizedEmail: string,
     universityId?: string
 ): Promise<{ id: string } | null> {
-    if (normalizedEmail === ADMIN_GMAIL) {
+    if (isAdminEmail(normalizedEmail)) {
         return getUniversityByEmail(normalizedEmail);
     }
 
@@ -149,7 +149,7 @@ async function handleJsonSignup(body: unknown) {
     const rateLimited = await checkRateLimit("signup", normalizedEmail);
     if (rateLimited) return rateLimited;
 
-    if (isGmailAddress(normalizedEmail) && normalizedEmail !== ADMIN_GMAIL) {
+    if (isGmailAddress(normalizedEmail) && !isAdminEmail(normalizedEmail)) {
         return NextResponse.json(
             {
                 error: "Gmail signups require document verification. Please select your university and upload a transcript or student ID.",
@@ -190,9 +190,6 @@ async function handleJsonSignup(body: unknown) {
         normalizedEmail,
         fields.name,
         verifyToken
-    );
-    console.log(
-        `Verification email to ${normalizedEmail}: ${emailResult.status}`
     );
 
     const emailFailed = emailResult.status === "failed";
@@ -248,7 +245,7 @@ async function handleMultipartSignup(formData: FormData) {
     const rateLimited = await checkRateLimit("signup", normalizedEmail);
     if (rateLimited) return rateLimited;
 
-    if (!isGmailAddress(normalizedEmail) && normalizedEmail !== ADMIN_GMAIL) {
+    if (!isGmailAddress(normalizedEmail) && !isAdminEmail(normalizedEmail)) {
         return NextResponse.json(
             {
                 error: "Document verification is only available for Gmail addresses. Please use your university email.",
@@ -257,7 +254,7 @@ async function handleMultipartSignup(formData: FormData) {
         );
     }
 
-    if (normalizedEmail !== ADMIN_GMAIL) {
+    if (!isAdminEmail(normalizedEmail)) {
         if (!universityId) {
             return NextResponse.json(
                 { error: "Please select your university." },
@@ -305,7 +302,7 @@ async function handleMultipartSignup(formData: FormData) {
     let verificationMethod: string = VERIFICATION_METHOD.EMAIL_DOMAIN;
 
     if (
-        normalizedEmail !== ADMIN_GMAIL &&
+        !isAdminEmail(normalizedEmail) &&
         document instanceof File &&
         document.size > 0
     ) {
@@ -326,9 +323,6 @@ async function handleMultipartSignup(formData: FormData) {
         normalizedEmail,
         fields.name,
         verifyToken
-    );
-    console.log(
-        `Verification email to ${normalizedEmail}: ${emailResult.status}`
     );
 
     const emailFailed = emailResult.status === "failed";
